@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kimi K3 — Is It Over for Claude?</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-void: #0d0d0d;
+      --bg-primary: #141414;
+      --bg-card: #1c1c1c;
+      --bg-code: #1a1a1a;
+      --bg-elevated: #252525;
+      --accent: #3B82F6;
+      --accent-bright: #60A5FA;
+      --accent-glow: rgba(96, 165, 250, 0.35);
+      --accent-subtle: rgba(96, 165, 250, 0.12);
+      --text-primary: #f0f0f0;
+      --text-secondary: #999999;
+      --text-muted: #555555;
+      --green: #4ade80;
+      --red: #f87171;
+      --gold: #fbbf24;
+      --blue: #60a5fa;
+      --font-display: 'DM Sans', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: var(--bg-void);
+      color: var(--text-primary);
+      font-family: var(--font-display);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .progress {
+      position: fixed; top: 0; left: 0;
+      height: 3px;
+      background: var(--accent);
+      z-index: 100;
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .deck {
+      display: flex;
+      width: 1300vw;
+      height: 100vh;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .slide {
+      width: 100vw; height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+    }
+    .slide-inner {
+      max-width: 1000px; width: 90%;
+      text-align: center; z-index: 2;
+    }
+
+    .slide .animate-in {
+      opacity: 0; transform: translateY(30px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .slide.active .animate-in { opacity: 1; transform: translateY(0); }
+    .slide.active .animate-in:nth-child(2) { transition-delay: 0.1s; }
+    .slide.active .animate-in:nth-child(3) { transition-delay: 0.2s; }
+    .slide.active .animate-in:nth-child(4) { transition-delay: 0.3s; }
+    .slide.active .animate-in:nth-child(5) { transition-delay: 0.4s; }
+    .slide.active .animate-in:nth-child(6) { transition-delay: 0.5s; }
+
+    h1 {
+      font-weight: 800;
+      font-size: clamp(2.4rem, 6vw, 4.5rem);
+      line-height: 1.1; letter-spacing: -0.02em;
+    }
+    h2 {
+      font-weight: 800;
+      font-size: clamp(2rem, 4.5vw, 3.5rem);
+      line-height: 1.15; letter-spacing: -0.02em;
+      margin-bottom: 1.5rem;
+    }
+    .accent { color: var(--accent-bright); }
+    .subtitle {
+      font-family: var(--font-mono);
+      font-size: clamp(0.9rem, 1.8vw, 1.2rem);
+      color: var(--text-secondary); margin-top: 1.2rem;
+    }
+    .description {
+      font-size: clamp(1rem, 2vw, 1.35rem);
+      color: var(--text-secondary); line-height: 1.5;
+      max-width: 700px; margin: 0 auto;
+    }
+
+    .slide::before {
+      content: ''; position: absolute; inset: 0;
+      z-index: 0; pointer-events: none;
+    }
+    .slide-1::before { background: radial-gradient(ellipse 60% 50% at 50% 55%, var(--accent-subtle) 0%, transparent 70%); }
+    .slide-2::before { background: radial-gradient(ellipse 55% 45% at 50% 40%, var(--accent-subtle) 0%, transparent 70%); }
+    .slide-3::before { background: radial-gradient(ellipse 50% 50% at 30% 50%, var(--accent-subtle) 0%, transparent 70%); }
+    .slide-4::before { background: radial-gradient(ellipse 55% 45% at 70% 50%, var(--accent-subtle) 0%, transparent 70%); }
+    .slide-5::before { background: radial-gradient(ellipse 60% 50% at 50% 60%, rgba(251, 191, 36, 0.08) 0%, transparent 70%); }
+    .slide-6::before { background: radial-gradient(ellipse 55% 45% at 40% 45%, var(--accent-subtle) 0%, transparent 70%); }
+    .slide-7::before { background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(251, 191, 36, 0.08) 0%, transparent 70%); }
+    .slide-8::before { background: radial-gradient(ellipse 50% 45% at 60% 50%, var(--accent-subtle) 0%, transparent 70%); }
+    .slide-9::before { background: radial-gradient(ellipse 55% 55% at 50% 50%, var(--accent-subtle) 0%, transparent 65%); }
+    .slide-10::before { background: radial-gradient(ellipse 60% 45% at 45% 45%, var(--accent-subtle) 0%, transparent 70%); }
+    .slide-11::before { background: radial-gradient(ellipse 55% 50% at 55% 50%, rgba(74, 222, 128, 0.08) 0%, transparent 70%); }
+    .slide-12::before { background: radial-gradient(ellipse 55% 50% at 50% 40%, rgba(248, 113, 113, 0.07) 0%, transparent 70%); }
+    .slide-13::before { background: radial-gradient(ellipse 60% 50% at 50% 55%, var(--accent-subtle) 0%, transparent 70%); }
+    .slide::after {
+      content: ''; position: absolute; inset: 0;
+      z-index: 1; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    .badge {
+      display: inline-block; background: var(--accent); color: #fff;
+      font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700;
+      padding: 0.35rem 0.9rem; border-radius: 100px;
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1.5rem;
+    }
+    .badge.outline {
+      background: transparent; color: var(--accent-bright);
+      border: 1px solid var(--accent);
+    }
+
+    .hero-emoji {
+      font-size: clamp(4rem, 10vw, 7rem); line-height: 1;
+      display: inline-block; margin-bottom: 1.5rem;
+      filter: drop-shadow(0 0 30px var(--accent-glow)) drop-shadow(0 0 60px var(--accent-glow));
+      animation: float 4s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-12px); }
+    }
+
+    .cards {
+      display: flex; gap: clamp(0.8rem, 2vw, 1.5rem);
+      margin-top: 2.5rem; justify-content: center; flex-wrap: wrap;
+    }
+    .card {
+      background: var(--bg-card); border-radius: var(--radius);
+      padding: clamp(1.5rem, 3vw, 2.2rem); flex: 1;
+      min-width: 200px; max-width: 280px;
+      border-top: 3px solid var(--accent);
+      transition: transform 0.3s ease, box-shadow 0.3s ease; text-align: left;
+    }
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 0 20px var(--accent-subtle);
+    }
+    .card.win { border-top-color: var(--green); }
+    .card.lose { border-top-color: var(--red); }
+    .card-icon {
+      width: 52px; height: 52px; border-radius: 12px;
+      background: var(--accent-subtle); display: flex;
+      align-items: center; justify-content: center;
+      font-size: 1.6rem; margin-bottom: 1rem;
+    }
+    .card-title { font-weight: 800; font-size: clamp(1.1rem, 2vw, 1.4rem); margin-bottom: 0.5rem; }
+    .card-text { font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; }
+    .card-verdict {
+      font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700;
+      margin-top: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .card-verdict.good { color: var(--green); }
+    .card-verdict.bad { color: var(--red); }
+
+    .stat-cards { display: flex; gap: clamp(0.8rem, 2vw, 1.5rem); margin-top: 2rem; justify-content: center; flex-wrap: wrap; }
+    .stat-card {
+      background: var(--bg-card); border-radius: var(--radius);
+      padding: clamp(1.2rem, 2.5vw, 2rem); flex: 1;
+      min-width: 200px; max-width: 260px; text-align: center;
+      border-top: 3px solid var(--accent);
+    }
+    .stat-card .sc-icon { font-size: 1.8rem; margin-bottom: 0.6rem; }
+    .stat-card .sc-value {
+      font-family: var(--font-mono); font-weight: 700;
+      font-size: clamp(2rem, 4vw, 3rem); color: var(--accent-bright); line-height: 1.1;
+    }
+    .stat-card .sc-label { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.4rem; letter-spacing: 0.06em; }
+    .stat-card .sc-desc { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem; line-height: 1.4; }
+
+    .vs-row {
+      display: flex; align-items: stretch; justify-content: center;
+      gap: clamp(1rem, 3vw, 2rem); margin-top: 2.5rem; flex-wrap: wrap;
+    }
+    .vs-block {
+      background: var(--bg-card); border-radius: var(--radius);
+      padding: clamp(1.5rem, 3vw, 2.5rem) clamp(1.8rem, 4vw, 3rem);
+      display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+      border: 2px solid var(--bg-elevated); min-width: 220px;
+    }
+    .vs-block.highlight { border-color: var(--accent); box-shadow: 0 0 30px var(--accent-subtle); }
+    .vs-icon { font-size: 2.5rem; }
+    .vs-big {
+      font-family: var(--font-mono); font-weight: 700;
+      font-size: clamp(2.4rem, 5vw, 3.8rem); color: var(--accent-bright); line-height: 1;
+    }
+    .vs-block .vs-name { font-weight: 800; font-size: 1.1rem; }
+    .vs-block .vs-sub { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); }
+    .vs-divider {
+      display: flex; align-items: center; font-family: var(--font-mono);
+      font-weight: 700; color: var(--text-muted); font-size: 1.1rem;
+    }
+
+    .price-cards { display: flex; gap: clamp(0.8rem, 2vw, 1.5rem); margin-top: 2rem; justify-content: center; flex-wrap: wrap; }
+    .price-card {
+      background: var(--bg-card); border-radius: var(--radius);
+      padding: clamp(1.3rem, 2.5vw, 2rem); flex: 1;
+      min-width: 210px; max-width: 280px; text-align: left;
+      border-top: 3px solid var(--bg-elevated);
+      display: flex; flex-direction: column; gap: 0.6rem;
+    }
+    .price-card.tier-premium { border-top-color: var(--red); }
+    .price-card.tier-mid { border-top-color: var(--blue); }
+    .price-card.tier-budget { border-top-color: var(--green); box-shadow: 0 0 25px rgba(74, 222, 128, 0.1); }
+    .pc-emoji { font-size: 1.8rem; }
+    .pc-name { font-weight: 800; font-size: 1.2rem; }
+    .pc-provider { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .pc-price-row {
+      display: flex; justify-content: space-between; align-items: baseline;
+      background: var(--bg-elevated); border-radius: var(--radius-sm);
+      padding: 0.5rem 0.8rem;
+    }
+    .pc-price-label { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
+    .pc-price-value { font-family: var(--font-mono); font-weight: 700; font-size: 1rem; color: var(--text-primary); }
+    .tier-budget .pc-price-value { color: var(--green); }
+    .savings-badge {
+      align-self: flex-start; background: rgba(74, 222, 128, 0.15); color: var(--green);
+      font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700;
+      padding: 0.3rem 0.7rem; border-radius: 100px; text-transform: uppercase; letter-spacing: 0.05em;
+      margin-top: 0.3rem;
+    }
+    .warn-badge {
+      align-self: flex-start; background: rgba(248, 113, 113, 0.15); color: var(--red);
+      font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700;
+      padding: 0.3rem 0.7rem; border-radius: 100px; text-transform: uppercase; letter-spacing: 0.05em;
+      margin-top: 0.3rem;
+    }
+
+    .rank-row {
+      display: flex; align-items: flex-end; justify-content: center;
+      gap: clamp(1rem, 3vw, 2rem); margin-top: 2.5rem; flex-wrap: wrap;
+    }
+    .rank-block {
+      background: var(--bg-card); border-radius: var(--radius);
+      padding: clamp(1.4rem, 3vw, 2.2rem) clamp(1.6rem, 3.5vw, 2.6rem);
+      display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+      border: 2px solid var(--bg-elevated);
+    }
+    .rank-block.first { border-color: var(--gold); box-shadow: 0 0 30px rgba(251, 191, 36, 0.15); }
+    .rank-number {
+      font-family: var(--font-mono); font-weight: 700;
+      font-size: clamp(2.5rem, 6vw, 4.5rem); line-height: 1; color: var(--text-secondary);
+    }
+    .rank-number.primary { color: var(--gold); text-shadow: 0 0 30px rgba(251, 191, 36, 0.4); }
+    .rank-label { font-weight: 800; font-size: clamp(1rem, 2vw, 1.3rem); margin-top: 0.4rem; }
+    .rank-sub { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); }
+
+    .flow { display: flex; align-items: center; justify-content: center; gap: clamp(0.5rem, 2vw, 1.5rem); margin-top: 2.5rem; flex-wrap: wrap; }
+    .flow-node {
+      background: var(--bg-card); border: 2px solid var(--bg-elevated);
+      border-radius: var(--radius); padding: clamp(1rem, 2.5vw, 1.8rem) clamp(1.2rem, 3vw, 2.2rem);
+      display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
+    }
+    .flow-node.highlight { border-color: var(--accent); box-shadow: 0 0 25px var(--accent-subtle); }
+    .flow-node .icon { font-size: 2.2rem; }
+    .flow-node .label { font-family: var(--font-mono); font-size: clamp(0.75rem, 1.4vw, 0.95rem); color: var(--text-secondary); font-weight: 700; }
+    .flow-arrow { font-size: 1.8rem; color: var(--accent); animation: pulse-arrow 2s ease-in-out infinite; }
+    @keyframes pulse-arrow { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .tip-box {
+      background: var(--bg-card); border: 1px solid var(--bg-elevated);
+      border-left: 3px solid var(--accent); border-radius: var(--radius-sm);
+      padding: 1rem 1.5rem; margin-top: 1.5rem; text-align: left;
+      max-width: 700px; margin-left: auto; margin-right: auto;
+    }
+    .tip-box .tip-label { font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-bright); font-weight: 700; text-transform: uppercase; margin-bottom: 0.3rem; }
+    .tip-box .tip-text { font-size: 1rem; color: var(--text-secondary); line-height: 1.5; }
+    .tip-box .tip-text strong { color: var(--text-primary); }
+
+    .big-question {
+      font-size: clamp(6rem, 15vw, 12rem); font-weight: 800;
+      color: var(--accent); line-height: 1;
+      text-shadow: 0 0 60px var(--accent-glow), 0 0 120px var(--accent-glow);
+      animation: pulse-q 3s ease-in-out infinite;
+      margin-bottom: 1.5rem;
+    }
+    @keyframes pulse-q {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.05); }
+    }
+
+    .conclusion-points {
+      display: flex; flex-direction: column; gap: 0.9rem;
+      margin-top: 2rem; max-width: 720px; margin-left: auto; margin-right: auto;
+    }
+    .conclusion-point {
+      display: flex; align-items: center; gap: 1rem;
+      background: var(--bg-card); border-radius: var(--radius-sm);
+      padding: 0.9rem 1.3rem; text-align: left;
+      border: 1px solid var(--bg-elevated);
+    }
+    .cp-icon { font-size: 1.4rem; flex-shrink: 0; }
+    .cp-text { font-size: clamp(0.9rem, 1.8vw, 1.1rem); color: var(--text-secondary); line-height: 1.45; }
+    .cp-text strong { color: var(--text-primary); }
+
+    .nav-dots { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 100; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--text-muted); cursor: pointer; transition: all 0.3s ease; border: none; padding: 0; }
+    .dot.active { background: var(--accent); box-shadow: 0 0 10px var(--accent-glow); transform: scale(1.3); }
+    .slide-counter { position: fixed; bottom: 30px; right: 30px; font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); z-index: 100; }
+
+    .click-zone { position: fixed; top: 0; width: 15%; height: 100%; z-index: 50; cursor: pointer; }
+    .click-zone.left { left: 0; }
+    .click-zone.right { right: 0; }
+    .click-zone:hover { background: rgba(255,255,255,0.02); }
+
+    @media (max-width: 600px) {
+      .flow { flex-direction: column; }
+      .flow-arrow { transform: rotate(90deg); }
+      .cards, .stat-cards, .price-cards { flex-direction: column; align-items: center; }
+      .card, .stat-card, .price-card { max-width: 100%; width: 100%; }
+      .rank-row, .vs-row { flex-direction: column; align-items: center; }
+      .vs-divider { transform: rotate(90deg); }
+    }
+
+    @media print {
+      .deck { width: auto; transform: none !important; flex-direction: column; }
+      .slide { height: auto; min-height: 100vh; page-break-after: always; }
+      .nav-dots, .slide-counter, .click-zone, .progress { display: none; }
+      .slide .animate-in { opacity: 1 !important; transform: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" id="progress"></div>
+  <div class="click-zone left" onclick="navigate(-1)"></div>
+  <div class="click-zone right" onclick="navigate(1)"></div>
+
+  <div class="deck" id="deck">
+
+    <!-- 1. HOOK -->
+    <section class="slide slide-1">
+      <div class="slide-inner">
+        <div class="hero-emoji animate-in">🌙</div>
+        <div class="animate-in"><span class="badge">⚡ OPEN-SOURCE SHOCKWAVE</span></div>
+        <h1 class="animate-in">Kimi <span class="accent">K3</span> — Is It Over for Claude?</h1>
+        <p class="subtitle animate-in">The Chinese open-source model matching the frontier</p>
+      </div>
+    </section>
+
+    <!-- 2. BENCHMARKS -->
+    <section class="slide slide-2">
+      <div class="slide-inner">
+        <div class="animate-in"><span class="badge outline">📊 THE NUMBERS</span></div>
+        <h2 class="animate-in">The <span class="accent">Benchmarks</span> Are Insane</h2>
+        <div class="stat-cards animate-in">
+          <div class="stat-card">
+            <div class="sc-icon">🥊</div>
+            <div class="sc-label">vs the frontier</div>
+            <div class="sc-value">TIED</div>
+            <div class="sc-desc">Right up there with Fable 5 &amp; GPT 5.6</div>
+          </div>
+          <div class="stat-card">
+            <div class="sc-icon">📈</div>
+            <div class="sc-label">vs GPT 5.6</div>
+            <div class="sc-value">WINS</div>
+            <div class="sc-desc">Scores above it on multiple benchmarks</div>
+          </div>
+          <div class="stat-card">
+            <div class="sc-icon">💻</div>
+            <div class="sc-label">Programming bench</div>
+            <div class="sc-value">#1</div>
+            <div class="sc-desc">Ranks higher than both GPT and Fable</div>
+          </div>
+        </div>
+        <div class="tip-box animate-in">
+          <div class="tip-label">🤔 But wait</div>
+          <div class="tip-text">Benchmarks don't tell the entire truth — so we <strong>tested it ourselves</strong>.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. SIZE -->
+    <section class="slide slide-3">
+      <div class="slide-inner">
+        <div class="animate-in"><span class="badge outline">🐋 SCALE</span></div>
+        <h2 class="animate-in">The <span class="accent">Biggest</span> Open Model Ever</h2>
+        <div class="vs-row animate-in">
+          <div class="vs-block highlight">
+            <div class="vs-icon">🌙</div>
+            <div class="vs-big">~3T</div>
+            <div class="vs-name">Kimi K3</div>
+            <div class="vs-sub">parameters</div>
+          </div>
+          <div class="vs-divider">vs</div>
+          <div class="vs-block">
+            <div class="vs-icon">🐳</div>
+            <div class="vs-big" style="color: var(--text-secondary)">1.6T</div>
+            <div class="vs-name">DeepSeek</div>
+            <div class="vs-sub">previous largest</div>
+          </div>
+        </div>
+        <p class="subtitle animate-in">Almost 2× larger than anything open-source before it</p>
+      </div>
+    </section>
+
+    <!-- 4. CONTENDERS / PRICING -->
+    <section class="slide slide-4">
+      <div class="slide-inner">
+        <div class="animate-in"><span class="badge outline">🥊 THE SHOWDOWN</span></div>
+        <h2 class="animate-in">The <span class="accent">$15</span> Contender</h2>
+        <div class="price-cards animate-in">
+          <div class="price-card tier-budget">
+            <div class="pc-emoji">🌙</div>
+            <div class="pc-name">Kimi Code</div>
+            <div class="pc-provider">Moonshot</div>
+            <div class="pc-price-row"><span class="pc-price-label">Plan</span><span class="pc-price-value">$15/mo</span></div>
+            <div class="savings-badge">✓ Cheapest entry</div>
+          </div>
+          <div class="price-card tier-premium">
+            <div class="pc-emoji">🤖</div>
+            <div class="pc-name">Claude Code</div>
+            <div class="pc-provider">Anthropic</div>
+            <div class="pc-price-row"><span class="pc-price-label">Pro</span><span class="pc-price-value">$20/mo</span></div>
+            <div class="pc-price-row"><span class="pc-price-label">Fable 5</span><span class="pc-price-value">$100/mo</span></div>
+            <div class="warn-badge">⚠ Rate limits fast</div>
+          </div>
+          <div class="price-card tier-mid">
+            <div class="pc-emoji">⚙️</div>
+            <div class="pc-name">Codex</div>
+            <div class="pc-provider">OpenAI</div>
+            <div class="pc-price-row"><span class="pc-price-label">Plan</span><span class="pc-price-value">$20/mo</span></div>
+            <div class="savings-badge">✓ Generous usage</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. TEST 1: PAC-MAN -->
+    <section class="slide slide-5">
+      <div class="slide-inner">
+        <div class="animate-in"><span class="badge">🕹️ TEST 1</span></div>
+        <h2 class="animate-in">1:1 <span class="accent">Pac-Man</span> Replica</h2>
+        <div class="cards animate-in">
+          <div class="card win">
+            <div class="card-icon">🌙</div>
+            <div class="card-title">Kimi K3</div>
+            <div class="card-text">Fully functioning, sound effects, wall tunnels — "basically perfect one to one."</div>
+            <div class="card-verdict good">✅ Winner</div>
+          </div>
+          <div class="card win">
+            <div class="card-icon">🤖</div>
+            <div class="card-title">Claude</div>
+            <div class="card-text">Fully functioning game, slightly smaller — a very solid build.</div>
+            <div class="card-verdict good">✅ Great</div>
+          </div>
+          <div class="card lose">
+            <div class="card-icon">⚙️</div>
+            <div class="card-title">Codex</div>
+            <div class="card-text">Bad frame rate, slow-paced, clips straight through walls. Buggy.</div>
+            <div class="card-verdict bad">❌ Laggy mess</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. TEST 2: FRONT-END -->
+    <section class="slide slide-6">
+      <div class="slide-inner">
+        <div class="animate-in"><span class="badge">🎨 TEST 2</span></div>
+        <h2 class="animate-in"><span class="accent">Front-End</span> Design Battle</h2>
+        <p class="description animate-in">Same prompt, three models: a modern, high-converting dental website in Next.js + Tailwind.</p>
+        <div class="cards animate-in">
+          <div class="card win">
+            <div class="card-icon">🌙</div>
+            <div class="card-title">Kimi K3</div>
+            <div class="card-text">Extremely clean, minimal, sellable for $500–$1,000. "I actually like Kimi's better."</div>
+            <div class="card-verdict good">✅ Cleanest</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">🤖</div>
+            <div class="card-title">Claude</div>
+            <div class="card-text">Found its own images, smart conversion bar — but slightly overwhelming.</div>
+            <div class="card-verdict good">✅ Strong</div>
+          </div>
+          <div class="card lose">
+            <div class="card-icon">⚙️</div>
+            <div class="card-title">Codex</div>
+            <div class="card-text">Professional but off — tiny text, weak CTAs. "A bit of a worse taste in design."</div>
+            <div class="card-verdict bad">❌ Details off</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. THE UPSET -->
+    <section class="slide slide-7">
+      <div class="slide-inner">
+        <div class="animate-in"><span class="badge outline">🏆 RESULTS</span></div>
+        <h2 class="animate-in">The <span class="accent">Upset</span></h2>
+        <div class="rank-row animate-in">
+          <div class="rank-block">
+            <div class="rank-number">#2</div>
+            <div class="rank-label">🤖 Claude</div>
+            <div class="rank-sub">still elite</div>
+          </div>
+          <div class="rank-block first">
+            <div class="rank-number primary">#1</div>
+            <div class="rank-label">🌙 Kimi K3</div>
+            <div class="rank-sub">open-source</div>
+          </div>
+          <div class="rank-block">
+            <div class="rank-number">#3</div>
+            <div class="rank-label">⚙️ Codex</div>
+            <div class="rank-sub">fell behind</div>
+          </div>
+        </div>
+        <p class="subtitle animate-in">Claude's front-end crown just slipped — to an open model</p>
+      </div>
+    </section>
+
+    <!-- 8. USAGE -->
+    <section class="slide slide-8">
+      <div class="slide-inner">
+        <div class="animate-in"><span class="badge outline">⛽ USAGE LIMITS</span></div>
+        <h2 class="animate-in">And the <span class="accent">Usage</span>?</h2>
+        <p class="description animate-in">After building a full Pac-Man game AND a complete website on the $15 plan:</p>
+        <div class="stat-cards animate-in">
+          <div class="stat-card">
+            <div class="sc-icon">⏱️</div>
+            <div class="sc-label">5-hour window</div>
+            <div class="sc-value">5%</div>
+            <div class="sc-desc">of session usage consumed</div>
+          </div>
+          <div class="stat-card">
+            <div class="sc-icon">📦</div>
+            <div class="sc-label">Total quota</div>
+            <div class="sc-value">0.7%</div>
+            <div class="sc-desc">of the full plan used</div>
+          </div>
+        </div>
+        <div class="tip-box animate-in">
+          <div class="tip-label">💡 Compare that</div>
+          <div class="tip-text">On Claude Pro, Fable 5 hits <strong>rate limits almost instantly</strong>.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9. BIG QUESTION -->
+    <section class="slide slide-9">
+      <div class="slide-inner">
+        <div class="big-question animate-in">?</div>
+        <h2 class="animate-in">Should You <span class="accent">Cancel</span> Your Claude Plan?</h2>
+      </div>
+    </section>
+
+    <!-- 10. THE GREAT SWITCH -->
+    <section class="slide slide-10">
+      <div class="slide-inner">
+        <div class="animate-in"><span class="badge">📈 IT'S ALREADY HAPPENING</span></div>
+        <h2 class="animate-in">The Great <span class="accent">Switch</span></h2>
+        <p class="description animate-in">US companies are moving to Chinese open-weight models — and the chart is skyrocketing.</p>
+        <div class="flow animate-in">
+          <div class="flow-node">
+            <span class="icon">🇺🇸</span>
+            <span class="label">US closed models</span>
+          </div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node highlight">
+            <span class="icon">🌙</span>
+            <span class="label">Kimi</span>
+          </div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node highlight">
+            <span class="icon">🐳</span>
+            <span class="label">DeepSeek</span>
+          </div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node highlight">
+            <span class="icon">⚡</span>
+            <span class="label">GLM</span>
+          </div>
+        </div>
+        <p class="subtitle animate-in">~⅓ of corporations reportedly already use Chinese open-weight models</p>
+      </div>
+    </section>
+
+    <!-- 11. PRICE WAR -->
+    <section class="slide slide-11">
+      <div class="slide-inner">
+        <div class="animate-in"><span class="badge outline">💸 API PRICING</span></div>
+        <h2 class="animate-in"><span class="accent">⅓</span> of the Price</h2>
+        <div class="price-cards animate-in">
+          <div class="price-card tier-premium">
+            <div class="pc-emoji">🤖</div>
+            <div class="pc-name">Fable 5</div>
+            <div class="pc-provider">Anthropic · per 1M tokens</div>
+            <div class="pc-price-row"><span class="pc-price-label">Input</span><span class="pc-price-value">$10</span></div>
+            <div class="pc-price-row"><span class="pc-price-label">Output</span><span class="pc-price-value">$50</span></div>
+          </div>
+          <div class="price-card tier-budget">
+            <div class="pc-emoji">🌙</div>
+            <div class="pc-name">Kimi K3</div>
+            <div class="pc-provider">Moonshot · per 1M tokens</div>
+            <div class="pc-price-row"><span class="pc-price-label">Input</span><span class="pc-price-value">$3</span></div>
+            <div class="pc-price-row"><span class="pc-price-label">Output</span><span class="pc-price-value">$15</span></div>
+            <div class="savings-badge">🔥 70% cheaper</div>
+          </div>
+        </div>
+        <p class="subtitle animate-in">Same tier of performance — a fraction of the cost</p>
+      </div>
+    </section>
+
+    <!-- 12. WHY THIS TERRIFIES THE LABS -->
+    <section class="slide slide-12">
+      <div class="slide-inner">
+        <div class="animate-in"><span class="badge" style="background: var(--red)">🚨 THE BIGGER PICTURE</span></div>
+        <h2 class="animate-in">Why This <span class="accent">Terrifies</span> the Labs</h2>
+        <div class="conclusion-points animate-in">
+          <div class="conclusion-point">
+            <span class="cp-icon">💰</span>
+            <span class="cp-text">OpenAI raised <strong>$122 billion</strong> in March — while making no profit</span>
+          </div>
+          <div class="conclusion-point">
+            <span class="cp-icon">🏰</span>
+            <span class="cp-text">Their entire moat depends on <strong>being the frontier</strong></span>
+          </div>
+          <div class="conclusion-point">
+            <span class="cp-icon">🌍</span>
+            <span class="cp-text">Kimi K3 is <strong>open source</strong> — everyone has access, everyone can inspect it</span>
+          </div>
+          <div class="conclusion-point">
+            <span class="cp-icon">📉</span>
+            <span class="cp-text">Matching quality at <strong>⅓ the cost</strong> undercuts billions in closed-model investment</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 13. VERDICT -->
+    <section class="slide slide-13">
+      <div class="slide-inner">
+        <div class="animate-in"><span class="badge">⚖️ THE VERDICT</span></div>
+        <h2 class="animate-in">Should You <span class="accent">Switch</span>?</h2>
+        <div class="conclusion-points animate-in">
+          <div class="conclusion-point">
+            <span class="cp-icon">💵</span>
+            <span class="cp-text"><strong>$20/mo users</strong> → Kimi wins. No Fable 5 on Claude Pro, and limits hit fast</span>
+          </div>
+          <div class="conclusion-point">
+            <span class="cp-icon">🚀</span>
+            <span class="cp-text"><strong>Power users</strong> → keep Claude Max. Fable 5 is still the best model</span>
+          </div>
+          <div class="conclusion-point">
+            <span class="cp-icon">🤝</span>
+            <span class="cp-text"><strong>Everyone</strong> → competition means better models and cheaper AI</span>
+          </div>
+        </div>
+        <div class="tip-box animate-in">
+          <div class="tip-label">🎯 Bottom line</div>
+          <div class="tip-text">If a model is <strong>just as good at ⅓ the cost</strong> — use it, wherever it comes from.</div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="nav-dots" id="dots">
+    <button class="dot active" onclick="goTo(0)"></button>
+    <button class="dot" onclick="goTo(1)"></button>
+    <button class="dot" onclick="goTo(2)"></button>
+    <button class="dot" onclick="goTo(3)"></button>
+    <button class="dot" onclick="goTo(4)"></button>
+    <button class="dot" onclick="goTo(5)"></button>
+    <button class="dot" onclick="goTo(6)"></button>
+    <button class="dot" onclick="goTo(7)"></button>
+    <button class="dot" onclick="goTo(8)"></button>
+    <button class="dot" onclick="goTo(9)"></button>
+    <button class="dot" onclick="goTo(10)"></button>
+    <button class="dot" onclick="goTo(11)"></button>
+    <button class="dot" onclick="goTo(12)"></button>
+  </div>
+  <div class="slide-counter" id="counter">1 / 13</div>
+
+  <script>
+    const deck = document.getElementById('deck');
+    const dots = document.querySelectorAll('.dot');
+    const slides = document.querySelectorAll('.slide');
+    const progress = document.getElementById('progress');
+    const counter = document.getElementById('counter');
+    const total = 13;
+    let current = 0;
+
+    function goTo(n) {
+      current = Math.max(0, Math.min(total - 1, n));
+      deck.style.transform = `translateX(-${current * 100}vw)`;
+      dots.forEach((d, i) => d.classList.toggle('active', i === current));
+      slides.forEach((s, i) => s.classList.toggle('active', i === current));
+      progress.style.width = `${((current + 1) / total) * 100}%`;
+      counter.textContent = `${current + 1} / ${total}`;
+    }
+
+    function navigate(dir) { goTo(current + dir); }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); navigate(1); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); navigate(-1); }
+    });
+
+    let touchX = 0;
+    document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; });
+    document.addEventListener('touchend', e => {
+      const delta = e.changedTouches[0].clientX - touchX;
+      if (Math.abs(delta) > 50) navigate(delta < 0 ? 1 : -1);
+    });
+
+    goTo(0);
+  </script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Level Up"
+  short_description: "Renovate a level 1 app to add sign-ins"

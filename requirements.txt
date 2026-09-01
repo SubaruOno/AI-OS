@@ -1,0 +1,15 @@
+# AIOS Workspace — Python Dependencies
+# Install: pip install -r requirements.txt
+
+# Core HTTP
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# Google APIs (Gmail + Calendar)
+google-auth>=2.27.0
+google-auth-oauthlib>=1.2.0
+google-auth-httplib2>=0.2.0
+google-api-python-client>=2.118.0
+
+# Markdown rendering (for PDF generation if needed)
+markdown>=3.5.0

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Analyze Folder"
+  short_description: "Understand an unfamiliar project before acting"
+  default_prompt: "Use $analyze-folder to map this project and tell me what matters."

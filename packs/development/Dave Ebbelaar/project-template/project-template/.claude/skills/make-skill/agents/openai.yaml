@@ -1,0 +1,3 @@
+interface:
+  display_name: "Make Skill"
+  short_description: "Turn a repeating job into a reusable recipe"

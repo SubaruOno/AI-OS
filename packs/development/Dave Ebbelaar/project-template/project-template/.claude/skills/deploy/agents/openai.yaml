@@ -1,0 +1,3 @@
+interface:
+  display_name: "Deploy"
+  short_description: "Run the safety checks, then go live"

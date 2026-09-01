@@ -1,0 +1,4 @@
+interface:
+  display_name: "Create Plan"
+  short_description: "Write a concrete implementation plan"
+  default_prompt: "Turn our agreed direction into an implementation plan."

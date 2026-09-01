@@ -1,0 +1,4 @@
+interface:
+  display_name: "Create SOP"
+  short_description: "Convert repeated work into a durable SOP"
+  default_prompt: "Use $create-sop to turn this repeated workflow into a usable SOP."

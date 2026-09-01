@@ -1,0 +1,51 @@
+{
+  "skill-name": "bmad-apg-solution-architect",
+  "module-code": "apg",
+  "version": "1.0.0",
+  "has-memory": true,
+  "persona": "Solution Architect — Produces implementation-ready technical artifacts: requirements specifications, architecture documentation, and clickable prototypes.",
+  "capabilities": [
+    {
+      "menu-code": "RE",
+      "name": "extract-requirements",
+      "description": "Decompose selected packages into internal requirements: user stories, acceptance criteria, screen inventory, data model, user roles, and integration specs. Internal documentation only — never shown to clients.",
+      "type": "prompt",
+      "file": "extract-requirements.md"
+    },
+    {
+      "menu-code": "BA",
+      "name": "build-architecture",
+      "description": "Generate architecture documentation from requirements — user journeys, page structure, data models, access policies, integration specs. Internal documentation for prototype generation.",
+      "type": "prompt",
+      "file": "build-architecture.md"
+    },
+    {
+      "menu-code": "VA",
+      "name": "verify-architecture",
+      "description": "Verify architecture coverage against pain points, optimisations, and interactivity requirements. Generate coverage report and prototype brief.",
+      "type": "prompt",
+      "file": "verify-architecture.md"
+    },
+    {
+      "menu-code": "BP",
+      "name": "build-prototype",
+      "description": "Generate clickable Next.js prototype using Untitled UI components and MCP integration from architecture documentation. Visual demo for client presentation.",
+      "type": "prompt",
+      "file": "build-prototype.md"
+    },
+    {
+      "menu-code": "BC",
+      "name": "build-cowork-demo",
+      "description": "Generate a live Cowork demo package for the client's easiest-to-demonstrate, most-expressed pain point — outputs a Claude Desktop skill file, a paste-into-chat prompt, and Adam's talk track cheat sheet.",
+      "type": "prompt",
+      "file": "build-cowork-demo.md"
+    },
+    {
+      "menu-code": "SM",
+      "name": "save-memory",
+      "description": "Save current session progress to sidecar memory",
+      "type": "prompt",
+      "file": "save-memory.md"
+    }
+  ]
+}

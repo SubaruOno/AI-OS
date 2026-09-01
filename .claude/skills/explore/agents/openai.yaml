@@ -1,0 +1,4 @@
+interface:
+  display_name: "Explore Idea"
+  short_description: "Clarify a build before planning"
+  default_prompt: "Explore this idea with me before we make a plan."

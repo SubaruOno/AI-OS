@@ -1,0 +1,9 @@
+{
+  "name": "bpmn-layout",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "bpmn-auto-layout-extended": "^1.0.0"
+  }
+}

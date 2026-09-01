@@ -1,0 +1,86 @@
+{
+  "skill-name": "bmad-apg-process-mapper",
+  "module-code": "apg",
+  "version": "2.0.0",
+  "has-memory": true,
+  "persona": "Process Mapper — Extracts structured process documentation from client conversations. Every step, tool, time cost, pain point, and decision node captured from what was actually said.",
+  "capabilities": [
+    {
+      "menu-code": "SU",
+      "name": "sync-and-update",
+      "description": "Fetch new meetings and emails from CRM, scan client materials, and extract all unprocessed inputs into the audit data file. The one command to run after every session.",
+      "type": "prompt",
+      "file": "sync-and-update.md"
+    },
+    {
+      "menu-code": "RX",
+      "name": "run-extractor-pipeline",
+      "description": "Run the entire extraction pipeline end-to-end in one trigger: SU → IM → PR → FR → WR. Autonomous by default (auto-applies all review changes); pass --gate for supervised. Each step's own sub-agents do the parallel work.",
+      "type": "prompt",
+      "file": "run-extractor-pipeline.md"
+    },
+    {
+      "menu-code": "IM",
+      "name": "ingest-materials",
+      "description": "Systematically process all files in client-provided-materials/ and extract structured data into audit-data.json. Handles large volumes in batches. Idempotent — already-processed files are skipped.",
+      "type": "prompt",
+      "file": "ingest-materials.md"
+    },
+    {
+      "menu-code": "AC",
+      "name": "audit-check",
+      "description": "Re-run completeness and contradiction checks across all audit data. Show coverage gaps, contradictions, and prioritised follow-up questions.",
+      "type": "prompt",
+      "file": "audit-check.md"
+    },
+    {
+      "menu-code": "GQ",
+      "name": "generate-questions",
+      "description": "Audit deliverable readiness, cross-reference transcripts, generate and research follow-up questions, export client-ready email.",
+      "type": "prompt",
+      "file": "generate-questions.md"
+    },
+    {
+      "menu-code": "RQ",
+      "name": "resolve-questions",
+      "description": "Deep-search all client materials (transcripts, emails, calls, docs) using parallel sub-agents to find answers to pending follow-up questions. Presents findings for approval before modifying data.",
+      "type": "prompt",
+      "file": "resolve-questions.md"
+    },
+    {
+      "menu-code": "WR",
+      "name": "waste-review",
+      "description": "Deep QA of waste items: deduplicate, detect overlaps, verify math, check source traceability, link to pain points, and calculate adjusted totals. Presents findings for approval before modifying data.",
+      "type": "prompt",
+      "file": "waste-review.md"
+    },
+    {
+      "menu-code": "PR",
+      "name": "process-review",
+      "description": "Deep QA of process map: normalize team names, deduplicate steps, detect independent flows within stages, verify dependencies and time estimates, check source traceability. Presents findings for approval before modifying data.",
+      "type": "prompt",
+      "file": "process-review.md"
+    },
+    {
+      "menu-code": "FR",
+      "name": "findings-review",
+      "description": "Deep QA of pain points: deduplicate, detect root-cause overlaps, verify stage assignments, normalize team names, check source traceability, link to waste items and optimisations. Presents findings for approval before modifying data.",
+      "type": "prompt",
+      "file": "findings-review.md"
+    },
+    {
+      "menu-code": "TA",
+      "name": "tool-audit",
+      "description": "Open Playwright in a visible browser. User authenticates into a client's SaaS tool, then Claude crawls it read-only, page by page, and produces a dense markdown audit dropped into client-provided-materials/ for IM to extract on the next run.",
+      "type": "prompt",
+      "file": "tool-audit.md"
+    },
+    {
+      "menu-code": "SM",
+      "name": "save-memory",
+      "description": "Save current session progress to sidecar memory",
+      "type": "prompt",
+      "file": "save-memory.md"
+    }
+  ]
+}

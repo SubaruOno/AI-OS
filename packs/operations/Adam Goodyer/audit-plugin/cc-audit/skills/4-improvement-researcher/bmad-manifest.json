@@ -1,0 +1,72 @@
+{
+  "skill-name": "bmad-apg-process-analyst",
+  "module-code": "apg",
+  "version": "1.0.0",
+  "has-memory": true,
+  "persona": "Process Analyst — Researches tools and APIs, generates new opportunities, estimates implementation weeks, calculates value with visible formulas, and writes client-facing modal content.",
+  "capabilities": [
+    {
+      "menu-code": "RA",
+      "name": "run-pipeline",
+      "description": "Orchestrate the entire Process Analyst pipeline end-to-end (TR → EI → RI → BR → BO → TS → VR). Auto-selects 'all' scope at each step, checkpoints between steps, halts immediately on any sub-agent failure, and produces one consolidated report. Each step's own sub-agent batching does the parallel work; the capabilities are a sequential data-dependency chain. Supports --from <CODE>, --force, --no-gate.",
+      "type": "prompt",
+      "file": "run-pipeline.md"
+    },
+    {
+      "menu-code": "TR",
+      "name": "research-tool-stack",
+      "description": "Research existing tool stack for API availability and MCP server existence. Enriches tools[] in extraction.json with integration_openness, api_available, mcp_available fields. Run before EI.",
+      "type": "prompt",
+      "file": "research-tool-stack.md"
+    },
+    {
+      "menu-code": "EI",
+      "name": "extract-improvements",
+      "description": "Synthesise proposed_changes[] and roi_items[] from completed audit data (pain points, optimisations, waste items). First capability to run after audit_status = complete.",
+      "type": "prompt",
+      "file": "extract-improvements.md"
+    },
+    {
+      "menu-code": "RI",
+      "name": "research-improvements",
+      "description": "Web research for tools, APIs, feasibility per proposed_change + generate new opportunities from unlinked pain points, unused APIs, and AI enablement possibilities. Idempotent — re-run to fill gaps.",
+      "type": "prompt",
+      "file": "research-improvements.md"
+    },
+    {
+      "menu-code": "BR",
+      "name": "build-and-rate",
+      "description": "Estimate implementation weeks, calculate value (time saving + productivity enhancement) with visible formulas, and write client-facing modal content for the priority matrix.",
+      "type": "prompt",
+      "file": "build-and-rate.md"
+    },
+    {
+      "menu-code": "TS",
+      "name": "build-technical-specs",
+      "description": "Generate technical_spec per rated proposed_change — swim-lane tool data, implementation steps, phased delivery, integration points with real API doc links, and acceptance criteria. Plugin-aware: every skill in every plugin_bundle is guaranteed a spec via its mapped change_id. Runs after BR. Powers the Technical Appendix on the client portal.",
+      "type": "prompt",
+      "file": "build-technical-specs.md"
+    },
+    {
+      "menu-code": "VR",
+      "name": "verify-research",
+      "description": "Comprehensive multi-perspective audit of all research output. Runs three review lenses — Technical Research (evidence, pricing, integration claims), Sales Effectiveness (high-ticket best practices, value framing), and Data Compliance (contradictions, formula consistency, cross-reference integrity) — then triages and resolves findings.",
+      "type": "prompt",
+      "file": "verify-research.md"
+    },
+    {
+      "menu-code": "BO",
+      "name": "build-outlook",
+      "description": "Build transformation_blueprint: phased Gantt rollout (Quick Wins / Core Builds / Future Sprints), short-term and long-term outlook narratives, and risks across data flow, storage, and AI adoption. Drives the 'Where this takes you.' section on blueprint.html. Run after RI.",
+      "type": "prompt",
+      "file": "build-outlook.md"
+    },
+    {
+      "menu-code": "SM",
+      "name": "save-memory",
+      "description": "Save current session progress to sidecar memory",
+      "type": "prompt",
+      "file": "save-memory.md"
+    }
+  ]
+}

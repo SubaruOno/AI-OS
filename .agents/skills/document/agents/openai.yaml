@@ -1,0 +1,4 @@
+interface:
+  display_name: "Document Work"
+  short_description: "Write and route durable documentation"
+  default_prompt: "Document what was built and update the documentation index."

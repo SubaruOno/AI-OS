@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Packs"
+  short_description: "Assess optional packs before promotion"
+  default_prompt: "Review the optional packs against my needs and compatibility."

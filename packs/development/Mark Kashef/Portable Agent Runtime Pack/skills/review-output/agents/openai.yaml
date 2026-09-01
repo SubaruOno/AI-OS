@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Output"
+  short_description: "Review deliverables against explicit criteria"
+  default_prompt: "Use $review-output to review this deliverable against its requirements."

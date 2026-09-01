@@ -1,0 +1,17 @@
+{
+ "version": 1,
+ "sources": {
+  "src": "edit/cut.mp4"
+ },
+ "ranges": [
+  {
+   "source": "src",
+   "start": 0.0,
+   "end": 39.12,
+   "quote": ""
+  }
+ ],
+ "grade": "none",
+ "overlays": [],
+ "total_duration_s": 39.12
+}

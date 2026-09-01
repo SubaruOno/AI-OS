@@ -1,0 +1,4 @@
+interface:
+  display_name: "Handoff Work"
+  short_description: "Package state for a fresh session"
+  default_prompt: "Prepare a handoff so this work can continue cleanly."

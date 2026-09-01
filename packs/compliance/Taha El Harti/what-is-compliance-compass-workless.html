@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What is Compliance Compass?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F1E8D5;
+  --ink:#1B1813;
+  --clay:#A24A2A;
+  --olive:#5C6A3E;
+  --dust:#D8CCB1;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Fraunces",Georgia,serif;
+  font-optical-sizing:auto;
+  color:var(--ink);
+  background:var(--dust);
+  line-height:1.5;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;
+}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+
+.page{
+  width:8.5in;min-height:11in;margin:28px auto;
+  padding:.85in .9in .7in;
+  background:var(--paper);
+  border:1px solid rgba(27,24,19,.15);
+  position:relative;display:flex;flex-direction:column;
+}
+
+/* ---------- meta / labels ---------- */
+.eyebrow{
+  font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  font-size:.64rem;font-weight:400;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--olive);
+}
+.stamp{
+  font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink);opacity:.55;
+}
+.hairline{border:0;border-top:1px solid rgba(27,24,19,.15)}
+
+/* ---------- display type ---------- */
+h1,h2,h3{font-weight:300;letter-spacing:-.02em}
+h1{font-size:2.9rem;line-height:1.06;max-width:11em}
+h1 .anchor{font-style:italic;color:var(--clay)}
+h2{font-size:1.9rem;line-height:1.12}
+h2 .anchor{font-style:italic;color:var(--clay)}
+h3{font-size:1.15rem;font-weight:400}
+
+/* ---------- page 1 ---------- */
+.hero{margin-bottom:.5in}
+.hero .brandline{display:flex;justify-content:space-between;align-items:baseline;
+  margin-bottom:.45in}
+.hero .sub{
+  margin-top:.26in;font-size:1.08rem;max-width:31em;line-height:1.55;
+}
+.pains{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:.35in;
+  margin-bottom:.55in;
+}
+.pain{border-top:1px solid rgba(27,24,19,.15);padding-top:12px}
+.pain .k{display:block;margin-bottom:8px}
+.pain p{font-size:.9rem;line-height:1.5}
+
+.sectionhead{display:flex;align-items:baseline;gap:16px;margin-bottom:.3in}
+.sectionhead .rule{flex:1;border-top:1px solid rgba(27,24,19,.15)}
+
+.stages{display:grid;grid-template-columns:1fr 1fr;gap:.32in .5in}
+.stage{border-top:1px solid rgba(27,24,19,.15);padding-top:12px}
+.stage .k{display:block;margin-bottom:6px}
+.stage h3{margin-bottom:5px}
+.stage p{font-size:.9rem;line-height:1.5}
+.stage p .q{font-style:normal;color:var(--olive)}
+.stage .note{margin-top:7px;font-size:.78rem;opacity:.65;line-height:1.45}
+
+.foot{margin-top:auto;padding-top:.28in;display:flex;justify-content:space-between;
+  align-items:baseline;border-top:1px solid rgba(27,24,19,.15)}
+.foot .big{font-size:1.35rem;font-weight:300;letter-spacing:-.01em}
+.foot .big i{font-style:italic}
+
+/* ---------- page 2 ---------- */
+.p2-sub{font-size:1rem;max-width:34em;line-height:1.55;margin:.22in 0 .4in}
+
+.tree{margin-bottom:.45in}
+.trow{
+  display:grid;grid-template-columns:2.5in 1fr;gap:0 .4in;
+  padding:14px 0;border-top:1px solid rgba(27,24,19,.15);
+  align-items:baseline;
+}
+.trow .qm{display:block;margin-bottom:4px}
+.trow .q{font-size:1.02rem;font-weight:400;line-height:1.35}
+.answers{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  font-size:.68rem;line-height:2;letter-spacing:.02em;color:var(--ink)}
+.answers .sep{opacity:.4;padding:0 .5em}
+.answers .soft{opacity:.55}
+.tree-end{
+  display:grid;grid-template-columns:2.5in 1fr;gap:0 .4in;
+  padding:18px 0 0;border-top:1px solid rgba(27,24,19,.35);
+  align-items:baseline;
+}
+.tree-end .end{font-size:1.35rem;font-weight:300;line-height:1.2;letter-spacing:-.01em}
+.tree-end .end i{font-style:italic}
+.tree-end p{font-size:.92rem;max-width:26em;line-height:1.5}
+
+.bottom{display:grid;grid-template-columns:1.15fr .85fr;gap:.6in;margin-top:.1in}
+.panel .k{display:block;margin-bottom:12px}
+.report-list{list-style:none}
+.report-list li{
+  display:grid;grid-template-columns:1.6em 1fr;gap:10px;
+  padding:7px 0;border-top:1px solid rgba(27,24,19,.12);
+  font-size:.9rem;line-height:1.45;
+}
+.report-list li:first-child{border-top:0;padding-top:0}
+.report-list .n{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  font-size:.66rem;padding-top:3px;color:var(--olive)}
+.report-list b{font-weight:600}
+
+.start-steps{list-style:none}
+.start-steps li{display:flex;gap:12px;align-items:baseline;margin:0 0 12px;
+  font-size:.95rem;line-height:1.45}
+.start-steps .n{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  font-size:.66rem;color:var(--olive);flex:none;padding-top:2px}
+.start-steps code{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  font-size:.82rem;background:var(--dust);padding:1px 7px}
+.start-note{font-size:.82rem;opacity:.65;margin-top:14px;line-height:1.5;max-width:22em}
+
+.honest{margin-top:auto;border-top:1px solid rgba(27,24,19,.15);padding-top:.22in;
+  display:flex;justify-content:space-between;gap:.4in;align-items:baseline}
+.honest .left{display:flex;gap:14px;align-items:baseline}
+.honest p{font-size:.9rem;max-width:34em;line-height:1.5}
+
+/* ---------- print ---------- */
+@page{size:letter;margin:0}
+@media print{
+  body{background:var(--paper)}
+  .page{margin:0;border:0;width:100%;min-height:0;height:11in;page-break-after:always}
+  .page:last-child{page-break-after:auto}
+}
+@media screen and (max-width:900px){
+  .page{width:auto;min-height:0;margin:12px;padding:28px 22px}
+  h1{font-size:2.1rem}
+  .pains,.stages,.bottom{grid-template-columns:1fr}
+  .trow,.tree-end{grid-template-columns:1fr;gap:6px}
+  .honest{flex-direction:column;gap:10px}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= PAGE 1 ================= -->
+<div class="page">
+  <header class="hero">
+    <div class="brandline">
+      <span class="eyebrow">Compliance Compass</span>
+      <span class="stamp">A tool you run on your own computer</span>
+    </div>
+    <h1>There are rules for running your business. Nobody ever told you <span class="anchor">which</span> ones.</h1>
+    <p class="sub">This tool finds out, in one conversation, about thirty minutes.
+    It asks simple questions, checks every rule system it knows against your answers,
+    and hands you a report: what applies to you, what doesn't, and what to do first.</p>
+  </header>
+
+  <div class="pains">
+    <div class="pain">
+      <span class="k eyebrow">The problem</span>
+      <p>Privacy laws. Card rules. Security audits. AI rules. They come from different
+      places, and no one list fits every business.</p>
+    </div>
+    <div class="pain">
+      <span class="k eyebrow">The old way</span>
+      <p>Guess and hope. Or pay a lawyer by the hour just to learn which rules are even
+      yours. Most people pick "guess and hope."</p>
+    </div>
+    <div class="pain">
+      <span class="k eyebrow">The cost of guessing</span>
+      <p>Fines. Lost deals when a big customer asks for proof you don't have. Or money
+      wasted following rules that never applied to you.</p>
+    </div>
+  </div>
+
+  <div class="sectionhead">
+    <span class="eyebrow">How it works · four stages</span>
+    <div class="rule"></div>
+  </div>
+  <div class="stages">
+    <div class="stage">
+      <span class="k eyebrow">Stage 01</span>
+      <h3>You talk.</h3>
+      <p>It asks about your business, one plain question at a time.
+      <span class="q">"What do you do?" "Who uses it?" "Where do they live?"</span></p>
+      <p class="note">"I don't know" is always a fine answer. If you have a website,
+      it does homework first and just asks you to confirm.</p>
+    </div>
+    <div class="stage">
+      <span class="k eyebrow">Stage 02</span>
+      <h3>It checks. And keeps checking.</h3>
+      <p>It carries a library of the big rule systems, and searches the web live for
+      what it doesn't carry. It keeps asking itself one question:
+      <span class="q">"Which rule have I not checked yet?"</span> It doesn't stop until
+      the answer is "none."</p>
+    </div>
+    <div class="stage">
+      <span class="k eyebrow">Stage 03</span>
+      <h3>You confirm.</h3>
+      <p>It reads the whole picture back in your words: what applies, what doesn't, and
+      what's still unknown. You correct anything that's wrong.</p>
+      <p class="note">Nothing gets generated until you say the picture is right.</p>
+    </div>
+    <div class="stage">
+      <span class="k eyebrow">Stage 04</span>
+      <h3>You get your report.</h3>
+      <p>One clean document: a ranked to-do list, the rules you can skip (and why),
+      and the exact questions to bring to a lawyer. Print it. Share it with your team.
+      Keep it.</p>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <p class="big">One conversation in. <i>A map out.</i></p>
+    <span class="stamp">Page 1 of 2</span>
+  </footer>
+</div>
+
+<!-- ================= PAGE 2 ================= -->
+<div class="page">
+  <div class="sectionhead" style="margin-bottom:0">
+    <span class="eyebrow">The branches</span>
+    <div class="rule"></div>
+  </div>
+  <h2 style="margin-top:.18in">The questions, and where they <span class="anchor">lead</span>.</h2>
+  <p class="p2-sub">Every answer you give turns rule systems on or off. That's the whole
+  trick: the rules were never one-size-fits-all. They follow the facts of your
+  business. A few of the branches:</p>
+
+  <div class="tree">
+    <div class="trow">
+      <div>
+        <span class="qm eyebrow">Q1</span>
+        <p class="q">Where do the people whose data you hold live?</p>
+      </div>
+      <p class="answers">EU · GDPR + COOKIE RULES<span class="sep">/</span>CALIFORNIA · CCPA<span class="sep">/</span>24 US STATE LAWS<span class="sep">/</span><span class="soft">ELSEWHERE · IT RESEARCHES LIVE</span></p>
+    </div>
+    <div class="trow">
+      <div>
+        <span class="qm eyebrow">Q2</span>
+        <p class="q">What kind of data is it?</p>
+      </div>
+      <p class="answers">HEALTH · HIPAA OR FTC HEALTH RULES<span class="sep">/</span>KIDS · COPPA<span class="sep">/</span>PAYMENTS · PCI DSS</p>
+    </div>
+    <div class="trow">
+      <div>
+        <span class="qm eyebrow">Q3</span>
+        <p class="q">Who pays you?</p>
+      </div>
+      <p class="answers">BIG COMPANIES · SOC 2, SECURITY REVIEWS<span class="sep">/</span>CONSUMERS · FTC + MARKETING RULES</p>
+    </div>
+    <div class="trow">
+      <div>
+        <span class="qm eyebrow">Q4</span>
+        <p class="q">Do you use AI in your product?</p>
+      </div>
+      <p class="answers">EU USERS · AI ACT DUTIES<span class="sep">/</span><span class="soft">US STATES · LIVE RESEARCH</span></p>
+    </div>
+    <div class="trow">
+      <div>
+        <span class="qm eyebrow">Q5</span>
+        <p class="q">How big are you?</p>
+      </div>
+      <p class="answers">UNDER THE LIMITS · MANY RULES SWITCH OFF<span class="sep">/</span><span class="soft">IT TELLS YOU WHICH · THAT'S HALF THE VALUE</span></p>
+    </div>
+    <div class="tree-end">
+      <p class="end">By the end, you know <i>where to go next.</i></p>
+      <p>Not a pile of maybes. A short list: do this first, skip
+      that, ask a lawyer these exact questions.</p>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="panel">
+      <span class="k eyebrow">What's in your report</span>
+      <ol class="report-list">
+        <li><span class="n">01</span><span><b>Your to-do list, ranked.</b> Worst first, with first steps and rough costs.</span></li>
+        <li><span class="n">02</span><span><b>Every rule it checked.</b> Applies, doesn't apply, or "find this out first."</span></li>
+        <li><span class="n">03</span><span><b>"If you were breached tomorrow."</b> The deadlines you'd face, on one timeline.</span></li>
+        <li><span class="n">04</span><span><b>What you can safely skip.</b> And what would change that.</span></li>
+        <li><span class="n">05</span><span><b>Questions for your lawyer.</b> So the paid hour is spent on answers, not basics.</span></li>
+        <li><span class="n">06</span><span><b>A save file.</b> Paste it into any future Claude chat to pick up where you left off.</span></li>
+      </ol>
+    </div>
+    <div class="panel">
+      <span class="k eyebrow">Starting it takes three steps</span>
+      <ul class="start-steps">
+        <li><span class="n">01</span><span>Open a terminal in the folder</span></li>
+        <li><span class="n">02</span><span>Type <code>claude</code></span></li>
+        <li><span class="n">03</span><span>Type <code>begin</code>, then just talk</span></li>
+      </ul>
+      <p class="start-note">Runs on your own computer with Claude Code. Your answers stay
+      in the conversation. The tool reads nothing you don't give it.</p>
+    </div>
+  </div>
+
+  <footer class="honest">
+    <div class="left">
+      <span class="eyebrow" style="flex:none">The honest part</span>
+      <p>This is triage, not legal advice. It doesn't replace a lawyer. It's the map
+      you bring to one, so you go in knowing what to ask.</p>
+    </div>
+    <span class="stamp">Page 2 of 2</span>
+  </footer>
+</div>
+
+</body>
+</html>

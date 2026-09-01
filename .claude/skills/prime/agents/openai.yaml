@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prime Workspace"
+  short_description: "Load context and current work"
+  default_prompt: "Load this workspace and catch me up."

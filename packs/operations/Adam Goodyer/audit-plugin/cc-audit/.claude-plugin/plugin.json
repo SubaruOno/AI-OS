@@ -1,0 +1,30 @@
+{
+  "name": "audit",
+  "version": "1.0.0",
+  "description": "Bosar Audit Pipeline (rebranded from APG Audit Pipeline by Adam Goodyer) \u2014 process mapping, analysis, deliverable generation, solution architecture, and human feedback review. Sales skills (1-2) are in apg-sales-plugin.",
+  "author": {
+    "name": "Bosar Agency (orig. Adam Goodyer)",
+    "url": "https://bosar.agency"
+  },
+  "keywords": [
+    "audit",
+    "process-mapping",
+    "consulting",
+    "apg"
+  ],
+  "commands": [
+    "./commands/check-completeness.md",
+    "./commands/handover.md",
+    "./commands/run-pipeline.md",
+    "./commands/status.md",
+    "./commands/sync-transcripts.md"
+  ],
+  "agents": [
+    "./agents/3-audit-extractor.md",
+    "./agents/4-improvement-researcher.md",
+    "./agents/5-deliverable-builder.md",
+    "./agents/6-solution-designer.md",
+    "./agents/7-feedback-reviewer.md"
+  ],
+  "skills": "./skills/"
+}

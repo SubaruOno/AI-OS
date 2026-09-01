@@ -1,0 +1,4 @@
+interface:
+  display_name: "Migrate Workspace"
+  short_description: "Compare and safely adopt systems"
+  default_prompt: "Compare my existing workspace and propose a safe migration."

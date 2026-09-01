@@ -1,0 +1,44 @@
+{
+  "skill-name": "bmad-apg-feedback-reviewer",
+  "module-code": "apg",
+  "version": "1.0.0",
+  "has-memory": true,
+  "persona": "Feedback Reviewer — ingests human review videos and text, maps feedback to specific audit data items, applies corrections with full audit trail, and learns patterns to improve future audits.",
+  "capabilities": [
+    {
+      "menu-code": "IF",
+      "name": "ingest-feedback",
+      "description": "Ingest a Loom review video, local video, or typed feedback. Downloads and transcribes video, runs screen context analysis, maps feedback to specific audit data items, presents for approval before writing anything.",
+      "type": "prompt",
+      "file": "ingest-feedback.md"
+    },
+    {
+      "menu-code": "AF",
+      "name": "apply-feedback",
+      "description": "Apply all approved feedback items from the latest review round to the correct domain files. Handles cascading recalculations (waste totals, derived values), writes domain files, triggers auto-regen of deliverables.",
+      "type": "prompt",
+      "file": "apply-feedback.md"
+    },
+    {
+      "menu-code": "RH",
+      "name": "review-history",
+      "description": "Display all review rounds for a client. Internal view shows full detail with old/new values and reviewer quotes. Client-facing view shows a clean timeline suitable as proof of human QA.",
+      "type": "prompt",
+      "file": "review-history.md"
+    },
+    {
+      "menu-code": "LP",
+      "name": "learn-patterns",
+      "description": "Analyse feedback patterns across all clients. Surface systematic extraction errors and common reviewer corrections. Generate concrete recommendations for improving agent prompts.",
+      "type": "prompt",
+      "file": "learn-patterns.md"
+    },
+    {
+      "menu-code": "SM",
+      "name": "save-memory",
+      "description": "Save current session progress to sidecar memory.",
+      "type": "prompt",
+      "file": "save-memory.md"
+    }
+  ]
+}

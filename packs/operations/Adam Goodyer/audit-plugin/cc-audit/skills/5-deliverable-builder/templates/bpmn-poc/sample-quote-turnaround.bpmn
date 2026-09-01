@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Visual reference for the BPMN process-page template.
+  Lanes are tools-as-lanes only: every lane is `system` | `external` | `offline`.
+  Performer is encoded out-of-band via the HTML page's overlays (colour stripe + initials chip).
+  This file is the canonical sample, keep it in sync with bpmn_renderer.py output.
+-->
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0"
+                  xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0"
+                  id="Definitions_quote_turnaround"
+                  targetNamespace="http://apgsoftware.com/bpmn">
+
+  <bpmn:collaboration id="Collaboration_1">
+    <bpmn:participant id="Participant_QuoteTurnaround"
+                      name="Quote turnaround"
+                      processRef="Process_QuoteTurnaround" />
+  </bpmn:collaboration>
+
+  <bpmn:process id="Process_QuoteTurnaround" name="Quote turnaround" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_Customer" name="Customer">
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_QuoteReceived</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Inbox" name="Shared inbox">
+        <bpmn:flowNodeRef>Task_ReceiveEnquiry</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SendQuote</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_HubSpot" name="HubSpot (CRM)">
+        <bpmn:flowNodeRef>Task_LogLead</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_QuoteDoc" name="Quote (Excel)">
+        <bpmn:flowNodeRef>Task_DraftQuote</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_HighValue</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReviewQuote</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="StartEvent_1" name="Enquiry email sent">
+      <bpmn:outgoing>Flow_01</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:receiveTask id="Task_ReceiveEnquiry" name="Receive enquiry in inbox">
+      <bpmn:incoming>Flow_01</bpmn:incoming>
+      <bpmn:outgoing>Flow_02</bpmn:outgoing>
+    </bpmn:receiveTask>
+
+    <bpmn:userTask id="Task_LogLead" name="Manually copy lead into HubSpot">
+      <bpmn:incoming>Flow_02</bpmn:incoming>
+      <bpmn:outgoing>Flow_03</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:userTask id="Task_DraftQuote" name="Draft quote in Excel">
+      <bpmn:incoming>Flow_03</bpmn:incoming>
+      <bpmn:outgoing>Flow_04</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:exclusiveGateway id="Gateway_HighValue" name="Quote over $5,000?">
+      <bpmn:incoming>Flow_04</bpmn:incoming>
+      <bpmn:outgoing>Flow_05_Yes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_05_No</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:userTask id="Task_ReviewQuote" name="Review and approve quote">
+      <bpmn:incoming>Flow_05_Yes</bpmn:incoming>
+      <bpmn:outgoing>Flow_06</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:sendTask id="Task_SendQuote" name="Send quote to customer">
+      <bpmn:incoming>Flow_05_No</bpmn:incoming>
+      <bpmn:incoming>Flow_06</bpmn:incoming>
+      <bpmn:outgoing>Flow_07</bpmn:outgoing>
+    </bpmn:sendTask>
+
+    <bpmn:endEvent id="EndEvent_QuoteReceived" name="Quote received by customer">
+      <bpmn:incoming>Flow_07</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_01" sourceRef="StartEvent_1" targetRef="Task_ReceiveEnquiry" />
+    <bpmn:sequenceFlow id="Flow_02" sourceRef="Task_ReceiveEnquiry" targetRef="Task_LogLead" />
+    <bpmn:sequenceFlow id="Flow_03" sourceRef="Task_LogLead" targetRef="Task_DraftQuote" />
+    <bpmn:sequenceFlow id="Flow_04" sourceRef="Task_DraftQuote" targetRef="Gateway_HighValue" />
+    <bpmn:sequenceFlow id="Flow_05_Yes" name="Yes" sourceRef="Gateway_HighValue" targetRef="Task_ReviewQuote" />
+    <bpmn:sequenceFlow id="Flow_05_No" name="No" sourceRef="Gateway_HighValue" targetRef="Task_SendQuote" />
+    <bpmn:sequenceFlow id="Flow_06" sourceRef="Task_ReviewQuote" targetRef="Task_SendQuote" />
+    <bpmn:sequenceFlow id="Flow_07" sourceRef="Task_SendQuote" targetRef="EndEvent_QuoteReceived" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
+
+      <bpmndi:BPMNShape id="Participant_QuoteTurnaround_di" bpmnElement="Participant_QuoteTurnaround" isHorizontal="true">
+        <dc:Bounds x="120" y="80" width="1240" height="720" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Lane_Customer_di" bpmnElement="Lane_Customer" isHorizontal="true">
+        <dc:Bounds x="150" y="80" width="1210" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Inbox_di" bpmnElement="Lane_Inbox" isHorizontal="true">
+        <dc:Bounds x="150" y="240" width="1210" height="180" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_HubSpot_di" bpmnElement="Lane_HubSpot" isHorizontal="true">
+        <dc:Bounds x="150" y="420" width="1210" height="180" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_QuoteDoc_di" bpmnElement="Lane_QuoteDoc" isHorizontal="true">
+        <dc:Bounds x="150" y="600" width="1210" height="200" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="222" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="200" y="185" width="82" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Task_ReceiveEnquiry_di" bpmnElement="Task_ReceiveEnquiry">
+        <dc:Bounds x="310" y="290" width="120" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Task_LogLead_di" bpmnElement="Task_LogLead" bioc:stroke="#c62828" bioc:fill="#ffebee" color:background-color="#ffebee" color:border-color="#c62828">
+        <dc:Bounds x="480" y="470" width="120" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Task_DraftQuote_di" bpmnElement="Task_DraftQuote" bioc:stroke="#c62828" bioc:fill="#ffebee" color:background-color="#ffebee" color:border-color="#c62828">
+        <dc:Bounds x="650" y="660" width="120" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Gateway_HighValue_di" bpmnElement="Gateway_HighValue" isMarkerVisible="true">
+        <dc:Bounds x="830" y="675" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="810" y="645" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Task_ReviewQuote_di" bpmnElement="Task_ReviewQuote">
+        <dc:Bounds x="930" y="660" width="120" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Task_SendQuote_di" bpmnElement="Task_SendQuote">
+        <dc:Bounds x="1090" y="290" width="120" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="EndEvent_QuoteReceived_di" bpmnElement="EndEvent_QuoteReceived">
+        <dc:Bounds x="1262" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1230" y="185" width="100" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="Flow_01_di" bpmnElement="Flow_01">
+        <di:waypoint x="240" y="178" />
+        <di:waypoint x="240" y="330" />
+        <di:waypoint x="310" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_02_di" bpmnElement="Flow_02">
+        <di:waypoint x="430" y="330" />
+        <di:waypoint x="540" y="330" />
+        <di:waypoint x="540" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_03_di" bpmnElement="Flow_03">
+        <di:waypoint x="600" y="510" />
+        <di:waypoint x="710" y="510" />
+        <di:waypoint x="710" y="660" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_04_di" bpmnElement="Flow_04">
+        <di:waypoint x="770" y="700" />
+        <di:waypoint x="830" y="700" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_05_Yes_di" bpmnElement="Flow_05_Yes">
+        <di:waypoint x="880" y="700" />
+        <di:waypoint x="930" y="700" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="893" y="675" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_05_No_di" bpmnElement="Flow_05_No">
+        <di:waypoint x="855" y="675" />
+        <di:waypoint x="855" y="330" />
+        <di:waypoint x="1090" y="330" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="862" y="500" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_06_di" bpmnElement="Flow_06">
+        <di:waypoint x="1050" y="700" />
+        <di:waypoint x="1150" y="700" />
+        <di:waypoint x="1150" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_07_di" bpmnElement="Flow_07">
+        <di:waypoint x="1210" y="330" />
+        <di:waypoint x="1280" y="330" />
+        <di:waypoint x="1280" y="178" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Install AI OS"
+  short_description: "Set up or resume this workspace"
+  default_prompt: "Set up or resume this AI OS for me."

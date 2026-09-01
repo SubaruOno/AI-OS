@@ -1,0 +1,4 @@
+file '/Users/albertbakhoj/Desktop/Short Form Content/reels/c0886/edit/_segs/s00.mp4'
+file '/Users/albertbakhoj/Desktop/Short Form Content/reels/c0886/edit/_segs/s01.mp4'
+file '/Users/albertbakhoj/Desktop/Short Form Content/reels/c0886/edit/_segs/s02.mp4'
+file '/Users/albertbakhoj/Desktop/Short Form Content/reels/c0886/edit/_segs/s03.mp4'

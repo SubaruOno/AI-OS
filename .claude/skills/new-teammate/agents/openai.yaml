@@ -1,0 +1,4 @@
+interface:
+  display_name: "Add Teammate"
+  short_description: "Create a seat and onboarding pack"
+  default_prompt: "Add a teammate and create their onboarding pack."

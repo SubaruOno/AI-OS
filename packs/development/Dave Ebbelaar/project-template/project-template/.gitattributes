@@ -1,0 +1,16 @@
+# Keep line endings as LF everywhere, including on Windows checkouts.
+# A shell script that arrives with CRLF fails with "bad interpreter", because
+# the carriage return becomes part of the interpreter path.
+* text=auto eol=lf
+
+*.sh   text eol=lf
+*.md   text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml  text eol=lf
+*.sql  text eol=lf
+
+*.png binary
+*.jpg binary
+*.pdf binary
+*.ico binary

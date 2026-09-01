@@ -1,0 +1,13 @@
+{
+ "version": 1,
+ "sources": {"src": "/Users/albertbakhoj/Desktop/Short Form Content/reels/c0886/edit/cutF.mp4"},
+ "ranges": [
+  {"source": "src", "start": 0.25, "end": 5.30, "quote": "hook"},
+  {"source": "src", "start": 5.55, "end": 15.05, "quote": "just use the skill ... entire front end"},
+  {"source": "src", "start": 15.95, "end": 26.55, "quote": "in the theme of Linear ... makeover"},
+  {"source": "src", "start": 26.95, "end": 39.00, "quote": "and then hit enter ... for free"}
+ ],
+ "grade": "none",
+ "overlays": [],
+ "total_duration_s": 37.2
+}

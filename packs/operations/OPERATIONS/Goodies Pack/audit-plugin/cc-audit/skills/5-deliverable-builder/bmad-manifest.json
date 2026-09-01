@@ -1,0 +1,65 @@
+{
+  "skill-name": "bmad-apg-agent-generator",
+  "module-code": "apg",
+  "version": "1.0.0",
+  "has-memory": true,
+  "persona": "Deliverable Builder — Precise HTML generation orchestrator. Validates audit data completeness, invokes generate.py, reports outputs. Never writes HTML directly.",
+  "capabilities": [
+    {
+      "menu-code": "GP",
+      "name": "generate-process-map",
+      "description": "Generate 2-process-map.html — BPMN 3-level hierarchy with swim-lane diagrams, waste heatmap, and citation tooltips",
+      "type": "prompt",
+      "file": "generate-process-map.md"
+    },
+    {
+      "menu-code": "GW",
+      "name": "generate-website",
+      "description": "Generate 1-client-website.html — single-file client-facing site with progressive session unlock. After audit complete + EI run, unlocks Opportunity Preview section.",
+      "type": "prompt",
+      "file": "generate-website.md"
+    },
+    {
+      "menu-code": "GF",
+      "name": "generate-findings",
+      "description": "Generate 3-findings.html — session findings summary showing what was discussed and discovered.",
+      "type": "prompt",
+      "file": "generate-findings.md"
+    },
+    {
+      "menu-code": "GV",
+      "name": "generate-waste",
+      "description": "Generate 4-waste.html — quantified waste breakdown with hours and annual costs per item.",
+      "type": "prompt",
+      "file": "generate-waste.md"
+    },
+    {
+      "menu-code": "GB",
+      "name": "generate-blueprint",
+      "description": "Generate 5-blueprint.html — AI Blueprint scroll journey: waste anchor, solution type education (4 badge types), initiative cards with quote attribution/ROI/cost/risk, priority matrix, plugin demo videos, phased roadmap.",
+      "type": "prompt",
+      "file": "generate-blueprint.md"
+    },
+    {
+      "menu-code": "VN",
+      "name": "verify-numbers",
+      "description": "Arithmetic verification of all dollar figures, hours, rates, payback periods, and ROI calculations across audit-data.json and generated HTML deliverables. Report-only — never auto-corrects unless explicitly requested.",
+      "type": "prompt",
+      "file": "verify-numbers.md"
+    },
+    {
+      "menu-code": "GH",
+      "name": "generate-handoff-zip",
+      "description": "Generate versioned client handoff zip for non-technical clients: a single 'OPEN ME.html' entry (the client website) plus a 'Supporting Files' folder with the other numbered deliverables and interactive BPMN process maps. Cross-page links are rewritten for the relocated layout. Output: 03-audit/handoff/v{N}/{Company} - APG Audit.zip — previous versions preserved.",
+      "type": "prompt",
+      "file": "generate-handoff-zip.md"
+    },
+    {
+      "menu-code": "SM",
+      "name": "save-memory",
+      "description": "Save current session progress to memory",
+      "type": "prompt",
+      "file": "save-memory.md"
+    }
+  ]
+}

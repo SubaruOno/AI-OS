@@ -1,0 +1,4 @@
+interface:
+  display_name: "Audit Agentic OS"
+  short_description: "Score an AI OS across its six layers"
+  default_prompt: "Use $audit-agentic-os to assess this folder and prioritize the next improvements."

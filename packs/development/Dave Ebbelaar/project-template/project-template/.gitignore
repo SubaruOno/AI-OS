@@ -1,0 +1,30 @@
+# Settings with real values. Only .env.example is committed.
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Installed packages.
+node_modules/
+.venv/
+
+# Build output.
+.next/
+dist/
+out/
+
+# Caches.
+__pycache__/
+*.pyc
+.ruff_cache/
+.pytest_cache/
+*.tsbuildinfo
+
+# Hosting and tooling state.
+.vercel
+.supabase/
+.railway/
+
+# Operating system files.
+.DS_Store
+Thumbs.db

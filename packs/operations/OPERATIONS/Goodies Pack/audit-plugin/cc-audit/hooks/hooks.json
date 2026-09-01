@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(cat | jq -r '.tool_input.file_path // .tool_input.filePath // empty'); if [ -n \"$FILE\" ] && echo \"$FILE\" | grep -qE '/(audit-manifest|audit-data)\\.json$'; then bash \"${CLAUDE_PLUGIN_ROOT}/hooks/auto-regen-deliverables.sh\" \"$FILE\"; fi"
+          }
+        ]
+      }
+    ]
+  }
+}

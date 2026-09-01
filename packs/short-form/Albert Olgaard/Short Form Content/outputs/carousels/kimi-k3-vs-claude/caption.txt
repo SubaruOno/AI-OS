@@ -1,0 +1,11 @@
+A Chinese open model just beat Claude in my own tests. I did not expect that.
+
+Kimi K3 is almost 3 trillion parameters. The biggest open-source model ever. I tested it against Claude and Codex on a Pac-Man game and a full dental website. Kimi matched Claude on the game and its website design was even cleaner.
+
+The wild part is the price. Claude charges $10 in and $50 out per million tokens. Kimi charges $3 and $15. That is a third of the cost.
+
+Comment KIMI and I will send you the full breakdown.
+Save this for when you pick your next coding tool.
+Follow @albert.olgaard for more real AI tests.
+
+#kimik3 #opensourceai #claudeai #aicoding #aitools

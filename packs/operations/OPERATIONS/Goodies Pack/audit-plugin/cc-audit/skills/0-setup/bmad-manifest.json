@@ -1,0 +1,20 @@
+{
+  "module": "audit",
+  "skill": "0-setup",
+  "version": "1.0.0",
+  "has-memory": false,
+  "capabilities": [
+    {
+      "code": "SW",
+      "name": "setup-wizard",
+      "description": "Verify audit prerequisites: CRM, clients dir, client folders",
+      "file": "setup-wizard.md"
+    },
+    {
+      "code": "VE",
+      "name": "verify-environment",
+      "description": "Re-run all audit checks without changing config",
+      "file": "verify-environment.md"
+    }
+  ]
+}

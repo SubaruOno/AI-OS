@@ -1,0 +1,25 @@
+# APG Audit Plugin — Configuration
+#
+# Machine-specific settings. Do not commit personal paths.
+# Run /audit:0-setup to configure interactively.
+
+# ─── USER ────────────────────────────────────────────────────────────────────
+# Your name and language, used to personalise agent communication.
+user_name: "Your Name"
+communication_language: English
+
+# ─── PATHS ───────────────────────────────────────────────────────────────────
+# Set clients_dir to an absolute path (e.g. a Google Drive mount) where client
+# folders live. Run /audit:0-setup to configure this interactively.
+paths:
+  clients_dir: "~/clients"
+
+  # Resolved per-client folder paths (auto-populated on first use, editable).
+  # For PMs without full Shared Drive access, each client folder is mapped individually.
+  # These take priority over clients_dir when resolving a specific client.
+  client_paths: {}
+  # Example (point each at wherever that client's folder lives — a local path,
+  # a Google Drive for Desktop mount, a shared drive, etc.):
+  # client_paths:
+  #   brightside-services: "/path/to/clients/brightside-services"
+  #   riverside-dental: "/path/to/clients/riverside-dental"

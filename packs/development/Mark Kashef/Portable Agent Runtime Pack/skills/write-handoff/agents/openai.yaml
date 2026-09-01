@@ -1,0 +1,4 @@
+interface:
+  display_name: "Write Handoff"
+  short_description: "Package completed work for the next operator"
+  default_prompt: "Use $write-handoff to create a concise handoff for this work."

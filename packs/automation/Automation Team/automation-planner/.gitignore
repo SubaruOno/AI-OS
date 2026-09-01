@@ -1,0 +1,5 @@
+# Test runs inside the repo produce plans here; never commit them
+automations/
+
+# OS noise
+.DS_Store

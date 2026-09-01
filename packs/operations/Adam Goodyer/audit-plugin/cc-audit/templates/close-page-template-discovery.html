@@ -1,0 +1,2052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<!-- TEMPLATE: Replace {company_name} throughout -->
+<title>{company_name} &mdash; Discovery Preview</title>
+<link rel="icon" type="image/png" href="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/APG%20Logo%20Rounded.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ── Design Tokens (matches process-map / client-website deliverables) ── */
+:root {
+  --bg: #f7f9fc;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --lime: #7DFF00;
+  --lime-text: #166534;
+  --muted: #64748b;
+  --fg: #0f1825;
+  --lime-dim: rgba(125,255,0,0.08);
+  --lime-glow: 0 4px 20px rgba(0,0,0,0.08);
+  --radius: 12px;
+}
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
+
+/* ── Sticky Nav ── */
+.site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(247,249,252,0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+}
+.nav-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+}
+.nav-logo { height: 32px; display: block; }
+.nav-client { font-size: 12px; color: var(--muted); font-weight: 500; letter-spacing: -0.01em; }
+
+/* ── Layout ── */
+.container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+/* ── Hero ── */
+.hero {
+  padding: 80px 24px 72px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  background-image:
+    linear-gradient(rgba(0,0,0,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.035) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(125,255,0,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--lime-text);
+  margin-bottom: 20px;
+  position: relative;
+}
+.hero h1 {
+  font-size: clamp(36px, 6vw, 64px);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: var(--fg);
+  line-height: 1.05;
+  margin-bottom: 16px;
+  position: relative;
+}
+.hero-sub {
+  font-size: 17px;
+  color: var(--fg);
+  font-weight: 500;
+  max-width: 640px;
+  margin: 0 auto 16px;
+  position: relative;
+}
+.hero-meta {
+  font-size: 14px;
+  color: var(--muted);
+  position: relative;
+}
+
+/* ── Section Structure ── */
+.page-section {
+  padding: 80px 0;
+  border-bottom: 1px solid var(--border);
+}
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--lime-text);
+  margin-bottom: 12px;
+}
+.section-heading {
+  font-size: clamp(24px, 4vw, 40px);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--fg);
+  margin-bottom: 8px;
+}
+.section-sub {
+  font-size: 15px;
+  color: var(--muted);
+  margin-bottom: 40px;
+}
+
+/* ── Cards ── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.card:hover {
+  box-shadow: var(--lime-glow);
+}
+.card-accent {
+  border-left: 3px solid var(--lime);
+}
+
+/* ── Pain Point Cards ── */
+.pain-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+.pain-card blockquote {
+  background: var(--lime-dim);
+  border-left: 3px solid var(--lime);
+  padding: 12px 16px;
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+  color: var(--fg);
+  font-size: 14px;
+  margin-top: 12px;
+  line-height: 1.5;
+}
+.pain-card h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--fg);
+  margin-bottom: 4px;
+}
+.pain-card p {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* ── Waste Calc (Dark Card) ── */
+.waste-card {
+  background: var(--fg);
+  color: #ffffff;
+  border-radius: 16px;
+  padding: 40px 32px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.waste-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(125,255,0,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.waste-card .formula {
+  font-size: 14px;
+  color: #94a3b8;
+  margin-bottom: 8px;
+  position: relative;
+}
+.waste-card .total {
+  font-size: clamp(36px, 5vw, 56px);
+  font-weight: 900;
+  color: var(--lime);
+  letter-spacing: -0.03em;
+  position: relative;
+}
+.waste-card .total-label {
+  font-size: 14px;
+  color: #94a3b8;
+  margin-top: 4px;
+  position: relative;
+}
+.waste-card blockquote {
+  max-width: 560px;
+  margin: 24px auto 0;
+  font-style: italic;
+  font-size: 15px;
+  color: #cbd5e1;
+  line-height: 1.5;
+  border-left: 3px solid var(--lime);
+  padding-left: 16px;
+  text-align: left;
+  position: relative;
+}
+.waste-supporting {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 16px;
+  position: relative;
+}
+
+/* ── Value Stack (Deliverables) ── */
+.value-list { list-style: none; }
+.value-item {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 20px 24px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  transition: box-shadow 0.2s;
+}
+.value-item:hover { box-shadow: var(--lime-glow); }
+.value-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--lime-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.value-icon svg { width: 20px; height: 20px; color: var(--lime-text); }
+.value-item h3 { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+.value-item p { font-size: 13px; color: var(--muted); }
+.value-hours {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--lime-text);
+  background: var(--lime-dim);
+  padding: 2px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.value-callout {
+  background: var(--lime-dim);
+  border: 1px solid rgba(125,255,0,0.2);
+  border-radius: var(--radius);
+  padding: 24px;
+  text-align: center;
+  margin-top: 24px;
+}
+.value-callout .guarantee-text {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--fg);
+  margin-bottom: 8px;
+}
+.value-callout .value-framing {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* ── Deliverable Preview Banner ── */
+.deliverable-preview {
+  background: var(--fg);
+  border-radius: var(--radius);
+  padding: 48px 32px;
+  border-top: 3px solid var(--lime);
+  margin-top: 32px;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+.deliverable-preview::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 60% at 50% 100%, rgba(125,255,0,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+.deliverable-preview-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--lime);
+  margin-bottom: 8px;
+  position: relative;
+}
+.deliverable-preview-heading {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 10px;
+  position: relative;
+}
+.deliverable-preview-sub {
+  font-size: 14px;
+  color: #94a3b8;
+  margin-bottom: 22px;
+  position: relative;
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.deliverable-preview-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--fg);
+  background: var(--lime);
+  padding: 14px 32px;
+  border-radius: 8px;
+  transition: opacity 0.2s, transform 0.15s;
+  position: relative;
+}
+.deliverable-preview-cta:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+.deliverable-preview-cta .arrow {
+  transition: transform 0.2s;
+}
+.deliverable-preview-cta:hover .arrow {
+  transform: translateX(3px);
+}
+
+/* ── Video Testimonial ── */
+.video-testimonial {
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+.video-testimonial video {
+  width: 100%;
+  display: block;
+}
+.video-testimonial-info {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+}
+.video-testimonial-info .vt-name { font-size: 15px; font-weight: 700; }
+.video-testimonial-info .vt-role { font-size: 13px; color: var(--muted); }
+
+/* ── Guarantee ── */
+.guarantee-section {
+  background: var(--fg);
+  color: #ffffff;
+  border-radius: 16px;
+  padding: 48px 32px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.guarantee-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(125,255,0,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+.guarantee-main {
+  font-size: clamp(20px, 3vw, 28px);
+  font-weight: 800;
+  line-height: 1.3;
+  margin-bottom: 12px;
+  position: relative;
+}
+.guarantee-sub {
+  font-size: 15px;
+  color: #94a3b8;
+  margin-bottom: 32px;
+  position: relative;
+}
+.guarantee-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  max-width: 600px;
+  margin: 0 auto;
+  position: relative;
+}
+@media (max-width: 600px) { .guarantee-grid { grid-template-columns: 1fr; } }
+.guarantee-item {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 16px;
+}
+.guarantee-item strong {
+  display: block;
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+.guarantee-item span {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+/* ── Credibility ── */
+.cred-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+@media (max-width: 700px) { .cred-layout { grid-template-columns: 1fr; } }
+.cred-photo {
+  width: 180px;
+  height: 180px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  object-fit: cover;
+}
+.cred-name { font-size: 20px; font-weight: 800; margin-top: 12px; }
+.cred-role { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+.cred-bio p {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+.cred-bio strong { color: var(--fg); }
+.cred-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.cred-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: box-shadow 0.2s;
+}
+.cred-badge:hover { box-shadow: var(--lime-glow); }
+.cred-badge svg { width: 14px; height: 14px; }
+a.cred-badge {
+  border-left: 3px solid var(--lime);
+  cursor: pointer;
+}
+a.cred-badge::after {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-left: 2px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23166534' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'/%3E%3Cpolyline points='15 3 21 3 21 9'/%3E%3Cline x1='10' x2='21' y1='14' y2='3'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+/* ── Team Divider ── */
+.cred-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 40px 0;
+}
+
+/* ── Upwork Screenshot ── */
+.upwork-screenshot {
+  margin-top: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--card);
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.upwork-screenshot:hover {
+  box-shadow: var(--lime-glow);
+  border-color: rgba(125,255,0,0.3);
+}
+.upwork-screenshot img {
+  width: 100%;
+  display: block;
+}
+
+/* ── Speaking Cards ── */
+.speaking-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+@media (max-width: 700px) { .speaking-grid { grid-template-columns: 1fr; } }
+.speaking-card {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--card);
+  transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
+  display: block;
+}
+.speaking-card:hover {
+  box-shadow: var(--lime-glow);
+  border-color: rgba(125,255,0,0.3);
+  transform: translateY(-2px);
+}
+.speaking-card img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  display: block;
+}
+.speaking-card-info {
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+}
+.speaking-card-info .sc-title { font-size: 12px; font-weight: 700; color: var(--fg); }
+.speaking-card-info .sc-sub { font-size: 11px; color: var(--muted); }
+.speaking-card-info .sc-link {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--lime-text);
+  margin-top: 3px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.speaking-card:hover .sc-link { text-decoration: underline; }
+.speaking-card-info .sc-link svg { width: 10px; height: 10px; }
+
+/* ── Social Proof ── */
+.proof-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 600px) { .proof-grid { grid-template-columns: 1fr; } }
+.proof-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: box-shadow 0.2s, border-color 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+.proof-panel:hover {
+  box-shadow: var(--lime-glow);
+  border-color: rgba(125,255,0,0.3);
+  transform: translateY(-2px);
+}
+.proof-panel-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--lime-text);
+  margin-top: 4px;
+}
+.proof-panel-link svg { width: 12px; height: 12px; }
+.proof-panel:hover .proof-panel-link { text-decoration: underline; }
+.proof-panel-img {
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: var(--bg);
+  overflow: hidden;
+}
+.proof-panel-img img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.proof-panel-info {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+.proof-panel-info .proof-title { font-size: 13px; font-weight: 700; }
+.proof-panel-info .proof-stat { font-size: 12px; color: var(--muted); }
+
+/* ── Testimonials ── */
+.testimonial-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+.testimonial-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  transition: box-shadow 0.2s;
+}
+.testimonial-card:hover { box-shadow: var(--lime-glow); }
+.testimonial-card .stars { display: flex; gap: 2px; margin-bottom: 12px; }
+.testimonial-card .stars svg { width: 14px; height: 14px; fill: #facc15; stroke: none; }
+.testimonial-text { font-size: 14px; color: var(--fg); line-height: 1.6; margin-bottom: 16px; }
+.testimonial-highlight { color: var(--lime-text); font-weight: 600; }
+.testimonial-author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.testimonial-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--lime-dim);
+  border: 1px solid rgba(125,255,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--lime-text);
+  flex-shrink: 0;
+}
+.testimonial-name { font-size: 13px; font-weight: 700; }
+.testimonial-role { font-size: 12px; color: var(--muted); }
+    /* ─── Video Testi Cards ─────────────────────────────── */
+    .testi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:20px; max-width:1100px; margin:32px auto 0; justify-items:center; }
+    .testi-card { width:100%; max-width:380px; background:var(--surface); border:1px solid var(--lime-border); border-radius:var(--radius); overflow:hidden; box-shadow:0 0 25px var(--lime-dim); transition:all 0.3s; }
+    .testi-card:hover { box-shadow:0 0 40px rgba(154,230,96,0.22); }
+    .testi-video { position:relative; aspect-ratio:3/4; background:#000; overflow:hidden; }
+    .testi-video img { width:100%; height:100%; object-fit:cover; display:block; }
+    .testi-play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.3); cursor:pointer; transition:background 0.2s; }
+    .testi-play:hover { background:rgba(0,0,0,0.15); }
+    .play-btn { width:60px; height:60px; border-radius:50%; background:rgba(154,230,96,0.9); display:flex; align-items:center; justify-content:center; transition:transform 0.2s; }
+    .testi-play:hover .play-btn { transform:scale(1.1); }
+    .play-btn svg { width:22px; height:22px; color:#0a0f0d; fill:#0a0f0d; margin-left:3px; }
+    .testi-iframe { width:100%; height:100%; border:none; position:absolute; inset:0; }
+    .testi-body { padding:20px; }
+    .testi-quote { font-size:0.9rem; color:var(--muted); font-style:italic; line-height:1.65; margin-bottom:14px; }
+    .testi-author { display:flex; align-items:center; gap:10px; }
+    .testi-avatar { width:34px; height:34px; border-radius:50%; overflow:hidden; background:rgba(154,230,96,0.15); flex-shrink:0; }
+    .testi-avatar img { width:100%; height:100%; object-fit:cover; }
+    .testi-avatar-init { width:34px; height:34px; border-radius:50%; background:rgba(154,230,96,0.15); display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; color:var(--lime); flex-shrink:0; }
+    .testi-name { font-size:0.875rem; font-weight:700; }
+    .testi-role { font-size:0.78rem; color:var(--muted); }
+    .testi-linkedin { color:#0A66C2; display:inline-flex; vertical-align:middle; margin-left:5px; }
+    /* ─── Written Review Cards ─────────────────────────── */
+    .review-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; max-width:1100px; margin:32px auto 0; }
+    .review-card { background:var(--surface); border:1px solid var(--lime-border); border-radius:var(--radius); padding:22px 20px; box-shadow:0 0 20px var(--lime-dim); transition:box-shadow 0.2s; }
+    .review-card:hover { box-shadow:0 0 36px rgba(154,230,96,0.18); }
+    .review-stars { display:flex; gap:2px; margin-bottom:12px; }
+    .review-stars svg { width:13px; height:13px; fill:#facc15; stroke:none; }
+    .review-text { font-size:0.83rem; color:var(--fg); line-height:1.65; margin-bottom:16px; }
+    .review-highlight { color:var(--lime-text); font-weight:600; }
+    .review-author { display:flex; align-items:center; gap:10px; padding-top:12px; border-top:1px solid var(--border); }
+    .review-photo { width:34px; height:34px; border-radius:50%; object-fit:cover; flex-shrink:0; border:1px solid var(--border); }
+    .review-name { font-size:0.8rem; font-weight:700; display:flex; align-items:center; gap:5px; }
+    .review-role { font-size:0.72rem; color:var(--muted); }
+    .review-li { color:#0A66C2; display:inline-flex; flex-shrink:0; }
+
+/* ── Trust Strip ── */
+.trust-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px 24px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-top: 24px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.trust-strip a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--fg);
+  transition: color 0.2s;
+}
+.trust-strip a:hover { color: var(--lime-text); }
+.trust-strip svg { width: 14px; height: 14px; flex-shrink: 0; }
+.trust-dot { color: var(--border); }
+
+/* ── CTA Button ── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--lime);
+  color: var(--fg);
+  font-weight: 900;
+  font-size: 16px;
+  padding: 16px 36px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+.btn-primary:hover {
+  opacity: 0.95;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(125,255,0,0.2);
+}
+.btn-arrow { transition: transform 0.2s; }
+.btn-primary:hover .btn-arrow { transform: translateX(4px); }
+
+/* ── Book Section ── */
+.book-section { text-align: center; }
+.book-section .book-note {
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 16px;
+}
+
+/* ── Footer ── */
+.site-footer {
+  padding: 40px 24px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+}
+.site-footer .brand { font-weight: 700; color: var(--fg); margin-bottom: 4px; }
+
+/* ── Scroll Animations ── */
+.fade-up {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+.fade-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Case Study ── */
+.cs-card {
+  background: var(--fg);
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+}
+.cs-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 80% at 100% 50%, rgba(125,255,0,0.07) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 60% at 0% 50%, rgba(255,255,255,0.02) 0%, transparent 70%);
+  pointer-events: none;
+}
+.cs-hero-img {
+  position: relative;
+  height: 320px;
+  overflow: hidden;
+}
+.cs-hero-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 70%;
+  display: block;
+}
+.cs-hero-img::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(15,24,37,0.15) 0%, rgba(15,24,37,0.3) 50%, var(--fg) 100%);
+  pointer-events: none;
+}
+.cs-hero-badge {
+  position: absolute;
+  bottom: 20px;
+  left: 32px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(15,24,37,0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 8px 16px 8px 10px;
+}
+.cs-hero-badge-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(125,255,0,0.15);
+  border: 1px solid rgba(125,255,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--lime);
+  flex-shrink: 0;
+}
+.cs-hero-badge-name { font-size: 13px; font-weight: 700; color: #ffffff; }
+.cs-hero-badge-role { font-size: 11px; color: #94a3b8; }
+@media (max-width: 768px) {
+  .cs-hero-img { height: 240px; }
+  .cs-hero-badge { bottom: 16px; left: 16px; }
+}
+.cs-split {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  min-height: 420px;
+  position: relative;
+}
+@media (max-width: 768px) {
+  .cs-split { grid-template-columns: 1fr; min-height: auto; }
+}
+
+/* Before side */
+.cs-before {
+  padding: 48px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.cs-before .cs-phase {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #64748b;
+  margin-bottom: 24px;
+}
+.cs-before .cs-big {
+  font-size: clamp(28px, 3.5vw, 36px);
+  font-weight: 900;
+  color: #475569;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+.cs-before .cs-big-sub {
+  font-size: 13px;
+  color: #475569;
+  margin-bottom: 24px;
+}
+.cs-metric {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+.cs-metric-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cs-before .cs-metric-icon {
+  background: rgba(100,116,139,0.15);
+}
+.cs-before .cs-metric-icon svg { width: 16px; height: 16px; color: #64748b; }
+.cs-metric-text {
+  font-size: 14px;
+  line-height: 1.4;
+}
+.cs-before .cs-metric-text { color: #64748b; }
+.cs-before .cs-metric-text strong { color: #94a3b8; font-weight: 800; }
+
+/* Divider */
+.cs-divider {
+  width: 1px;
+  background: rgba(255,255,255,0.08);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cs-divider-arrow {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--fg);
+  border: 1px solid rgba(125,255,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  box-shadow: 0 0 24px rgba(125,255,0,0.15);
+}
+.cs-divider-arrow svg { width: 20px; height: 20px; color: var(--lime); }
+@media (max-width: 768px) {
+  .cs-divider {
+    width: 100%;
+    height: 1px;
+    flex-direction: row;
+  }
+  .cs-divider-arrow {
+    width: 40px;
+    height: 40px;
+  }
+  .cs-divider-arrow svg { transform: rotate(90deg); }
+}
+
+/* After side */
+.cs-after {
+  padding: 48px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+}
+.cs-after::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 70% 50%, rgba(125,255,0,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+.cs-after .cs-phase {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--lime);
+  margin-bottom: 24px;
+  position: relative;
+}
+.cs-after .cs-big {
+  font-size: clamp(36px, 5vw, 56px);
+  font-weight: 900;
+  color: var(--lime);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin-bottom: 6px;
+  position: relative;
+}
+.cs-after .cs-big-sub {
+  font-size: 14px;
+  color: #94a3b8;
+  margin-bottom: 24px;
+  position: relative;
+}
+.cs-after .cs-metric-icon {
+  background: rgba(125,255,0,0.1);
+}
+.cs-after .cs-metric-icon svg { width: 16px; height: 16px; color: var(--lime); }
+.cs-after .cs-metric-text { color: #cbd5e1; position: relative; }
+.cs-after .cs-metric-text strong { color: #ffffff; font-weight: 800; }
+
+/* System strip */
+.cs-system-strip {
+  background: rgba(125,255,0,0.04);
+  border-top: 1px solid rgba(125,255,0,0.12);
+  padding: 20px 40px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  position: relative;
+}
+.cs-system-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--lime);
+  margin-right: 8px;
+  white-space: nowrap;
+}
+.cs-system-item {
+  font-size: 12px;
+  font-weight: 600;
+  color: #cbd5e1;
+  padding: 5px 12px;
+  background: rgba(125,255,0,0.06);
+  border: 1px solid rgba(125,255,0,0.15);
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+/* Attribution */
+.cs-attribution {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+}
+.cs-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--lime-text);
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+.cs-link:hover { opacity: 0.7; }
+.cs-link svg { width: 14px; height: 14px; }
+
+/* ── SVG Icons ── */
+svg.icon { display: inline-block; vertical-align: middle; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── Competition Table ── */
+.competition-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 8px;
+}
+.competition-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  font-size: 14px;
+}
+.competition-table th {
+  background: var(--fg);
+  color: #fff;
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 14px 16px;
+  text-align: left;
+  white-space: nowrap;
+}
+.competition-table td {
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+  vertical-align: top;
+  line-height: 1.5;
+}
+.competition-table tr:hover td { background: var(--lime-dim); }
+.comp-name {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--fg);
+  display: block;
+}
+.comp-detail {
+  font-size: 13px;
+  color: var(--muted);
+  display: block;
+  margin-top: 2px;
+}
+.comp-after {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--lime-text);
+}
+
+/* ── Intelligence Cards ── */
+.intel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+.intel-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--lime);
+  border-radius: var(--radius);
+  padding: 24px;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.intel-card:hover { box-shadow: var(--lime-glow); }
+.intel-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.intel-card-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--lime-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.intel-card-icon svg { width: 18px; height: 18px; color: var(--lime-text); }
+.intel-card h3 { font-size: 15px; font-weight: 700; color: var(--fg); }
+.intel-card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+.intel-card ul {
+  list-style: none;
+  margin: 8px 0 0;
+}
+.intel-card ul li {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 4px 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.intel-card ul li::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--lime);
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+.intel-card .intel-highlight {
+  font-weight: 600;
+  color: var(--fg);
+}
+
+/* ── Industry Tools Grid ── */
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.tool-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  transition: box-shadow 0.2s;
+}
+.tool-chip:hover { box-shadow: var(--lime-glow); }
+.tool-chip-name { font-size: 14px; font-weight: 700; color: var(--fg); }
+.tool-chip-cat { font-size: 12px; color: var(--muted); }
+.tool-chip-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--lime-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.tool-chip-icon svg { width: 16px; height: 16px; color: var(--lime-text); }
+.practices-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+@media (max-width: 600px) { .practices-compare { grid-template-columns: 1fr; } }
+.practices-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.practices-box h4 {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.practices-box.best-in-class {
+  border-left: 3px solid var(--lime);
+}
+.practices-box p { font-size: 14px; color: var(--fg); line-height: 1.6; }
+
+/* ── Discovery Prompts ── */
+.prompt-list { margin-top: 16px; }
+.prompt-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 8px;
+  transition: box-shadow 0.2s;
+}
+.prompt-item:hover { box-shadow: var(--lime-glow); }
+.prompt-question {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--fg);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.prompt-question::before {
+  content: '?';
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--lime);
+  color: var(--fg);
+  font-weight: 900;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.prompt-context {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-left: 34px;
+}
+.prompt-leader {
+  font-size: 13px;
+  color: var(--lime-text);
+  font-weight: 600;
+  margin-left: 34px;
+  margin-top: 6px;
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- NAV -->
+<!-- ════════════════════════════════════════════════════ -->
+<nav class="site-nav">
+  <div class="nav-inner">
+    <img src="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/APG%20Logo%20Rounded.png" alt="Bosar Agency" class="nav-logo">
+    <!-- TEMPLATE: {company_name} -->
+    <span class="nav-client">{company_name}</span>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- HERO -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="hero">
+  <p class="hero-label">Bosar Agency &middot; Discovery Preview</p>
+  <!-- TEMPLATE: {company_name} -->
+  <h1>{company_name}</h1>
+  <p class="hero-sub">Here&rsquo;s what we found about your industry.</p>
+  <!-- TEMPLATE: {hero_subheadline} — One personalised sentence referencing something specific from research -->
+  <p class="hero-meta">{hero_subheadline}</p>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- WHAT WE EXPECT TO FIND (PAIN POINTS) -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="page-section">
+  <div class="container">
+    <div class="fade-up">
+      <p class="section-label">What we expect to find</p>
+      <h2 class="section-heading">What we expect to find</h2>
+      <p class="section-sub">These are the patterns we typically see in your industry &mdash; based on our research.</p>
+    </div>
+
+    <!-- TEMPLATE: Generate 3 pain point cards with hypothesis-style content -->
+    <div class="pain-grid fade-up">
+
+      <div class="card card-accent pain-card">
+        <h3>{pain_point_1_title}</h3>
+        <p>{pain_point_1_context}</p>
+        <blockquote>&ldquo;{pain_point_1_quote}&rdquo;</blockquote>
+      </div>
+
+      <div class="card card-accent pain-card">
+        <h3>{pain_point_2_title}</h3>
+        <p>{pain_point_2_context}</p>
+        <blockquote>&ldquo;{pain_point_2_quote}&rdquo;</blockquote>
+      </div>
+
+      <div class="card card-accent pain-card">
+        <h3>{pain_point_3_title}</h3>
+        <p>{pain_point_3_context}</p>
+        <blockquote>&ldquo;{pain_point_3_quote}&rdquo;</blockquote>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- COMPETITION COMPARISON TABLE -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="page-section">
+  <div class="container">
+    <div class="fade-up">
+      <p class="section-label">Your competition</p>
+      <h2 class="section-heading">How you stack up in {region}</h2>
+      <p class="section-sub">Real signals from competitor websites &mdash; your column gets filled on the call.</p>
+    </div>
+    <div class="competition-table-wrap fade-up">
+      <table class="competition-table">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>You Today</th>
+            <th>Your Competitors</th>
+            <th>After Audit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {competition_rows}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- COMPETITIVE INTELLIGENCE -->
+<!-- ════════════════════════════════════════════════════ -->
+{intel_marketing}
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- INDUSTRY TOOLS & BEST PRACTICES -->
+<!-- ════════════════════════════════════════════════════ -->
+{intel_tools}
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- INDUSTRY PAIN POINTS — DISCOVERY PROMPTS -->
+<!-- ════════════════════════════════════════════════════ -->
+{intel_pain_points}
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- YOUR BIGGEST DRAIN -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="page-section">
+  <div class="container">
+    <div class="fade-up">
+      <p class="section-label">Top finding</p>
+      <h2 class="section-heading">Your biggest operational drain right now</h2>
+    </div>
+
+    <!-- TEMPLATE: Populate from benchmark-based waste estimate -->
+    <div class="waste-card fade-up">
+      <div class="formula">{hrs}/wk &times; {headcount} staff &times; $50/hr &times; 52 weeks</div>
+      <div class="total">${monthly_waste}/month</div>
+      <div class="total-label">lost to {waste_description}</div>
+      <blockquote>&ldquo;{top_waste_quote}&rdquo;</blockquote>
+      <p class="waste-supporting">This is typically one of 8&ndash;12 we find in a full audit.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- WHAT THE AUDIT DELIVERS -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="page-section">
+  <div class="container">
+    <div class="fade-up">
+      <p class="section-label">The audit</p>
+      <h2 class="section-heading">What you get</h2>
+      <p class="section-sub">A complete operational blueprint of your business &mdash; built from the inside out.</p>
+    </div>
+
+    <div class="fade-up">
+      <div class="value-item">
+        <div class="value-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 12h4"/><path d="M10 16h4"/><path d="M10 8h1"/></svg></div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;">
+            <h3>Full Operational Audit Document</h3>
+            <span class="value-hours">10&ndash;15 hrs</span>
+          </div>
+          <p>A complete map of how your operation actually runs &mdash; every tool, workflow, and manual process &mdash; and where it's breaking down. Department-by-department process maps with waste points identified and costed.</p>
+        </div>
+      </div>
+
+      <div class="value-item">
+        <div class="value-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg></div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;">
+            <h3>AI &amp; Automation Opportunity Map</h3>
+            <span class="value-hours">8&ndash;12 hrs</span>
+          </div>
+          <p>Every opportunity where AI and automation will have real impact in your specific business &mdash; mapped to your actual tools, team, and workflows. Not a generic list.</p>
+        </div>
+      </div>
+
+      <div class="value-item">
+        <div class="value-icon"><svg class="icon" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;">
+            <h3>ROI Projection &amp; Savings Report</h3>
+            <span class="value-hours">6&ndash;10 hrs</span>
+          </div>
+          <p>Hard numbers showing how much time and money each fix saves &mdash; with formulas visible. Use this to justify the investment to partners, co-founders, or your board.</p>
+        </div>
+      </div>
+
+      <div class="value-item">
+        <div class="value-icon"><svg class="icon" viewBox="0 0 24 24"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg></div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;">
+            <h3>Priority Matrix &mdash; What To Fix First</h3>
+            <span class="value-hours">10&ndash;15 hrs</span>
+          </div>
+          <p>Every opportunity ranked by impact and effort so you know exactly where to start, what to ignore, and in what order to move.</p>
+        </div>
+      </div>
+
+      <div class="value-item">
+        <div class="value-icon"><svg class="icon" viewBox="0 0 24 24"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg></div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;">
+            <h3>Strategy Walkthrough Call</h3>
+            <span class="value-hours">4&ndash;6 hrs</span>
+          </div>
+          <p>We present the full blueprint live to you and your team. Every question answered, every next step mapped out. You keep the blueprint whether you work with us or not.</p>
+        </div>
+      </div>
+
+      <!-- Meetings row -->
+      <div class="value-item" style="background:var(--lime-dim);border-color:rgba(125,255,0,0.2);">
+        <div class="value-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;">
+            <h3>Stakeholder &amp; Process Deep-Dive Meetings</h3>
+            <span class="value-hours">5&ndash;10 hrs</span>
+          </div>
+          <p>Direct sessions with key stakeholders and team members to understand every process, tool, and bottleneck from the inside.</p>
+        </div>
+      </div>
+
+      <!-- Total -->
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 24px;background:var(--fg);color:#fff;border-radius:var(--radius);margin-top:8px;">
+        <span style="font-weight:800;font-size:15px;">Total hours invested</span>
+        <span style="font-weight:900;font-size:20px;color:var(--lime);">45&ndash;70 hrs</span>
+      </div>
+    </div>
+
+    <!-- Deliverable Preview Banner -->
+    <div class="deliverable-preview fade-up" style="margin-top:32px;">
+      <div style="margin-bottom:16px;position:relative;">
+        <svg width="48" height="36" viewBox="0 0 48 36" fill="none" style="display:inline-block;">
+          <rect x="1" y="1" width="46" height="34" rx="4" stroke="var(--lime)" stroke-width="1.5" fill="none" opacity="0.5"/>
+          <line x1="1" y1="9" x2="47" y2="9" stroke="var(--lime)" stroke-width="1" opacity="0.3"/>
+          <circle cx="8" cy="5" r="1.5" fill="var(--lime)" opacity="0.4"/>
+          <circle cx="13" cy="5" r="1.5" fill="var(--lime)" opacity="0.4"/>
+          <circle cx="18" cy="5" r="1.5" fill="var(--lime)" opacity="0.4"/>
+          <rect x="8" y="14" width="32" height="3" rx="1.5" fill="var(--lime)" opacity="0.15"/>
+          <rect x="8" y="20" width="24" height="2" rx="1" fill="var(--lime)" opacity="0.1"/>
+          <rect x="8" y="25" width="28" height="2" rx="1" fill="var(--lime)" opacity="0.1"/>
+        </svg>
+      </div>
+      <p class="deliverable-preview-label">See a real example</p>
+      <p class="deliverable-preview-heading">Preview what your finished audit looks like</p>
+      <p class="deliverable-preview-sub">Explore a completed audit we built for a home services business &mdash; real structure, real insights, demo data.</p>
+      <a href="https://portal.bosar.agency/demo-brightside" target="_blank" rel="noopener noreferrer" class="deliverable-preview-cta">
+        Explore the Demo Portal <span class="arrow">&rarr;</span>
+      </a>
+    </div>
+
+    <div class="value-callout fade-up">
+      <p class="guarantee-text">Find $5,000/month in savings or you pay nothing &mdash; and you keep everything we produce.</p>
+      <p class="value-framing">At senior consultant rates, this level of work is valued at $15,000+. You pay $5,000. You own all IP &mdash; code, docs, diagrams, everything.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- THE GUARANTEE -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="page-section">
+  <div class="container">
+    <div class="guarantee-section fade-up">
+      <p class="guarantee-main">Find $5,000/month in savings or you pay nothing &mdash; and you keep everything we produce.</p>
+      <p class="guarantee-sub">Fixed price tiers. No scope creep. You own all IP &mdash; code, docs, diagrams, everything.</p>
+      <div class="guarantee-grid">
+        <div class="guarantee-item">
+          <strong>7 days</strong>
+          <span>to decide &mdash; full refund, no questions</span>
+        </div>
+        <div class="guarantee-item">
+          <strong>You keep it</strong>
+          <span>the blueprint is yours either way</span>
+        </div>
+        <div class="guarantee-item">
+          <strong>Zero risk</strong>
+          <span>if it's not actionable, you pay nothing</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- WHO'S BEHIND THIS -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="page-section">
+  <div class="container">
+    <div class="fade-up">
+      <p class="section-label">Who you're working with</p>
+      <h2 class="section-heading">A team you won't find at another tech agency</h2>
+      <p class="section-sub">One founder has presented to audiences of over five million and educates hundreds of thousands through a dedicated research &amp; education branch. The other was CTO scaling systems for some of Australia and America&rsquo;s fastest-growing companies. Combined: <strong>300+ projects</strong> across every major platform your business already uses.</p>
+    </div>
+
+    <!-- ── Adam ── -->
+    <div class="cred-layout fade-up">
+      <div style="display:flex;flex-direction:column;align-items:center;">
+        <!-- TEMPLATE: Adam's photo — upload to R2 or use relative path -->
+        <img src="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/adam.png" alt="Adam — Founder, Bosar Agency" class="cred-photo">
+        <p class="cred-name">Adam</p>
+        <p class="cred-role">Founder, Bosar Agency</p>
+
+        <div class="cred-badges" style="margin-top:16px;justify-content:center;">
+          <a href="https://www.youtube.com/@AdamGoodyer" target="_blank" rel="noopener noreferrer" class="cred-badge">
+            <svg class="icon" viewBox="0 0 24 24" style="color:var(--lime-text);"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
+            YouTube
+          </a>
+          <a href="https://www.upwork.com/freelancers/adamgoodyer" target="_blank" rel="noopener noreferrer" class="cred-badge">
+            <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:var(--lime-text);stroke:none;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            Upwork
+          </a>
+          <a href="https://www.linkedin.com/in/adam-goodyer/" target="_blank" rel="noopener noreferrer" class="cred-badge">
+            <svg class="icon" viewBox="0 0 24 24" style="color:var(--lime-text);"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>
+            LinkedIn
+          </a>
+        </div>
+
+        <div class="cred-badges" style="margin-top:8px;flex-wrap:wrap;justify-content:center;">
+          <div class="cred-badge">
+            <svg viewBox="0 0 24 24" style="fill:var(--lime-text);stroke:none;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            100+ projects
+          </div>
+          <div class="cred-badge">
+            <svg viewBox="0 0 24 24" style="fill:var(--lime-text);stroke:none;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            60+ reviews
+          </div>
+        </div>
+      </div>
+
+      <div>
+
+        <!-- Speaking & Recognition -->
+        <div style="margin-top:24px;">
+          <p style="font-size:13px;font-weight:700;color:var(--fg);margin-bottom:8px;">Speaking &amp; Recognition</p>
+          <ul style="font-size:13px;color:var(--muted);line-height:1.7;list-style:none;padding:0;">
+            <li style="margin-bottom:6px;padding-left:16px;position:relative;"><span style="position:absolute;left:0;color:var(--lime);">&bull;</span> Presented at the <strong style="color:var(--fg);">Africa AI Summit</strong> in Cape Town &mdash; n8n sponsored event with a combined audience of 3.5M+, presenting on this exact audit methodology</li>
+            <li style="margin-bottom:6px;padding-left:16px;position:relative;"><span style="position:absolute;left:0;color:var(--lime);">&bull;</span> Speaker at the <strong style="color:var(--fg);">AAA AI Event</strong> in Sydney, Australia</li>
+            <li style="margin-bottom:6px;padding-left:16px;position:relative;"><span style="position:absolute;left:0;color:var(--lime);">&bull;</span> Appeared on <strong style="color:var(--fg);">n8n&rsquo;s official channel</strong>, <strong style="color:var(--fg);">Liam Ottley&rsquo;s channel</strong> (800K+ subscribers), and various other leading AI podcasts &mdash; widely recognised as an expert in the space</li>
+            <li style="padding-left:16px;position:relative;"><span style="position:absolute;left:0;color:var(--lime);">&bull;</span> <strong style="color:var(--fg);">Top 1% on Upwork</strong> &mdash; Expert-Vetted in the world&rsquo;s largest freelancing marketplace</li>
+          </ul>
+
+          <div class="speaking-grid">
+            <div class="speaking-card">
+              <img src="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/Adam%20Africa%20AI.JPEG" alt="Adam presenting at Africa AI Summit in Cape Town">
+              <div class="speaking-card-info">
+                <p class="sc-title">Africa AI Summit &mdash; Cape Town</p>
+                <p class="sc-sub">n8n sponsored event &middot; Combined audience 3.5M+</p>
+              </div>
+            </div>
+            <div class="speaking-card">
+              <img src="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/Adam%20Sydney%20AAA%20Event.png" alt="Adam speaking at AAA AI event in Sydney">
+              <div class="speaking-card-info">
+                <p class="sc-title">AAA AI Event &mdash; Sydney</p>
+                <p class="sc-sub">Australia&rsquo;s leading AI community event</p>
+              </div>
+            </div>
+            <div class="speaking-card">
+              <img src="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/Adam%20Portugal%20Pod.png" alt="Adam on podcast">
+              <div class="speaking-card-info">
+                <p class="sc-title">Podcast &amp; Media</p>
+                <p class="sc-sub">Featured on n8n, Liam Ottley (800K+), and more</p>
+                <div style="display:flex;gap:8px;margin-top:6px;">
+                  <a href="https://www.youtube.com/watch?v=OrV7SZrxufk&t=327s" target="_blank" rel="noopener noreferrer" class="sc-link">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg> n8n
+                  </a>
+                  <a href="https://www.youtube.com/watch?v=IyrSfHizvWc&t=159s" target="_blank" rel="noopener noreferrer" class="sc-link">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg> Liam Ottley
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="cred-divider">
+
+    <!-- ── Pat ── -->
+    <div class="cred-layout fade-up">
+      <div style="display:flex;flex-direction:column;align-items:center;">
+        <img src="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/Pat%20Headshot.avif" alt="Patrick — Co-Founder, Bosar Agency" class="cred-photo">
+        <p class="cred-name">Patrick</p>
+        <p class="cred-role">Co-Founder, Bosar Agency</p>
+
+        <div class="cred-badges" style="margin-top:16px;justify-content:center;">
+          <a href="https://www.linkedin.com/in/patrick-goodyer/" target="_blank" rel="noopener noreferrer" class="cred-badge">
+            <svg class="icon" viewBox="0 0 24 24" style="color:var(--lime-text);"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>
+            LinkedIn
+          </a>
+        </div>
+
+        <div class="cred-badges" style="margin-top:8px;flex-wrap:wrap;justify-content:center;">
+          <div class="cred-badge">
+            <svg viewBox="0 0 24 24" style="fill:var(--lime-text);stroke:none;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            200+ projects
+          </div>
+          <div class="cred-badge">
+            <svg viewBox="0 0 24 24" style="fill:var(--lime-text);stroke:none;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            Make.com
+          </div>
+          <div class="cred-badge">
+            <svg viewBox="0 0 24 24" style="fill:var(--lime-text);stroke:none;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            Monday.com
+          </div>
+          <div class="cred-badge">
+            <svg viewBox="0 0 24 24" style="fill:var(--lime-text);stroke:none;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            HubSpot
+          </div>
+          <div class="cred-badge">
+            <svg class="icon" viewBox="0 0 24 24" style="color:var(--lime-text);"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Former CTO
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="cred-bio">
+          <p><strong>200+ projects</strong> in process automation and CRM optimisation across Salesforce, HubSpot, PipeDrive, and every major platform. A registered <strong>Make.com</strong>, <strong>Monday.com</strong>, and <strong>HubSpot</strong> integration partner &mdash; Patrick doesn&rsquo;t just know these tools, he&rsquo;s certified to build on them.</p>
+          <p>Before APG, Patrick was <strong>CTO at Pittsburgh&rsquo;s fastest-growing solar company</strong>, where he built the systems that powered that growth from the ground up. He went on to build operational systems for <strong>one of Australia&rsquo;s biggest TV shows</strong> and <strong>one of Australia&rsquo;s biggest solar companies</strong> out of Byron Bay &mdash; bringing deep, real-world experience in scaling the exact kind of operations we audit.</p>
+        </div>
+
+        <!-- Upwork Profile Screenshot -->
+        <div class="upwork-screenshot" style="margin-top:20px;">
+          <img src="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/pat_upwork_profile_.jpeg" alt="Patrick's Upwork profile — 200+ projects, top-rated freelancer">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- SOCIAL PROOF WALL -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="page-section">
+  <div class="container">
+    <div class="fade-up">
+      <p class="section-label">Proof</p>
+      <h2 class="section-heading">See for yourself</h2>
+      <p class="section-sub">Seven years of results. Verified everywhere.</p>
+    </div>
+
+    <!-- Proof Screenshots -->
+    <div class="proof-grid fade-up">
+      <a href="https://www.upwork.com/freelancers/adamgoodyer" target="_blank" rel="noopener noreferrer" class="proof-panel">
+        <div class="proof-panel-img">
+          <img src="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/Adam%20Upwork%20Screenshot.png" alt="Upwork Profile">
+        </div>
+        <div class="proof-panel-info">
+          <p class="proof-title">Upwork Profile</p>
+          <p class="proof-stat">60+ projects &middot; 100% Job Success &middot; Expert-Vetted</p>
+          <p class="proof-panel-link"><svg class="icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg> View on Upwork</p>
+        </div>
+      </a>
+
+      <a href="https://www.youtube.com/@AdamGoodyer" target="_blank" rel="noopener noreferrer" class="proof-panel">
+        <div class="proof-panel-img">
+          <img src="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/Adam%20Goodyer%20Youtube%20Channel%20Screenshot.png" alt="YouTube Channel">
+        </div>
+        <div class="proof-panel-info">
+          <p class="proof-title">YouTube Channel</p>
+          <p class="proof-stat">6,000+ subscribers &middot; 100+ videos &middot; 200,000+ views</p>
+          <p class="proof-panel-link"><svg class="icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg> View on YouTube</p>
+        </div>
+      </a>
+
+      <a href="https://www.skool.com/ai-builders-hub" target="_blank" rel="noopener noreferrer" class="proof-panel">
+        <div class="proof-panel-img">
+          <img src="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/Skool%20Screenshot.png" alt="AI Builders Hub">
+        </div>
+        <div class="proof-panel-info">
+          <p class="proof-title">AI Builders Hub</p>
+          <p class="proof-stat">400+ members &middot; Skool community</p>
+          <p class="proof-panel-link"><svg class="icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg> View on Skool</p>
+        </div>
+      </a>
+
+      <a href="https://www.upwork.com/freelancers/adamgoodyer" target="_blank" rel="noopener noreferrer" class="proof-panel">
+        <div class="proof-panel-img">
+          <img src="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/upwork_reviews_collage.png" alt="Upwork Reviews">
+        </div>
+        <div class="proof-panel-info">
+          <p class="proof-title">Client Reviews</p>
+          <p class="proof-stat">60+ third-party verified reviews</p>
+          <p class="proof-panel-link"><svg class="icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg> View reviews</p>
+        </div>
+      </a>
+    </div>
+
+
+    <!-- Video Testimonials — 3 client reviews -->
+    <div class="testi-grid fade-up">
+
+      <div class="testi-card">
+        <div class="testi-video" id="v0-wrap">
+          <img src="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/placeholder.png" alt="[Client name] testimonial">
+          <div class="testi-play" onclick="playVideo('v0-wrap','')">
+            <div class="play-btn"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><polygon points="5,3 19,12 5,21"/></svg></div>
+          </div>
+        </div>
+        <div class="testi-body">
+          <p class="testi-quote">"[Client testimonial — replace with your own.]"</p>
+          <div class="testi-author">
+            <div class="testi-avatar"><img src="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/placeholder.png" alt="[Client name]"></div>
+            <div>
+              <div class="testi-name">[Client name] <a href="#" target="_blank" rel="noopener noreferrer" class="testi-linkedin"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg></a></div>
+              <div class="testi-role">[Role, Company]</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="testi-card">
+        <div class="testi-video" id="v1-wrap">
+          <img src="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/placeholder.png" alt="[Client name] testimonial">
+          <div class="testi-play" onclick="playVideo('v1-wrap','')">
+            <div class="play-btn"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><polygon points="5,3 19,12 5,21"/></svg></div>
+          </div>
+        </div>
+        <div class="testi-body">
+          <p class="testi-quote">"[Client testimonial — replace with your own.]"</p>
+          <div class="testi-author">
+            <div class="testi-avatar-init">CL</div>
+            <div><div class="testi-name">[Client name] </div><div class="testi-role">[Role, Company]</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="testi-card">
+        <div class="testi-video" id="v2-wrap">
+          <img src="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/placeholder.png" alt="[Client name] testimonial">
+          <div class="testi-play" onclick="playVideo('v2-wrap','')">
+            <div class="play-btn"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><polygon points="5,3 19,12 5,21"/></svg></div>
+          </div>
+        </div>
+        <div class="testi-body">
+          <p class="testi-quote">"[Client testimonial — replace with your own.]"</p>
+          <div class="testi-author">
+            <div class="testi-avatar-init">CL</div>
+            <div><div class="testi-name">[Client name] </div><div class="testi-role">[Role, Company]</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Written Reviews Grid — 6 LinkedIn-verified reviews -->
+    <div class="review-grid fade-up">
+
+      <!-- [Client name] -->
+      <div class="review-card">
+        <div class="review-stars"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+        <p class="review-text">&ldquo;[Client testimonial — replace with your own.]&rdquo;</p>
+        <div class="review-author">
+          <img src="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/placeholder.png" onerror="this.src='https://ui-avatars.com/api/?name=Client&background=1a2e1a&color=9ae660&bold=true&size=72'" alt="[Client name]" class="review-photo">
+          <div>
+            <p class="review-name">[Client name] <a href="#" target="_blank" rel="noopener noreferrer" class="review-li"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg></a></p>
+            <p class="review-role">[Role, Company]</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- [Client name] -->
+      <div class="review-card">
+        <div class="review-stars"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+        <p class="review-text">&ldquo;[Client testimonial — replace with your own.]&rdquo;</p>
+        <div class="review-author">
+          <img src="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/placeholder.png" onerror="this.src='https://ui-avatars.com/api/?name=Client&background=1a2e1a&color=9ae660&bold=true&size=72'" alt="[Client name]" class="review-photo">
+          <div>
+            <p class="review-name">[Client name] <a href="#" target="_blank" rel="noopener noreferrer" class="review-li"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg></a></p>
+            <p class="review-role">[Role, Company]</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- [Client name] -->
+      <div class="review-card">
+        <div class="review-stars"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+        <p class="review-text">&ldquo;[Client testimonial — replace with your own.]&rdquo;</p>
+        <div class="review-author">
+          <img src="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/placeholder.png" onerror="this.src='https://ui-avatars.com/api/?name=Client&background=1a2e1a&color=9ae660&bold=true&size=72'" alt="[Client name]" class="review-photo">
+          <div>
+            <p class="review-name">[Client name] <a href="#" target="_blank" rel="noopener noreferrer" class="review-li"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg></a></p>
+            <p class="review-role">[Role, Company]</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- [Client name] -->
+      <div class="review-card">
+        <div class="review-stars"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+        <p class="review-text">&ldquo;[Client testimonial — replace with your own.]&rdquo;</p>
+        <div class="review-author">
+          <img src="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/placeholder.png" onerror="this.src='https://ui-avatars.com/api/?name=Client&background=1a2e1a&color=9ae660&bold=true&size=72'" alt="[Client name]" class="review-photo">
+          <div>
+            <p class="review-name">[Client name] <a href="#" target="_blank" rel="noopener noreferrer" class="review-li"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg></a></p>
+            <p class="review-role">[Role, Company]</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- [Client name] -->
+      <div class="review-card">
+        <div class="review-stars"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+        <p class="review-text">&ldquo;[Client testimonial — replace with your own.]&rdquo;</p>
+        <div class="review-author">
+          <img src="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/placeholder.png" onerror="this.src='https://ui-avatars.com/api/?name=Client&background=1a2e1a&color=9ae660&bold=true&size=72'" alt="[Client name]" class="review-photo">
+          <div>
+            <p class="review-name">[Client name] <a href="#" target="_blank" rel="noopener noreferrer" class="review-li"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg></a></p>
+            <p class="review-role">[Role, Company]</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- [Client name] -->
+      <div class="review-card">
+        <div class="review-stars"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+        <p class="review-text">&ldquo;[Client testimonial — replace with your own.]&rdquo;</p>
+        <div class="review-author">
+          <img src="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/placeholder.png" onerror="this.src='https://ui-avatars.com/api/?name=Client&background=1a2e1a&color=9ae660&bold=true&size=72'" alt="[Client name]" class="review-photo">
+          <div>
+            <p class="review-name">[Client name] <a href="#" target="_blank" rel="noopener noreferrer" class="review-li"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg></a></p>
+            <p class="review-role">[Role, Company]</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Trust Strip -->
+    <div class="trust-strip fade-up">
+      <a href="https://www.upwork.com/freelancers/adamgoodyer" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" style="fill:var(--lime-text);stroke:none;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        60+ verified reviews
+      </a>
+      <span class="trust-dot">&bull;</span>
+      <span style="display:flex;align-items:center;gap:6px;">
+        <svg class="icon" viewBox="0 0 24 24" style="color:var(--lime-text);"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+        <strong>300+ projects completed</strong>
+      </span>
+      <span class="trust-dot">&bull;</span>
+      <a href="https://www.trustpilot.com/review/bosar.agency" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:#00B67A;stroke:none;"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+        Rated Excellent on Trustpilot
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- CASE STUDY — CLIENT EXAMPLE -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="page-section">
+  <div class="container">
+    <div class="fade-up">
+      <p class="section-label">Case study</p>
+      <h2 class="section-heading">What happens when you inject a system behind a team</h2>
+      <p class="section-sub"><a href="#" target="_blank" rel="noopener noreferrer" style="color:var(--lime-text);font-weight:600;text-decoration:underline;text-underline-offset:2px;">[Client name]</a> &mdash; [Location]</p>
+      <p style="font-size:14px;color:var(--fg);max-width:720px;line-height:1.6;margin-bottom:40px;">We audited their entire operation and found they were running everything through Excel, phone calls, and Outlook &mdash; no CRM, no system for tracking leads or follow-up times, and zero visibility over their pipeline. Here&rsquo;s what changed.</p>
+    </div>
+
+    <div class="cs-card fade-up">
+      <div class="cs-hero-img">
+        <img src="https://pub-66c549f8c8d44c16ab441b6668d7a12a.r2.dev/placeholder.png" alt="[Client name] team at work">
+        <div class="cs-hero-badge">
+          <div class="cs-hero-badge-avatar">CL</div>
+          <div>
+            <p class="cs-hero-badge-name">[Client name]</p>
+            <p class="cs-hero-badge-role">Operations Manager</p>
+          </div>
+        </div>
+      </div>
+      <div class="cs-split">
+
+        <!-- ── BEFORE ── -->
+        <div class="cs-before">
+          <p class="cs-phase">July 2025 &mdash; Before</p>
+          <p class="cs-big">$200K<span style="font-size:0.5em;color:#64748b;font-weight:600;">/year</span></p>
+          <p class="cs-big-sub">70 maintenance contracts</p>
+
+          <div class="cs-metric">
+            <div class="cs-metric-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/></svg></div>
+            <div class="cs-metric-text">Excel spreadsheets &mdash; <strong>no modern CRM</strong></div>
+          </div>
+          <div class="cs-metric">
+            <div class="cs-metric-icon"><svg class="icon" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg></div>
+            <div class="cs-metric-text"><strong>No business system</strong> &mdash; phone, Outlook, and memory</div>
+          </div>
+          <div class="cs-metric">
+            <div class="cs-metric-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+            <div class="cs-metric-text">All IP lived <strong>in the owner&rsquo;s head</strong></div>
+          </div>
+        </div>
+
+        <!-- ── DIVIDER ── -->
+        <div class="cs-divider">
+          <div class="cs-divider-arrow">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </div>
+        </div>
+
+        <!-- ── AFTER ── -->
+        <div class="cs-after">
+          <p class="cs-phase">March 2026 &mdash; 9 months later</p>
+          <p class="cs-big">$2M<span style="font-size:0.4em;color:#94a3b8;font-weight:600;">/year</span></p>
+          <p class="cs-big-sub">$200K/month revenue run-rate</p>
+
+          <div class="cs-metric">
+            <div class="cs-metric-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+            <div class="cs-metric-text"><strong>15</strong> headcount</div>
+          </div>
+          <div class="cs-metric">
+            <div class="cs-metric-icon"><svg class="icon" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+            <div class="cs-metric-text"><strong>5</strong> vehicles on the road</div>
+          </div>
+          <div class="cs-metric">
+            <div class="cs-metric-icon"><svg class="icon" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+            <div class="cs-metric-text"><strong>1 system</strong> runs the entire operation</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- System capabilities strip -->
+      <div class="cs-system-strip">
+        <span class="cs-system-label">One system for</span>
+        <span class="cs-system-item">Scheduling</span>
+        <span class="cs-system-item">Timesheeting</span>
+        <span class="cs-system-item">Invoicing</span>
+        <span class="cs-system-item">CRM</span>
+        <span class="cs-system-item">Quoting</span>
+        <span class="cs-system-item">Takeoffs</span>
+        <span class="cs-system-item">Proposals</span>
+        <span class="cs-system-item">Phone Calls</span>
+        <span class="cs-system-item">Client Comms</span>
+      </div>
+    </div>
+
+    <!-- Attribution -->
+    <div class="cs-attribution fade-up">
+      <a href="#" target="_blank" rel="noopener noreferrer" class="cs-link">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+        your-client-site.example.com
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- BOOK & PAY -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="page-section" style="border-bottom:none;">
+  <div class="container">
+    <div class="book-section fade-up">
+      <p class="section-label">Next step</p>
+      <h2 class="section-heading">Schedule your audit kickoff</h2>
+      <p class="section-sub">Book your session and complete payment. Your first audit call will be scheduled within 48 hours.</p>
+
+      <!-- TEMPLATE: Replace {booking_url} with client-specific dynamic link -->
+      <a href="{booking_url}" target="_blank" rel="noopener noreferrer" class="btn-primary">
+        Book Your Audit Kickoff <span class="btn-arrow">&rarr;</span>
+      </a>
+
+      <p class="book-note">100% money-back guarantee. You keep the blueprint either way.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- FOOTER -->
+<!-- ════════════════════════════════════════════════════ -->
+<footer class="site-footer">
+  <p class="brand">Bosar Agency Solutions Pty Ltd</p>
+  <p>ABN 31 674 897 262</p>
+  <p>1 Sussex Street, Barangaroo NSW 2000</p>
+  <p style="margin-top:8px;">hello@bosar.agency &middot; +61 485 012 038</p>
+  <p style="margin-top:12px;font-size:12px;color:var(--muted);">Prepared exclusively for {company_name}.</p>
+</footer>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- JAVASCRIPT -->
+<!-- ════════════════════════════════════════════════════ -->
+<script>
+// Testimonial video play
+function playVideo(wrapperId, videoId) {
+  var wrap = document.getElementById(wrapperId);
+  wrap.innerHTML = '<iframe class="testi-iframe" src="https://customer-96dey70a994gv78z.cloudflarestream.com/' + videoId + '/iframe?autoplay=true" allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>';
+}
+
+// Scroll-triggered fade-up animations
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.1, rootMargin: '-40px' });
+
+document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>

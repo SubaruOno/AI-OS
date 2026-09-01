@@ -1,0 +1,4 @@
+interface:
+  display_name: "Log Work"
+  short_description: "Record, save, and back up work"
+  default_prompt: "Record and save the work completed in this session."

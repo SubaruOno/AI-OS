@@ -1,0 +1,16 @@
+{
+ "version": 1,
+ "sources": {"src": "/Users/albertbakhoj/Downloads/C0886.MP4"},
+ "ranges": [
+  {"source": "src", "start": 19.70, "end": 25.30, "quote": "It's how you go from this to this in sixty seconds with one Claude prompt."},
+  {"source": "src", "start": 43.25, "end": 48.00, "quote": "Just use the frontend design skill, so write /frontend design,"},
+  {"source": "src", "start": 54.86, "end": 63.80, "quote": "And then write this exact thing. Redesign my entire frontend in the theme of Linear."},
+  {"source": "src", "start": 66.30, "end": 73.95, "quote": "Don't stop until you have given the entire software a makeover."},
+  {"source": "src", "start": 75.40, "end": 76.56, "quote": "And then hit Enter."},
+  {"source": "src", "start": 81.60, "end": 86.80, "quote": "Because Claude is now going to use this specific frontend design skill and redesign your entire software"},
+  {"source": "src", "start": 91.35, "end": 97.05, "quote": "If you want this skill together with all of my other Claude skills, just comment skills and I'll send it to you completely for free."}
+ ],
+ "grade": "none",
+ "overlays": [],
+ "total_duration_s": 39.0
+}

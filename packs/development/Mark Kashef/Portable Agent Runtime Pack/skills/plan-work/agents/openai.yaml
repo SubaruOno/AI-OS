@@ -1,0 +1,4 @@
+interface:
+  display_name: "Plan Work"
+  short_description: "Turn a goal into a scoped execution plan"
+  default_prompt: "Use $plan-work to turn this goal into an executable plan."
