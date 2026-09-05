@@ -12,7 +12,7 @@
 
 ### テラコヤ.AI(2024年9月〜長期インターン中の会社)
 
-Slack(terakoyaai.slack.com)で確認した、実際によく一緒に動くメンバー:
+すばるはBusiness Development Teamに所属。オフィスは東京・虎ノ門ヒルズビジネスタワー。Slack(terakoyaai.slack.com)で確認した、実際によく一緒に動くメンバー:
 
 - **Paul Li**(paul@terakoya.ai) — #general作成者。おそらく創業者。
 - **Shun / 佐藤竣**(shun@terakoya.ai)
@@ -20,4 +20,4 @@ Slack(terakoyaai.slack.com)で確認した、実際によく一緒に動くメ�
 - **Philippe Khin**(philippe@terakoya.ai)
 - **Teiichirou**(teiichirou@terakoya.ai)
 
-AIエージェント・自動化開発、彦根の地元企業向けAI活用ワークショップの運営を一緒に進めている。
+AIエージェント・自動化開発、彦根の地元企業向けAI活用ワークショップの運営を一緒に進めている。テラコヤ.AIは滋賀大学の学生団体「[DSコミュニティ推進会](you.md)」(すばるが中心メンバー)とも連携しており、AIコーディングコンテストの共催などで接点がある。

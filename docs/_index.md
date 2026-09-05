@@ -24,7 +24,7 @@
 
 | When you're working on... | Doc | What it covers |
 |---|---|---|
-| *(nothing built yet)* | | |
+| SHIGABASE(大学野球部アプリ) | [shigabase.md](shigabase.md) | 構成・技術スタック・ディレクトリ、既知の課題(バージョン不一致、iOS 26クラッシュ対応) |
 
 ## Reference
 
