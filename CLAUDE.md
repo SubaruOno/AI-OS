@@ -43,7 +43,11 @@ business layer later without starting over — just run `/install` again.
 - **Use handoff for a long thread.** It records the state and provides a clean
   restart prompt.
 
-If a session ends without log, the next prime checks for unfinished local work.
+If a session ends without log, the next prime checks for unfinished local work. In
+Claude Code, a `Stop` hook in `.claude/settings.json` also enforces this directly:
+whenever uncommitted changes exist, it blocks the assistant from finishing until the
+log workflow runs, so completed work reaches the ledger without waiting for the next
+prime.
 
 ## How the assistant behaves
 

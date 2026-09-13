@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -n \"$(git status --porcelain 2>/dev/null)\" ]; then printf '{\"decision\": \"block\", \"reason\": \"Uncommitted changes exist in this workspace. Before finishing, run the log workflow: check ledger/<seat>.md for any missing rows (per CLAUDE.md, only meaningful work needs a row), check for constitution/context drift, then git add/commit/push per .claude/commands/log.md.\"}'; fi",
+            "statusMessage": "Checking for unlogged work..."
+          }
+        ]
+      }
+    ]
+  }
+}
