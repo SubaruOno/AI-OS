@@ -11,3 +11,4 @@
 - 2026-09-13 · すばる · setup/build · セッション終了時のログ漏れを防ぐため`.claude/settings.json`に`Stop`フックを追加。未コミットの変更がある間は完了扱いにさせず、ログワークフロー(ledger確認→commit→push)を強制実行させる仕組み。CLAUDE.md/AGENTS.mdの「The rhythm」節にも反映
 
 - 2026-09-13 15:09 · すばる · job-hunt/research · Gmail・締め切りナビ・カレンダーの初期確認を実施。本人用の[進捗記録](../private/job-hunt/2026-09-13/status.md)に確認済み締切と残作業を保存。全件確認は継続中
+- 2026-09-13 · すばる · job-hunt/build · Codex(Astraモデル)の就活タスクが利用上限で中断しても引き継げるよう、[handoffドキュメント](../outputs/handoffs/2026-09-13-job-hunt-schedule-check.md)を作成。優先対応(KDDIアンケート等)と次のアクションを明記
