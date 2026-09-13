@@ -17,3 +17,5 @@
 
 - 2026-09-13 15:35 · subaru · job-hunt/note · 本人指示で調査停止。公式学年暦の確認と通常授業10件の当日分削除・検証を[最新引き継ぎ](../outputs/handoffs/2026-09-13-job-hunt-codex-latest.md)に反映。
 - 2026-09-13 15:46 · すばる · job-hunt/build · Claudeで再開。Gmail/カレンダーMCPに接続し、受付完了メールの横断検索で今日締切5社が未提出の可能性が高いと判明(Speeeは本選考エントリー済み確定)。本文確認済みの締切・予定26件をGoogleカレンダーに登録し、色分けで確認済み/要確認を区別。提出自体は本人指示で保留
+- 2026-09-13 16:20 · すばる · job-hunt/ship · 本日の4タスクを完了。①Gmail全件スイープ(ATS直送201スレッド)で新規締切8件を発見し[記録](../private/job-hunt/2026-09-13/gmail-sweep.md)。②締め切りナビ975件をcurlで取得し[原票をTSV保存](../private/job-hunt/2026-09-13/simenavi-raw-2028.tsv)、関係企業133件を突合してメール未着のKDDI DS・AI等を発見。③[締切マスター](../private/job-hunt/2026-09-13/master-deadlines.md)を作成し本人と相談、EYはStrategy一本に決定。④夏休みの授業16件を削除し締切42件に3日前・前日通知を設定
+- 2026-09-13 · すばる · job-hunt/decision · 今夜23:59締切はKDDIアンケート・ダイフク・大和総研の3件に絞ると決定。EY SCは併願不可のためStrategy Consultant(10/26)一本。今日以降の応募判断は後日
