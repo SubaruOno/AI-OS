@@ -9,3 +9,5 @@
 - 2026-09-01 18:55 · すばる · research/note · `~/Projects/TerakoyaAI/ShigabaseiOS`を調査し、構成・技術スタック・既知の課題(バージョン不一致、iOS 26クラッシュ対応中)をdocs/shigabase.mdに記録。GitHub連携は接続済みと確認しcontext/tech-stack.mdを更新
 - 2026-09-03 · すばる · research/build · ChatGPTのフルデータエクスポート(会話984件、2023年4月〜2026年8月)を`context/import/chatgpt-export/`に取り込み、25並列エージェントで全件digest化(`conversations_digest.md`)。新たに判明した事実(DSコミュニティ推進会/Worcreaでの活動、テラコヤ.AI Business Development Team所属・虎ノ門オフィス、統計検定3級・漢検準2級、NEXT BASE「BASS」のデータ管理者役、オーケストラでの指揮)をcontext/you.md・people.md・tech-stack.mdに反映
 - 2026-09-13 · すばる · setup/build · セッション終了時のログ漏れを防ぐため`.claude/settings.json`に`Stop`フックを追加。未コミットの変更がある間は完了扱いにさせず、ログワークフロー(ledger確認→commit→push)を強制実行させる仕組み。CLAUDE.md/AGENTS.mdの「The rhythm」節にも反映
+
+- 2026-09-13 15:09 · すばる · job-hunt/research · Gmail・締め切りナビ・カレンダーの初期確認を実施。本人用の[進捗記録](../private/job-hunt/2026-09-13/status.md)に確認済み締切と残作業を保存。全件確認は継続中
