@@ -13,3 +13,6 @@
 - 2026-09-13 15:09 · すばる · job-hunt/research · Gmail・締め切りナビ・カレンダーの初期確認を実施。本人用の[進捗記録](../private/job-hunt/2026-09-13/status.md)に確認済み締切と残作業を保存。全件確認は継続中
 - 2026-09-13 · すばる · job-hunt/build · Codex(Astraモデル)の就活タスクが利用上限で中断しても引き継げるよう、[handoffドキュメント](../outputs/handoffs/2026-09-13-job-hunt-schedule-check.md)を作成。優先対応(KDDIアンケート等)と次のアクションを明記
 - 2026-09-13 15:20 · すばる · job-hunt/note · 上限前の[最新引き継ぎ](../outputs/handoffs/2026-09-13-job-hunt-codex-latest.md)を作成。メール検索15ページ・締切一覧の閲覧範囲、本人回答、未確認事項と再開順を本人用ファイルに保存
+- 2026-09-13 15:28 · subaru · job-hunt/research · 利用枠を確認して再開。重要企業4社のメール本文から締切・検査流用・応募完了条件を確認し、[非公開作業記録](../private/job-hunt/2026-09-13/status.md)に保存。
+
+- 2026-09-13 15:35 · subaru · job-hunt/note · 本人指示で調査停止。公式学年暦の確認と通常授業10件の当日分削除・検証を[最新引き継ぎ](../outputs/handoffs/2026-09-13-job-hunt-codex-latest.md)に反映。
