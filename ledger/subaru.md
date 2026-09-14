@@ -20,3 +20,4 @@
 - 2026-09-13 16:20 · すばる · job-hunt/ship · 本日の4タスクを完了。①Gmail全件スイープ(ATS直送201スレッド)で新規締切8件を発見し[記録](../private/job-hunt/2026-09-13/gmail-sweep.md)。②締め切りナビ975件をcurlで取得し[原票をTSV保存](../private/job-hunt/2026-09-13/simenavi-raw-2028.tsv)、関係企業133件を突合してメール未着のKDDI DS・AI等を発見。③[締切マスター](../private/job-hunt/2026-09-13/master-deadlines.md)を作成し本人と相談、EYはStrategy一本に決定。④夏休みの授業16件を削除し締切42件に3日前・前日通知を設定
 - 2026-09-13 · すばる · job-hunt/decision · 今夜23:59締切はKDDIアンケート・ダイフク・大和総研の3件に絞ると決定。EY SCは併願不可のためStrategy Consultant(10/26)一本。今日以降の応募判断は後日
 - 2026-09-14 15:39 · すばる · job-hunt/decision · KDDI技術系IS事後アンケートは提出済みと本人確認。9/14のPwC公認会計士キャリアチャレンジ オンラインイベントは不参加に決定。[締切マスター](../private/job-hunt/2026-09-13/master-deadlines.md)に反映
+- 2026-09-14 15:44 · すばる · job-hunt/decision · 9/13締切のダイフク3days/2daysと大和総研ITソリューション1Day二次は未提出と本人確認。[締切マスター](../private/job-hunt/2026-09-13/master-deadlines.md)に反映
