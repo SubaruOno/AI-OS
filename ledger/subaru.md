@@ -22,3 +22,5 @@
 - 2026-09-14 15:39 · すばる · job-hunt/decision · KDDI技術系IS事後アンケートは提出済みと本人確認。9/14のPwC公認会計士キャリアチャレンジ オンラインイベントは不参加に決定。[締切マスター](../private/job-hunt/2026-09-13/master-deadlines.md)に反映
 - 2026-09-14 15:44 · すばる · job-hunt/decision · 9/13締切のダイフク3days/2daysと大和総研ITソリューション1Day二次は未提出と本人確認。[締切マスター](../private/job-hunt/2026-09-13/master-deadlines.md)に反映
 - 2026-09-14 18:39 · すばる · shigabase/research · SHIGABASEを複数チーム向けの新アプリとして出す案を検討。競合調査と需要検証の計画を[調査メモ](../outputs/2026-09-14-shigabase-multi-team-research.md)に保存
+
+- 2026-09-15 00:26 · subaru · codex/research · 定期実行「毎朝の就活・情報管理チェック」の消費原因を実行履歴から確認。広範囲の画面操作と連携不可日の再実行が要因。設定変更なし。
