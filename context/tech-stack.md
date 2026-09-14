@@ -24,5 +24,5 @@ Python、R(lme4、lavaan)、JavaScript/React Native/Expo/Supabase、Excel(openpy
 SHIGABASEのGitHub連携は接続済み(`SubaruOno/ShigabaseiOS`、private)。詳細は
 [docs/shigabase.md](../docs/shigabase.md)を参照。
 
-新アプリ「てくてくまち」のコードは `~/Projects/walk-town`(ローカルGitのみ、GitHub未作成)。詳細は
+新アプリ「てくてくまち」のコードは `~/Projects/walk-town`(GitHub: `SubaruOno/walk-town`、private)。詳細は
 [docs/walk-town.md](../docs/walk-town.md)を参照。
