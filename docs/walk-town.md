@@ -18,12 +18,11 @@ Expo SDK 54 / React Native 0.81.5 / React 19 / expo-router。保存は `expo-sql
 - `src/components/GiftOpenAnimation.tsx` — 包みを開ける演出(揺れ→リボン→小物が弾んで出る、レア度で光り方が変わる。Codex作)
 - `app/` — まち・図鑑・設定のタブと、おみやげ画面
 
-## 現状(2026-09-15)
+## 現状(2026-09-16 朝)
 
-- 土台(計画書のStep 3〜6)は完成。型チェックとlintは通過。iOS 26.4シミュレーターで起動し、きょうのおみやげが届いて街に置けるところまで動作した。
-- タップ位置の判定と出来事(猫の昼寝)の判定は、コード単体のテストで確認済み。
-- Step 7(Codexの演出とドラッグ)を `main` に取り込み済み。シミュレーターで、開封の演出、トレイから置く、長押しドラッグで移動、図鑑、設定のデータ削除が動くことを確認した。
-- 未確認: 実機での歩数の包み、触覚フィードバック、ピンチ操作、絵はがきモード、猫の出来事の見た目。
-- 未着手: 紙袋の絵、実機での3日間の試用(Step 8)、TestFlight配布(Step 9)。
-- 気になる点: 開封後、小物の後ろに包みの箱がうっすら残って見える。
-- シミュレーターの専用パネルは、Xcodeが選択されていないため使えない(`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` が必要)。
+- 計画書のStep 1〜7が完了し、夜間の開発で遊びの仕組みを大きく足した。何を足したかと、確かめたこと・確かめていないことは[夜間開発レポート](../outputs/walk-town/2026-09-16-overnight-report.md)にまとめた。
+- 仕組みの一覧、テスト用リンク、利用記録の種類は、リポジトリの `docs/CONTRACT.md` が正本。
+- 未確認: 実機での触覚・ピンチ・ドラッグ・歩数計、絵はがきの共有シート、長時間動かしたときの重さ。
+- 未着手: 住人の本物の絵、紙袋の絵、実機での試用(Step 8)、TestFlight配布(Step 9)。
+- シミュレーターの専用パネルは、Xcodeが選択されていないため使えない(`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` が必要)。夜間は `app/debug.tsx` のテスト用リンクと `xcrun simctl` の撮影で確認した。
+- デモ動画: `~/Projects/tekuteku-art/demo-overnight.mp4`。
