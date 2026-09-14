@@ -14,14 +14,16 @@ Expo SDK 54 / React Native 0.81.5 / React 19 / expo-router。保存は `expo-sql
 - `docs/ART_GUIDE.md` — 小物の絵の生成プロンプトと取り込み手順
 - `src/db/index.ts` — SQLite(inventory, placements, gifts, events, meta)
 - `src/gifts/` — 歩数とデイリーの包み、抽選
-- `src/components/TownGrid.tsx` — 斜め見下ろしの街の描画とタップ位置の判定
-- `src/components/GiftOpenAnimation.tsx` — 包みを開ける演出(今は仮実装、Codexが作り込む)
+- `src/components/TownGrid.tsx` — 斜め見下ろしの街の描画、タップ位置の判定、長押しドラッグでの移動、ピンチでの拡大縮小(ドラッグとズームはCodex作)
+- `src/components/GiftOpenAnimation.tsx` — 包みを開ける演出(揺れ→リボン→小物が弾んで出る、レア度で光り方が変わる。Codex作)
 - `app/` — まち・図鑑・設定のタブと、おみやげ画面
 
 ## 現状(2026-09-15)
 
 - 土台(計画書のStep 3〜6)は完成。型チェックとlintは通過。iOS 26.4シミュレーターで起動し、きょうのおみやげが届いて街に置けるところまで動作した。
 - タップ位置の判定と出来事(猫の昼寝)の判定は、コード単体のテストで確認済み。
-- 未確認: 実機での歩数の包み、並べ替えの操作全般、絵はがきモード、図鑑、設定画面。
-- 未着手: Codexによる演出とドラッグ操作(Step 7)、紙袋の絵、TestFlight配布。
+- Step 7(Codexの演出とドラッグ)を `main` に取り込み済み。シミュレーターで、開封の演出、トレイから置く、長押しドラッグで移動、図鑑、設定のデータ削除が動くことを確認した。
+- 未確認: 実機での歩数の包み、触覚フィードバック、ピンチ操作、絵はがきモード、猫の出来事の見た目。
+- 未着手: 紙袋の絵、実機での3日間の試用(Step 8)、TestFlight配布(Step 9)。
+- 気になる点: 開封後、小物の後ろに包みの箱がうっすら残って見える。
 - シミュレーターの専用パネルは、Xcodeが選択されていないため使えない(`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` が必要)。

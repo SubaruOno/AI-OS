@@ -31,3 +31,4 @@
 - 2026-09-15 02:42 · すばる · walk-town/build · ChatGPTで生成した小物14枚の背景(描き込まれた市松模様)を除去し、~/Projects/tekuteku-art/processed に透過PNGで保存。6×6の街の見本画像を作成
 - 2026-09-15 02:54 · すばる · walk-town/build · てくてくまちの土台を~/Projects/walk-townに作成(端末内DB、歩数とデイリーの包み、6×6の街、図鑑、設定、絵はがき)。iOS 26シミュレーターで起動確認。[ドキュメント](../docs/walk-town.md)
 - 2026-09-15 03:16 · すばる · walk-town/ship · GitHub CLIを導入し、privateリポジトリSubaruOno/walk-townを作成してpush
+- 2026-09-15 03:51 · すばる · walk-town/build · Codexに開封演出・長押しドラッグ・ピンチズームを実装させ、シミュレーターで動作確認してmainに取り込み。デモ動画を~/Projects/tekuteku-art/demo-step7.mp4に保存
