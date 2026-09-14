@@ -32,3 +32,4 @@
 - 2026-09-15 02:54 · すばる · walk-town/build · てくてくまちの土台を~/Projects/walk-townに作成(端末内DB、歩数とデイリーの包み、6×6の街、図鑑、設定、絵はがき)。iOS 26シミュレーターで起動確認。[ドキュメント](../docs/walk-town.md)
 - 2026-09-15 03:16 · すばる · walk-town/ship · GitHub CLIを導入し、privateリポジトリSubaruOno/walk-townを作成してpush
 - 2026-09-15 03:51 · すばる · walk-town/build · Codexに開封演出・長押しドラッグ・ピンチズームを実装させ、シミュレーターで動作確認してmainに取り込み。デモ動画を~/Projects/tekuteku-art/demo-step7.mp4に保存
+- 2026-09-15 04:49 · すばる · walk-town/build · 夜間開発ループ: 住人の手紙(10通)とお礼、初回5包み、時間帯で変わる湖の景色と夜の明かり、手紙で4×4→8×8に広がる土地を実装。各機能をCodexレビュー→修正→シミュレーター撮影で確認しmainへ
