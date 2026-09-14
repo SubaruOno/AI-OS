@@ -18,11 +18,12 @@ Expo SDK 54 / React Native 0.81.5 / React 19 / expo-router。保存は `expo-sql
 - `src/components/GiftOpenAnimation.tsx` — 包みを開ける演出(揺れ→リボン→小物が弾んで出る、レア度で光り方が変わる。Codex作)
 - `app/` — まち・図鑑・設定のタブと、おみやげ画面
 
-## 現状(2026-09-16 朝)
+## 現状(2026-09-16 7:35)
 
-- 計画書のStep 1〜7が完了し、夜間の開発で遊びの仕組みを大きく足した。何を足したかと、確かめたこと・確かめていないことは[夜間開発レポート](../outputs/walk-town/2026-09-16-overnight-report.md)にまとめた。
-- 仕組みの一覧、テスト用リンク、利用記録の種類は、リポジトリの `docs/CONTRACT.md` が正本。
-- 未確認: 実機での触覚・ピンチ・ドラッグ・歩数計、絵はがきの共有シート、長時間動かしたときの重さ。
-- 未着手: 住人の本物の絵、紙袋の絵、実機での試用(Step 8)、TestFlight配布(Step 9)。
-- シミュレーターの専用パネルは、Xcodeが選択されていないため使えない(`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` が必要)。夜間は `app/debug.tsx` のテスト用リンクと `xcrun simctl` の撮影で確認した。
-- デモ動画: `~/Projects/tekuteku-art/demo-overnight.mp4`。
+- 夜間の開発で遊びの仕組みを足し([夜間開発レポート](../outputs/walk-town/2026-09-16-overnight-report.md))、朝は見た目・手触り・配置と結果のつながりを35の仮説で改善した([朝の仮説検証ログ](../outputs/walk-town/2026-09-16-morning-hypotheses.md))。
+- 住人5人、紙袋、包み、対岸の村、アイコンの絵は Codex CLI の画像生成で作った(`~/Projects/tekuteku-art`)。
+- 仕組みの一覧、テスト用リンクは、リポジトリの `docs/CONTRACT.md` が正本。TestFlightの手順は `docs/TESTFLIGHT.md`。変更前に `scripts/check.sh` を通す。
+- iPhone実機はExpo Go(`exp://192.168.11.35:8081`、Macと同じWi-Fi)で接続確認済み。
+- 未確認: 実機での効果音・触覚・ピンチ・ドラッグ・歩数計、長時間動かしたときの重さ、LINEへの絵はがき送信。
+- 未着手: 台なしの小物の絵(Codexの利用上限のため)、TestFlight配布。
+- シミュレーターの専用パネルは、Xcodeが選択されていないため使えない(`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` が必要)。
