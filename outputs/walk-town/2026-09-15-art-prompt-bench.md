@@ -25,17 +25,54 @@ Style variations:
 Show the 4 variations side by side, labeled 1-4 below each image.
 ```
 
-## 2回目(選んだタッチで1枚ずつ)
+## 決定(2026-09-15)
+
+- タッチは案1(粘土のミニチュア風)。
+- 足元の草の台ごと1マスとして使う。何も置いていないマス用に「草の台だけ」の絵も作る。
+
+## 2回目(残りの小物を1枚ずつ)
+
+基準のベンチ画像(案1)を毎回添付して貼る。
 
 ```
-Use style variation [番号] exactly. Create one image of: [小物名の英語].
-Isometric 3/4 top-down view, one square tile footprint, centered, transparent background, no text, 1024x1024.
-Keep the same colors, lighting direction (from upper left), outline thickness, and level of detail as the bench.
+Use the attached bench image as the exact style reference (variation 1: soft 3D clay miniature).
+Create ONE image of: [ITEM].
+
+Keep identical to the reference:
+- Same isometric angle and camera height
+- Same square grass tile base: same size, shape, rounded edges, thickness, color, and small grass tufts
+- The item stands centered on the tile and does not extend beyond the tile edges (tall items may go upward)
+- Same soft clay material, rounded edges, warm afternoon light from the upper left, soft shadows
+- Same color saturation and level of detail
+
+Transparent background outside the tile. No text, no labels, no extra objects. Square 1024x1024.
 ```
 
-小物の英語名: wooden park bench / round leafy tree / clump of lakeside reeds / small flower bed / round-globe street lamp / red Japanese mailbox / bicycle with a front basket / wooden signpost / small lakeside coffee stand / soft-serve ice cream kiosk / rowboat on a display stand / small clock tower
+[ITEM]に入れる英語(13枚):
+
+1. empty tile only (the grass tile base with nothing on it)
+2. a round leafy tree
+3. a clump of lakeside reeds
+4. a small flower bed with simple flowers
+5. a street lamp with a round glass globe
+6. a red cylindrical Japanese mailbox
+7. a bicycle with a front basket, parked
+8. a small wooden signpost with two blank arrow boards
+9. a small lakeside coffee stand with an awning (rare)
+10. a small soft-serve ice cream kiosk (rare)
+11. a small wooden rowboat resting on a display stand (rare)
+12. a small clock tower that fits on one tile (very rare)
+13. event overlay: a sleeping cat curled up, no tile, transparent background, same clay style, sized to sit on the bench
+
+紙袋の演出はMVPの2つ目の出来事用に後で作る。
+
+## チェック項目
+
+- 台の大きさ・角度がベンチと同じか(重ねて比べる)
+- 小さく(80px)表示しても何か分かるか
+- 色の濃さが1枚だけ浮いていないか
+- 台の外にはみ出していないか
 
 ## 注意
 
-- 基準にする1枚を決めたら、以降の生成には毎回その画像を添付する。
 - 任天堂作品の画風に似せる指示は入れない。

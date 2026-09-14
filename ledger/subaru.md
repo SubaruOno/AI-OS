@@ -27,3 +27,4 @@
 - 2026-09-15 01:47 · すばる · walk-town/decision · 新アプリ案を「散歩のおみやげで小さな街を作る」に決定(Codexの意見で、すれ違い通信から方向転換)。MVP計画書を[plans/2026-09-15-walk-town-app-mvp.md](../plans/2026-09-15-walk-town-app-mvp.md)に作成
 - 2026-09-15 01:51 · すばる · walk-town/research · Codexと世界観・仕掛け・名前・小物12種のアイデア出し。[記録](../outputs/walk-town/2026-09-15-ideation-with-codex.md)。テスター5〜8人は確保済み
 - 2026-09-15 01:56 · すばる · walk-town/decision · 世界観「湖畔のよりみち」、仮称「てくてくまち」に決定。計画書を更新し、絵のタッチ決め用の[プロンプト](../outputs/walk-town/2026-09-15-art-prompt-bench.md)を作成
+- 2026-09-15 02:04 · すばる · walk-town/decision · 小物の絵は粘土ミニチュア風・草の台付きに決定。残り12枚分の[生成プロンプト](../outputs/walk-town/2026-09-15-art-prompt-bench.md)を作成
