@@ -21,3 +21,4 @@
 - 2026-09-13 · すばる · job-hunt/decision · 今夜23:59締切はKDDIアンケート・ダイフク・大和総研の3件に絞ると決定。EY SCは併願不可のためStrategy Consultant(10/26)一本。今日以降の応募判断は後日
 - 2026-09-14 15:39 · すばる · job-hunt/decision · KDDI技術系IS事後アンケートは提出済みと本人確認。9/14のPwC公認会計士キャリアチャレンジ オンラインイベントは不参加に決定。[締切マスター](../private/job-hunt/2026-09-13/master-deadlines.md)に反映
 - 2026-09-14 15:44 · すばる · job-hunt/decision · 9/13締切のダイフク3days/2daysと大和総研ITソリューション1Day二次は未提出と本人確認。[締切マスター](../private/job-hunt/2026-09-13/master-deadlines.md)に反映
+- 2026-09-14 18:39 · すばる · shigabase/research · SHIGABASEを複数チーム向けの新アプリとして出す案を検討。競合調査と需要検証の計画を[調査メモ](../outputs/2026-09-14-shigabase-multi-team-research.md)に保存
