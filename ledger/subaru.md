@@ -25,3 +25,4 @@
 
 - 2026-09-15 00:26 · subaru · codex/research · 定期実行「毎朝の就活・情報管理チェック」の消費原因を実行履歴から確認。広範囲の画面操作と連携不可日の再実行が要因。設定変更なし。
 - 2026-09-15 01:47 · すばる · walk-town/decision · 新アプリ案を「散歩のおみやげで小さな街を作る」に決定(Codexの意見で、すれ違い通信から方向転換)。MVP計画書を[plans/2026-09-15-walk-town-app-mvp.md](../plans/2026-09-15-walk-town-app-mvp.md)に作成
+- 2026-09-15 01:51 · すばる · walk-town/research · Codexと世界観・仕掛け・名前・小物12種のアイデア出し。[記録](../outputs/walk-town/2026-09-15-ideation-with-codex.md)。テスター5〜8人は確保済み
