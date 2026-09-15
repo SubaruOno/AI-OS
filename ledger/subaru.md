@@ -87,3 +87,4 @@
 - 2026-09-15 22:32 · subaru · terakoya/build · AIコンサル提案資料 第2版（3人体制の役割・対応量・18か月スケジュール・売上と資金計画・新会社設立条件）を作成（private/terakoya-ai-consulting）
 - 2026-09-15 22:34 · すばる · poitto/build · 開発ループ8周目・まとめ: 初回起動の音オン保証、つづきから表示を確認。タイトル→ステージ選択→プレイ→リザルトの流れが完成、全ステージクリア可能をテストで保証、実機配置。[記録](../outputs/poitto/2026-09-15-dev-loop.md)
 - 2026-09-16 00:03 · すばる · poitto/research · マップが似すぎ・難易度が甘いという指摘を受け、家を縦断する9面の企画と3Dモデル導入方針をCodexと相談。[企画](../outputs/poitto/2026-09-16-house-stage-ideas.md)
+- 2026-09-16 00:24 · すばる · poitto/build · 家ステージ開発開始: Poly HavenのCC0家具モデル8点をダウンロードし、子ども部屋→廊下→階段の3面実装をCodexに依頼。[記録](../outputs/poitto/2026-09-16-house-dev-loop.md)
