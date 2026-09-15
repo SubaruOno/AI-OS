@@ -1,7 +1,7 @@
 # Plan: Rick さんの設定メモから AI-OS に取り入れる
 
 **Created:** 2026-09-15
-**Status:** Draft
+**Status:** Implemented
 **Request:** Rick さんの AI エージェント設定メモから、AI-OS に合う部分を取り入れる
 **Purpose:** 記録の置き場を分野ごとにはっきりさせ、取り返しのつかない git 操作を仕組みで止める
 

@@ -49,3 +49,4 @@
 - 2026-09-15 14:01 · すばる · walk-town/ship · 修正ビルドをTestFlightに提出、すばるの実機で正常起動を確認
 - 2026-09-15 15:02 · すばる · poitto/build · Poittoを自分のプロジェクトとして整備: 履歴を作り直しSubaruOno/Poitto(非公開)へ、Bundle IDをcom.subaruono.Poitto・チーム7QD9M2757Sに変更、旧チケット番号を除去。単体テスト105件合格
 - 2026-09-15 15:03 · subaru · workspace/decision · Rick さんの設定メモから取り入れる項目を計画化（置き場ルール・危険操作 hook・画像置き場、symlink は見送り）
+- 2026-09-15 15:10 · subaru · workspace/build · 危険な git 操作を止める PreToolUse hook、情報の置き場表、画像置き場 ~/Pictures/ai/ を constitution に追加

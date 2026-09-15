@@ -95,6 +95,7 @@ AGENTS.md       identical constitution loaded by Codex
 INDEX.md        human map of the workspace
 .claude/        Claude Code skills and command shortcuts
 .agents/        Codex project skills, mirrored from .claude/skills
+.claude/hooks/  guardrail scripts run by Claude Code hooks
 context/        context about すばる (you.md, people.md, tech-stack.md)
 private/        owner-only local material, excluded from Git
 ledger/         durable work record, one file per seat
@@ -118,6 +119,44 @@ scripts/        cross-platform setup and verification helpers
   Composio first.
 - Finished software: run test, then document it and update `docs/_index.md`.
 - Optional material in `packs/`: run pack-review before promoting anything.
+
+## Where information lives
+
+Each kind of information has one home. Decide by topic and by whether it may be
+shared, not by which folder the session happens to be in.
+
+| Information | Home |
+|---|---|
+| すばる's background, preferences, way of working | [context/you.md](context/you.md) |
+| Job hunting: ES drafts, selection status, company notes | `private/job-hunt/` |
+| Osaka Gas: attendance, player data, team-internal matters | `private/` only, never a tracked file |
+| Apps (SHIGABASE, walk-town): design and usage | `docs/<app>.md`; code lives in each app's repo |
+| Completed work | `ledger/<seat>.md` |
+| Work being planned | `plans/` |
+| Feedback on how the assistant should work | Claude auto-memory; promote a lasting rule into this file and delete the memory |
+
+Do not write work logs or progress status into auto-memory; the ledger already
+holds them. Do not write counts or parameters into this file; name the file that
+holds the number instead, because numbers go stale first.
+
+## Images for review
+
+Images the assistant makes for すばる to look at (previews, comparisons,
+screenshots) go in `~/Pictures/ai/`, one level only, no subfolders. Name them
+`YYYYMMDD-HHMM-<project>-<what>.<ext>` in JST. Give the absolute path in the reply.
+Deliverables such as App Store screenshots keep their home in the app repo; put
+only a copy here. Delete images once the adopted version is committed.
+
+## Guardrails
+
+Irreversible commands are blocked by a hook, not by rules alone.
+[guard-dangerous-bash.py](.claude/hooks/guard-dangerous-bash.py) runs before every
+Bash call in Claude Code and blocks force push, `git reset --hard`, `git clean -f`,
+discarding all changes with `checkout`/`restore .`, `git branch -D`, and `rm -rf`
+on the home folder, workspace root, or `.git`. Plain pushes to main stay allowed
+because the Stop hook auto-commits and pushes. If a blocked command is truly
+needed, すばる runs it in their own terminal. Codex has no equivalent hook, so in
+Codex treat the same list as ask-first.
 
 ## Working with the ledger
 

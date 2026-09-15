@@ -20,7 +20,9 @@ removed until they're needed. Ask `/install` again to add the business layer.
 
 ## Reference
 
-[what this folder is](WHAT-THIS-IS.md) · [installation](INSTALL-GUIDE.md) · [first steps](START-HERE.md) · [writing style](reference/writing-style.md) · [getting API keys](reference/getting-keys.md) · [source material](packs/README.md)
+[what this folder is](WHAT-THIS-IS.md) · [installation](INSTALL-GUIDE.md) · [first steps](START-HERE.md) · [writing style](reference/writing-style.md) · [getting API keys](reference/getting-keys.md) · [source material](packs/README.md) · [danger guard hook](.claude/hooks/guard-dangerous-bash.py)
+
+Review images: `~/Pictures/ai/` (outside the workspace)
 
 ---
 
