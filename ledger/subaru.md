@@ -54,3 +54,4 @@
 - 2026-09-15 15:18 · subaru · workspace/note · 置き場ルールで点検: tracked に大阪ガス内部情報なし。報告手順を private/ へ移し、作業時間の自動記録ルールを constitution へ昇格、auto-memory を整理
 - 2026-09-15 15:28 · subaru · workspace/build · ja-lint hook: .md/.txt 書き込み後に NG 辞書で不自然な日本語を指摘（ES 専用ルールは private/job-hunt のみ）
 - 2026-09-15 15:36 · すばる · poitto/research · RealityKit Phase 0検証: 動き・入力・純粋計算(テスト9本)はOK、影とぼかしはシミュレータ不可でiOS 26必須。[検証ログ](../outputs/poitto/2026-09-15-realitykit-spike.md)
+- 2026-09-15 15:51 · すばる · poitto/note · RealityKit検証アプリが実機でもぼかし設定時にクラッシュ。Warpへ引き継ぎ資料を作成。[引き継ぎ](../outputs/handoffs/2026-09-15-poitto-realitykit-spike.md)
