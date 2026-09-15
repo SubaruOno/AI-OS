@@ -25,5 +25,6 @@ Expo SDK 54 / React Native 0.81.5 / React 19 / expo-router。保存は `expo-sql
 - 仕組みの一覧、テスト用リンクは、リポジトリの `docs/CONTRACT.md` が正本。TestFlightの手順は `docs/TESTFLIGHT.md`。変更前に `scripts/check.sh` を通す。
 - iPhone実機はExpo Go(`exp://192.168.11.35:8081`、Macと同じWi-Fi)で接続確認済み。
 - 未確認: 実機での効果音・触覚・ピンチ・ドラッグ・歩数計、長時間動かしたときの重さ、LINEへの絵はがき送信。
-- 未着手: 台なしの小物の絵(Codexの利用上限のため)、TestFlight配布。
+- App Store提出素材はリポジトリの `store/` にある(アイコン、6.9インチのスクショ5枚、`store.config.json` の説明文、プライバシーポリシー)。手順は `store/README.md`。
+- 未着手: 台なしの小物の絵、App Store Connectでのアプリ作成とビルド提出(本人のAppleログインが必要)、審査用の連絡先の記入、プライバシーポリシーの公開URL。
 - シミュレーターの専用パネルは、Xcodeが選択されていないため使えない(`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` が必要)。
