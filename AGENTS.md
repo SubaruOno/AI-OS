@@ -166,6 +166,16 @@ because the Stop hook auto-commits and pushes. If a blocked command is truly
 needed, すばる runs it in their own terminal. Codex has no equivalent hook, so in
 Codex treat the same list as ask-first.
 
+Japanese phrasing is checked by a second hook.
+[ja_lint.py](.claude/hooks/ja-lint/ja_lint.py) runs after every Write or Edit of a
+`.md` or `.txt` file and reports phrases listed in
+[ng-rules.json](.claude/hooks/ja-lint/ng-rules.json); rules marked `job-hunt`
+apply only under `private/job-hunt/`. When a finding appears, rewrite the whole
+sentence instead of swapping the flagged word. When すばる points out unnatural
+Japanese, add the pattern to `ng-rules.json` first, then fix the text, so the same
+correction does not come back. In Codex, read the same dictionary before writing
+ES or other Japanese prose.
+
 ## Working with the ledger
 
 Write a row immediately after each meaningful unit of completed work:
