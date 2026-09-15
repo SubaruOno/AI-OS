@@ -46,3 +46,4 @@
 - 2026-09-15 10:45 · すばる · walk-town/ship · App Store Connectに説明文・プロモーション文・キーワード・サポートURL・著作権・審査用連絡先とメモ・サブタイトル・カテゴリ(ゲーム/シミュレーション・カジュアル、ヘルスケア)・スクショ5枚(6.5インチ)・プライバシーポリシーURL・データ収集なしを保存。プライバシーの公開と審査提出は未実施
 - 2026-09-15 13:27 · すばる · walk-town/build · TestFlight版の起動画面フリーズを特定・修正: expo-audioのpeer依存でexpo-asset@57が混入しExpoAsset未組込→フォント読込失敗→ルートがnullのまま。expo-asset ~12.0.13を直接依存に、フォント/DB失敗時も3秒で起動。Releaseシミュレーターで再現と解消を確認(Codexと並行解析)
 - 2026-09-15 14:05 · すばる · workspace/build · Composio CLI 0.4.1を導入しログイン(subaru.ono1)。Gmailをalias ono1で接続し受信箱の取得を確認。ono15は既存のGmailコネクタのまま
+- 2026-09-15 14:01 · すばる · walk-town/ship · 修正ビルドをTestFlightに提出、すばるの実機で正常起動を確認

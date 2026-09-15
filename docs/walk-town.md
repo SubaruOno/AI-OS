@@ -26,5 +26,6 @@ Expo SDK 54 / React Native 0.81.5 / React 19 / expo-router。保存は `expo-sql
 - iPhone実機はExpo Go(`exp://192.168.11.35:8081`、Macと同じWi-Fi)で接続確認済み。
 - 未確認: 実機での効果音・触覚・ピンチ・ドラッグ・歩数計、長時間動かしたときの重さ、LINEへの絵はがき送信。
 - App Store提出素材はリポジトリの `store/` にある(アイコン、6.9インチのスクショ5枚、`store.config.json` の説明文、プライバシーポリシー)。手順は `store/README.md`。
-- 未着手: 台なしの小物の絵、App Store Connectでのアプリ作成とビルド提出(本人のAppleログインが必要)、審査用の連絡先の記入、プライバシーポリシーの公開URL。
+- 2026-09-15: 起動画面フリーズを修正したビルドがTestFlightで正常に動作(すばるの実機で確認)。App Store Connectのアプリ・説明文・スクショ・プライバシーURLは登録済み。
+- 未着手: 台なしの小物の絵、プライバシー情報の「公開」、外部テスト(友だち配布)、審査提出。
 - シミュレーターの専用パネルは、Xcodeが選択されていないため使えない(`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` が必要)。
