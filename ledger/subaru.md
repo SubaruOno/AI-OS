@@ -55,3 +55,5 @@
 - 2026-09-15 15:28 · subaru · workspace/build · ja-lint hook: .md/.txt 書き込み後に NG 辞書で不自然な日本語を指摘（ES 専用ルールは private/job-hunt のみ）
 - 2026-09-15 15:36 · すばる · poitto/research · RealityKit Phase 0検証: 動き・入力・純粋計算(テスト9本)はOK、影とぼかしはシミュレータ不可でiOS 26必須。[検証ログ](../outputs/poitto/2026-09-15-realitykit-spike.md)
 - 2026-09-15 15:51 · すばる · poitto/note · RealityKit検証アプリが実機でもぼかし設定時にクラッシュ。Warpへ引き継ぎ資料を作成。[引き継ぎ](../outputs/handoffs/2026-09-15-poitto-realitykit-spike.md)
+
+- 2026-09-15 15:55 · すばる · poitto/research · Claudeと仕様書を2往復レビュー。旧版由来の制約、Phase 0未完了、短い操作区間を先に仕上げる共同提案を[記録](../outputs/poitto/2026-09-15-spec-review-with-claude.md)。元の仕様書・コードは未変更。
