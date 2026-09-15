@@ -43,3 +43,4 @@
 - 2026-09-15 10:18 · すばる · walk-town/ship · App Store提出の準備: Codex画像生成でアイコンと宣伝画像の背景5枚、実画面をはめ込んだスクショ5枚(6.9インチ)、説明文・キーワード・年齢区分・審査メモ(store.config.json)、プライバシーポリシーとサポートページ
 - 2026-09-15 10:35 · すばる · walk-town/ship · App Store準備: Apple DeveloperにバンドルID com.subaruono.tekutekumachi を登録、プライバシーポリシーとサポートをNotionで公開しURLを設定、審査用連絡先はGit外の.env.storeに保存
 - 2026-09-15 10:36 · すばる · walk-town/ship · App Store Connectで「てくてくまち」を新規作成(Apple ID 6812138389、iOS 1.0 提出準備中)。eas.jsonに紐づけ
+- 2026-09-15 10:45 · すばる · walk-town/ship · App Store Connectに説明文・プロモーション文・キーワード・サポートURL・著作権・審査用連絡先とメモ・サブタイトル・カテゴリ(ゲーム/シミュレーション・カジュアル、ヘルスケア)・スクショ5枚(6.5インチ)・プライバシーポリシーURL・データ収集なしを保存。プライバシーの公開と審査提出は未実施

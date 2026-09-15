@@ -35,3 +35,4 @@ outputs/**/*.zip
 
 # Per-machine seat identity
 .seat
+outputs/walk-town/store-upload/
