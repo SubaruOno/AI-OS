@@ -60,6 +60,9 @@
 - 2026-09-15 16:33 · すばる · poitto/build · Phase 0完了: DOFクラッシュを無効化で対処、入力録音・再生(-replay)追加、着地判定の下からの吸着バグ修正、紙飛行機を1.5倍デフォルトに決定。実機で影OK・60fps安定を確認。
 - 2026-09-15 · すばる · walk-town/note · ウィジェット(WidgetKit)・ダイナミックアイランド(ActivityKit)の実装計画書を作成。[plans/2026-09-15-walk-town-widget-dynamic-island.md](../plans/2026-09-15-walk-town-widget-dynamic-island.md)
 
+- 2026-09-15 · すばる · walk-town/decision · てくてくまちの改善方向性を整理。優先度①小物の台の絵直し②住人セリフ複数化③金色マスはTestFlight後判断④おかえりメッセージに歩数追加。夜間仮説ループの改善点(初回ユーザー視点・1ループ10〜15本・削る仮説を入れる)も確認。
+- 2026-09-15 · すばる · walk-town/decision · 3Dアバター(選択肢B)の難易度評価: アート制作はAIで3〜7日に圧縮可能、コード(SwiftUI移行)は2〜3ヶ月変わらず。TestFlight検証後にSwiftUI移行と同時にやるのが適切と判断。
+- 2026-09-15 · すばる · walk-town/decision · ゲームバランス調整: 歩数閾値を2000→1000歩に変更検討。通知設計は「あと200歩」1回+「届いた！」の2種に絞る方針を確認。
 - 2026-09-15 16:15 · すばる · poitto/research · 共同開発を確認。委託先Codexが読み取り専用で実装未完了、ぼかし無効化は起動未検証と判明。[レビュー記録](../outputs/poitto/2026-09-15-development-review.md)に指摘と連絡範囲を保存。
 - 2026-09-15 16:30 · すばる · osakagas/note · 8月勤務報告のやりとり完了(事務から合計訂正・単価1,100円・新様式の案内→お礼返信を送信)。大阪ガス作業の実時刻記録を private/osakagas-worklog.md に開始
 - 2026-09-15 17:58 · すばる · poitto/build · Phase 3完了: TitleScreen・ResultScreen・TutorialHints・Haptics・Sounds・GameRoot・リング進捗ピップを実機にデプロイ。RealityViewのmakeクロージャが値キャプチャで isActive=false 固定になるバグを発見・修正(SpikeWorldにisActiveを持たせupdate:クロージャで同期)。実機で動作確認済み。
