@@ -42,3 +42,4 @@
 - 2026-09-15 07:41 · すばる · walk-town/build · 朝の仮説検証ループ終盤: 開けたらそのまま置ける、開封時の場所ヒント、トレイの金色の点、場所ができた瞬間の住人のお礼、知らせの重なり修正。計38仮説
 - 2026-09-15 10:18 · すばる · walk-town/ship · App Store提出の準備: Codex画像生成でアイコンと宣伝画像の背景5枚、実画面をはめ込んだスクショ5枚(6.9インチ)、説明文・キーワード・年齢区分・審査メモ(store.config.json)、プライバシーポリシーとサポートページ
 - 2026-09-15 10:35 · すばる · walk-town/ship · App Store準備: Apple DeveloperにバンドルID com.subaruono.tekutekumachi を登録、プライバシーポリシーとサポートをNotionで公開しURLを設定、審査用連絡先はGit外の.env.storeに保存
+- 2026-09-15 10:36 · すばる · walk-town/ship · App Store Connectで「てくてくまち」を新規作成(Apple ID 6812138389、iOS 1.0 提出準備中)。eas.jsonに紐づけ
