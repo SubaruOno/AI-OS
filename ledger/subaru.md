@@ -58,3 +58,5 @@
 
 - 2026-09-15 15:55 · すばる · poitto/research · Claudeと仕様書を2往復レビュー。旧版由来の制約、Phase 0未完了、短い操作区間を先に仕上げる共同提案を[記録](../outputs/poitto/2026-09-15-spec-review-with-claude.md)。元の仕様書・コードは未変更。
 - 2026-09-15 · すばる · walk-town/note · ウィジェット(WidgetKit)・ダイナミックアイランド(ActivityKit)の実装計画書を作成。[plans/2026-09-15-walk-town-widget-dynamic-island.md](../plans/2026-09-15-walk-town-widget-dynamic-island.md)
+
+- 2026-09-15 16:15 · すばる · poitto/research · 共同開発を確認。委託先Codexが読み取り専用で実装未完了、ぼかし無効化は起動未検証と判明。[レビュー記録](../outputs/poitto/2026-09-15-development-review.md)に指摘と連絡範囲を保存。
