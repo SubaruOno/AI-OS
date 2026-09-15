@@ -48,3 +48,4 @@
 - 2026-09-15 14:05 · すばる · workspace/build · Composio CLI 0.4.1を導入しログイン(subaru.ono1)。Gmailをalias ono1で接続し受信箱の取得を確認。ono15は既存のGmailコネクタのまま
 - 2026-09-15 14:01 · すばる · walk-town/ship · 修正ビルドをTestFlightに提出、すばるの実機で正常起動を確認
 - 2026-09-15 15:02 · すばる · poitto/build · Poittoを自分のプロジェクトとして整備: 履歴を作り直しSubaruOno/Poitto(非公開)へ、Bundle IDをcom.subaruono.Poitto・チーム7QD9M2757Sに変更、旧チケット番号を除去。単体テスト105件合格
+- 2026-09-15 15:03 · subaru · workspace/decision · Rick さんの設定メモから取り入れる項目を計画化（置き場ルール・危険操作 hook・画像置き場、symlink は見送り）
