@@ -57,3 +57,4 @@
 - 2026-09-15 15:51 · すばる · poitto/note · RealityKit検証アプリが実機でもぼかし設定時にクラッシュ。Warpへ引き継ぎ資料を作成。[引き継ぎ](../outputs/handoffs/2026-09-15-poitto-realitykit-spike.md)
 
 - 2026-09-15 15:55 · すばる · poitto/research · Claudeと仕様書を2往復レビュー。旧版由来の制約、Phase 0未完了、短い操作区間を先に仕上げる共同提案を[記録](../outputs/poitto/2026-09-15-spec-review-with-claude.md)。元の仕様書・コードは未変更。
+- 2026-09-15 · すばる · walk-town/note · ウィジェット(WidgetKit)・ダイナミックアイランド(ActivityKit)の実装計画書を作成。[plans/2026-09-15-walk-town-widget-dynamic-island.md](../plans/2026-09-15-walk-town-widget-dynamic-island.md)
