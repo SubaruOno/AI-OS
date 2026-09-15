@@ -77,3 +77,4 @@
 - 2026-09-15 21:38 · すばる · poitto/research · 次の進め方をCodexと相談。見た目より遊べる状態の検証を先にする、入力録画が保存されないバグ(Claude確認済み)、リング未通過でもCLEARになる点などを[記録](../outputs/poitto/2026-09-15-next-steps-with-codex.md)。
 - 2026-09-15 21:46 · すばる · poitto/build · 土台固め(Codex実装): 録画保存バグ修正、自動操作をデフォルトオフ(-autopilotで復帰)、コース定義をCourseDefinition.swiftに共通化、リングをボーナス★表示に。実機ビルド・起動成功、プレイでの確認待ち。
 - 2026-09-15 21:57 · すばる · poitto/build · 開発ループ1周目(Codex実装): 紙風タイトル・ステージ選択・進行保存・リザルト遷移。シミュレータで撮影し課題を[記録](../outputs/poitto/2026-09-15-dev-loop.md)。
+- 2026-09-15 22:01 · すばる · poitto/build · 開発ループ2周目(Codex実装): 3D部屋のタイトル、5ステージ、下寄せリザルト。課題を[記録](../outputs/poitto/2026-09-15-dev-loop.md)。
