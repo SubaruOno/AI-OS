@@ -51,3 +51,4 @@
 - 2026-09-15 15:03 · subaru · workspace/decision · Rick さんの設定メモから取り入れる項目を計画化（置き場ルール・危険操作 hook・画像置き場、symlink は見送り）
 - 2026-09-15 15:10 · subaru · workspace/build · 危険な git 操作を止める PreToolUse hook、情報の置き場表、画像置き場 ~/Pictures/ai/ を constitution に追加
 - 2026-09-15 15:18 · すばる · poitto/decision · RealityKitで全面書き直しに決定(Codex GPT-6はUnity推奨、Swift継続を優先)。書き直し仕様書を作成し旧版をscenekit-finalタグで保存
+- 2026-09-15 15:18 · subaru · workspace/note · 置き場ルールで点検: tracked に大阪ガス内部情報なし。報告手順を private/ へ移し、作業時間の自動記録ルールを constitution へ昇格、auto-memory を整理

@@ -139,6 +139,14 @@ Do not write work logs or progress status into auto-memory; the ledger already
 holds them. Do not write counts or parameters into this file; name the file that
 holds the number instead, because numbers go stale first.
 
+Osaka Gas work has two standing routines, both kept in `private/`. Whenever a
+session involves 大阪ガス硬式野球部 work (scouting material, game data entry,
+analysis), or すばる mentions offline work such as practice or games, append the
+real start and end times (from `date`) to `private/osakagas-worklog.md` without
+being asked. Never invent or round times toward a target; the sheet's display
+rules apply only when transcribing. The monthly report procedure lives in
+`private/osakagas-work-report.md`.
+
 ## Images for review
 
 Images the assistant makes for すばる to look at (previews, comparisons,
