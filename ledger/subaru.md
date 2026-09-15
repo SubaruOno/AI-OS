@@ -61,3 +61,4 @@
 - 2026-09-15 · すばる · walk-town/note · ウィジェット(WidgetKit)・ダイナミックアイランド(ActivityKit)の実装計画書を作成。[plans/2026-09-15-walk-town-widget-dynamic-island.md](../plans/2026-09-15-walk-town-widget-dynamic-island.md)
 
 - 2026-09-15 16:15 · すばる · poitto/research · 共同開発を確認。委託先Codexが読み取り専用で実装未完了、ぼかし無効化は起動未検証と判明。[レビュー記録](../outputs/poitto/2026-09-15-development-review.md)に指摘と連絡範囲を保存。
+- 2026-09-15 16:30 · すばる · osakagas/note · 8月勤務報告のやりとり完了(事務から合計訂正・単価1,100円・新様式の案内→お礼返信を送信)。大阪ガス作業の実時刻記録を private/osakagas-worklog.md に開始
