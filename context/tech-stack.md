@@ -8,7 +8,7 @@
 |---|---|---|
 | Google Drive | 大阪ガス・RAUD・ゼミの資料、就活書類 | 接続済み |
 | Google Calendar | 授業・野球活動・就活イベントのスケジュール | 接続済み |
-| Gmail | 就活の連絡・締切管理、企業マイページの確認 | 未接続(claude.aiでは使用歴あり、Step5で接続予定) |
+| Gmail | 就活の連絡・締切管理、企業マイページの確認 | 接続済み: ono15はClaudeのGmailコネクタ、ono1はComposio(alias ono1) |
 | Notion | ES下書きの保管 | 未接続 |
 | Claude.ai (別アカウント) | これまでの会話・メモリー、`context/import/`に取り込み済み | — |
 | ChatGPT (別アカウント) | 会話984件(2023年4月〜2026年8月)のフルエクスポート、`context/import/chatgpt-export/`に取り込み済み | — |
