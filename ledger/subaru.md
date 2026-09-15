@@ -62,3 +62,4 @@
 
 - 2026-09-15 16:15 · すばる · poitto/research · 共同開発を確認。委託先Codexが読み取り専用で実装未完了、ぼかし無効化は起動未検証と判明。[レビュー記録](../outputs/poitto/2026-09-15-development-review.md)に指摘と連絡範囲を保存。
 - 2026-09-15 16:30 · すばる · osakagas/note · 8月勤務報告のやりとり完了(事務から合計訂正・単価1,100円・新様式の案内→お礼返信を送信)。大阪ガス作業の実時刻記録を private/osakagas-worklog.md に開始
+- 2026-09-15 17:58 · すばる · poitto/build · Phase 3完了: TitleScreen・ResultScreen・TutorialHints・Haptics・Sounds・GameRoot・リング進捗ピップを実機にデプロイ。RealityViewのmakeクロージャが値キャプチャで isActive=false 固定になるバグを発見・修正(SpikeWorldにisActiveを持たせupdate:クロージャで同期)。実機で動作確認済み。
