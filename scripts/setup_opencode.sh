@@ -17,11 +17,9 @@ LINE='export OPENCODE_API_KEY=$(grep -m1 "^OPENCODE_API_KEY=" ~/AI-OS/.env | cut
 grep -qF "$LINE" "$HOME/.zshrc" 2>/dev/null || echo "$LINE" >> "$HOME/.zshrc"
 echo "2/3 ターミナルでキーを読み込む設定を追加しました"
 
-CODE=$(curl -s -m 30 -o /dev/null -w '%{http_code}' https://opencode.ai/zen/go/v1/responses \
-  -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' \
-  -d '{"model":"kimi-k2.7-code","input":"hi","max_output_tokens":16}')
-case "$CODE" in
-  200) echo "3/3 接続できました。新しいターミナルを開いて  codex --profile oc  で使えます。" ;;
-  401|403) echo "3/3 キーが受け付けられませんでした（$CODE）。キーをもう一度確認してください。" ;;
-  *) echo "3/3 応答コード $CODE。Claude に伝えてください。" ;;
+RESP_CODE=$(curl -s -m 30 -o /dev/null -w '%{http_code}' https://opencode.ai/zen/go/v1/models -H "Authorization: Bearer $KEY")
+case "$RESP_CODE" in
+  200) echo "3/3 キーを確認しました。新しいターミナルで  codex --profile oc  が使えます。" ;;
+  401|403) echo "3/3 キーが受け付けられませんでした（$RESP_CODE）。キーをもう一度確認してください。" ;;
+  *) echo "3/3 応答コード $RESP_CODE。Claude に伝えてください。" ;;
 esac

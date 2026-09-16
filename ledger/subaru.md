@@ -94,3 +94,4 @@
 - 2026-09-16 03:20 · すばる · poitto/build · 家ステージv2: 横移動の長いコース、風ゾーン(扇風機・上昇気流)、紙の軌跡・着地・リング・紙吹雪エフェクト。端から転がり落ちると即MISSの判定も修正。順番を子ども部屋→階段→廊下に。テスト全件成功、実機配置。[記録](../outputs/poitto/2026-09-16-house-dev-loop.md)
 - 2026-09-16 10:29 · subaru · terakoya/build · 提案資料v2を更新（固定費の確定、対面/オンライン別の工数比較、学生2人の2028年1月フル稼働を反映）
 - 2026-09-16 11:36 · すばる · tooling/build · opencode Go を Codex から使えるよう設定(~/.codex/oc.config.toml、profile oc)。キー登録と疎通確認を1コマンドにまとめた [scripts/setup_opencode.sh](../scripts/setup_opencode.sh) を作成。Codexはresponses形式のみ対応のため、Anthropic形式専用モデルは不可。
+- 2026-09-16 11:40 · すばる · tooling/build · opencode GoをCodexから使えるよう設定・疎通確認。deepseek-v4-proとgpt-5.6-lunaが動作、kimi/glmは混雑エラー、qwen・minimax・kimi-k3はresponses形式非対応。既定はdeepseek-v4-pro。
