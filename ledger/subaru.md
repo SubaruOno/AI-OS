@@ -130,3 +130,4 @@
 - 2026-09-16 21:51 · すばる · walk-town/build · 手紙・場所・お気に入り・日替わりのお願い・絵の高さで使う小物IDがカタログに実在するかを確かめる scripts/check_item_ids.py を作り、check.sh に組み込み。わざと誤字を入れて検出を確認
 - 2026-09-16 21:53 · すばる · walk-town/build · 歩数を読めないカードで、歩数計のない端末には設定への導線を出さず「この端末では歩数を数えられません」と表示。シミュレーターで確認
 - 2026-09-16 21:54 · すばる · walk-town/note · 次のTestFlightビルド用の「テストしてほしいこと」文案を docs/TESTFLIGHT.md に追加。expo-notifications追加後も部品がSDK 54でそろっていることを確認(起動フリーズの再発防止)。絵はがきに新しい小物が描かれることも確認
+- 2026-09-16 22:15 · すばる · walk-town/ship · 配布版と同じRelease構成をシミュレーター用にビルドし(expo prebuild + xcodebuild)、iPhone 17 Pro Maxシミュレーターで起動画面を越えて案内まで進むことを確認。expo-notifications入りでも起動フリーズは再発しない。prebuildが書き換えたpackage.jsonのscriptsは戻した
