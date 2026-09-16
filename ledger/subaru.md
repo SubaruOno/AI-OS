@@ -103,3 +103,4 @@
 - 2026-09-16 14:16 · すばる · poitto/ship · App Store Connect整備: バンドルID登録、アプリ作成(Poitto! 紙くずフライト / 6812626509)、ChatGPT生成アイコン適用、Release アーカイブ→ipa→TestFlightへアップロード成功。ASC APIキーは ~/.appstoreconnect/private_keys/。
 - 2026-09-16 14:42 · すばる · poitto/ship · TestFlight内部テストへ1.0(1)を配布、実機で動作確認。[docs/poitto.md](../docs/poitto.md)を作成し docs/_index.md に追加。
 - 2026-09-16 15:06 · すばる · walk-town/build · TestFlightフィードバック3件をASC APIで取得し、実機で感じた点と合わせて6件を修正(包みの連打と一括開封、絵を触れる当たり判定、街の名前の保存ボタン、バウンス控えめ、島を楕円に、小物ごとの大きさ)。1件1コミット、型とlintは通過。小物の追加はCodexに委託中。[記録](../outputs/walk-town/2026-09-16-testflight-feedback.md)
+- 2026-09-16 15:29 · すばる · poitto/ship · App Store提出物を整備: スクショ5枚(ChatGPT生成背景+端末フレーム+9:41表示)、説明文・キーワード・サブタイトル、Notionでプライバシーポリシーとサポート公開、年齢区分4+、カテゴリ、無料175地域、データ収集なし申告、ビルド紐づけ。残りは審査用電話番号。
