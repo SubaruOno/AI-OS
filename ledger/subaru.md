@@ -101,3 +101,4 @@
 - 2026-09-16 12:18 · すばる · poitto/build · TestFlight準備開始: RealityKit版を本体に(バンドルID com.subaruono.Poitto、1.0(1)、暗号化申告)、アプリアイコンを作成。旧fastlane設定は委託元のままで使用不可と判明、作り直す方針。
 - 2026-09-16 13:54 · subaru · terakoya/build · 木村の差分を反映した提案第3版（無報酬・利益3等分、3人の合同会社、木村週20時間が上限）をスライド17枚とmdで作成
 - 2026-09-16 14:16 · すばる · poitto/ship · App Store Connect整備: バンドルID登録、アプリ作成(Poitto! 紙くずフライト / 6812626509)、ChatGPT生成アイコン適用、Release アーカイブ→ipa→TestFlightへアップロード成功。ASC APIキーは ~/.appstoreconnect/private_keys/。
+- 2026-09-16 14:42 · すばる · poitto/ship · TestFlight内部テストへ1.0(1)を配布、実機で動作確認。[docs/poitto.md](../docs/poitto.md)を作成し docs/_index.md に追加。
