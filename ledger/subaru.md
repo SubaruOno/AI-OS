@@ -96,3 +96,4 @@
 - 2026-09-16 11:36 · すばる · tooling/build · opencode Go を Codex から使えるよう設定(~/.codex/oc.config.toml、profile oc)。キー登録と疎通確認を1コマンドにまとめた [scripts/setup_opencode.sh](../scripts/setup_opencode.sh) を作成。Codexはresponses形式のみ対応のため、Anthropic形式専用モデルは不可。
 - 2026-09-16 11:40 · すばる · tooling/build · opencode GoをCodexから使えるよう設定・疎通確認。deepseek-v4-proとgpt-5.6-lunaが動作、kimi/glmは混雑エラー、qwen・minimax・kimi-k3はresponses形式非対応。既定はdeepseek-v4-pro。
 - 2026-09-16 11:51 · subaru · terakoya/decision · 提案資料v2の役割分担を変更（小野=現場・運用、佐藤=データ・計測）
+- 2026-09-16 12:00 · subaru · terakoya/build · 提案資料v2の全文をMarkdown化（private/terakoya-ai-consulting/2026-09-16-proposal-v2.md）
