@@ -36,6 +36,9 @@ def fetch_page(page: int) -> list[dict[str, str]]:
         text = " ".join(anchor.stripped_strings)
         if "申込期限" not in text:
             continue
+        # Some logo alt text is prepended before the countdown (for example,
+        # "デ あと2日 本選考"). The countdown itself is display-only.
+        text = re.sub(r"^.*?あと\S+\s+", "", text)
         match = DEADLINE_RE.fullmatch(text)
         if not match:
             continue
