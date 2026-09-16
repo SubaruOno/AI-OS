@@ -18,7 +18,14 @@ Expo SDK 54 / React Native 0.81.5 / React 19 / expo-router。保存は `expo-sql
 - `src/components/GiftOpenAnimation.tsx` — 包みを開ける演出(揺れ→リボン→小物が弾んで出る、レア度で光り方が変わる。Codex作)
 - `app/` — まち・図鑑・設定のタブと、おみやげ画面
 
-## 現状(2026-09-16 7:35)
+## 現状(2026-09-16 16:25)
+
+- 見た目を作り直している。原因は、小物の絵が「草の台に載った1マス」として描かれ、地面のマスと二重に重なっていたこと。倍率や島の形をいじっても直らず、絵の作り方から変えることにした。計画は[見た目の作り直し](../plans/2026-09-16-walk-town-look-rework.md)、真上から見た地図の案は[別案](../plans/2026-09-16-walk-town-map-view.md)。
+- 新しい決まりは `docs/ART_GUIDE.md`(アプリのリポジトリ)にある。小物は台なし・物だけ・影なしで描き、大きさは人の背丈を1.0とするものさしで決める。比率は絵ではなく `tileW` の数値で揃える。
+- TestFlightのフィードバック3件と、直すことリストは[記録](../outputs/walk-town/2026-09-16-testflight-feedback.md)。
+- ブランチ: `fix/feedback-round1` に触り心地の修正、`art/plateless-trial` に台なしの絵の試作(ポストと時計塔の2種)。
+
+## 以前の現状(2026-09-16 7:35)
 
 - 夜間の開発で遊びの仕組みを足し([夜間開発レポート](../outputs/walk-town/2026-09-16-overnight-report.md))、朝は見た目・手触り・配置と結果のつながりを35の仮説で改善した([朝の仮説検証ログ](../outputs/walk-town/2026-09-16-morning-hypotheses.md))。
 - 住人5人、紙袋、包み、対岸の村、アイコンの絵は Codex CLI の画像生成で作った(`~/Projects/tekuteku-art`)。
