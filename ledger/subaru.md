@@ -97,3 +97,4 @@
 - 2026-09-16 11:40 · すばる · tooling/build · opencode GoをCodexから使えるよう設定・疎通確認。deepseek-v4-proとgpt-5.6-lunaが動作、kimi/glmは混雑エラー、qwen・minimax・kimi-k3はresponses形式非対応。既定はdeepseek-v4-pro。
 - 2026-09-16 11:51 · subaru · terakoya/decision · 提案資料v2の役割分担を変更（小野=現場・運用、佐藤=データ・計測）
 - 2026-09-16 12:00 · subaru · terakoya/build · 提案資料v2の全文をMarkdown化（private/terakoya-ai-consulting/2026-09-16-proposal-v2.md）
+- 2026-09-16 12:08 · すばる · poitto/build · opencode Go(deepseek-v4.1-flash)でUI更新: ステージ選択の俯瞰図をコース定義から描画、仕掛けタグ、風の表示、ステージ別ヒント。テスト全件成功、実機配置。[記録](../outputs/poitto/2026-09-16-house-dev-loop.md)
