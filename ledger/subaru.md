@@ -99,3 +99,4 @@
 - 2026-09-16 12:00 · subaru · terakoya/build · 提案資料v2の全文をMarkdown化（private/terakoya-ai-consulting/2026-09-16-proposal-v2.md）
 - 2026-09-16 12:08 · すばる · poitto/build · opencode Go(deepseek-v4.1-flash)でUI更新: ステージ選択の俯瞰図をコース定義から描画、仕掛けタグ、風の表示、ステージ別ヒント。テスト全件成功、実機配置。[記録](../outputs/poitto/2026-09-16-house-dev-loop.md)
 - 2026-09-16 12:18 · すばる · poitto/build · TestFlight準備開始: RealityKit版を本体に(バンドルID com.subaruono.Poitto、1.0(1)、暗号化申告)、アプリアイコンを作成。旧fastlane設定は委託元のままで使用不可と判明、作り直す方針。
+- 2026-09-16 13:54 · subaru · terakoya/build · 木村の差分を反映した提案第3版（無報酬・利益3等分、3人の合同会社、木村週20時間が上限）をスライド17枚とmdで作成
