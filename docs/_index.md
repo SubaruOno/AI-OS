@@ -32,4 +32,4 @@
 
 | When you're working on... | Doc | What it covers |
 |---|---|---|
-| Macの打鍵音を起動・停止・調整する | [rustyvibes.md](rustyvibes.md) | Rustyvibesの起動方法、音源、音量、入力監視の設定 |
+| *(nothing yet)* | | |
