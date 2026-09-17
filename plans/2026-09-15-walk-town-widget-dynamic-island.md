@@ -1,9 +1,34 @@
 # Plan: てくてくまち ウィジェット & ダイナミックアイランド
 
 **Created:** 2026-09-15
-**Status:** Backlog(MVP 検証後に着手)
+**Status:** Backlog(MVP 検証後に着手。2026-09-17 に引き継ぎメモを追加)
 **Request:** てくてくまちにホーム画面ウィジェットとダイナミックアイランドを追加する
 **Purpose:** アプリを開かなくても「歩いている途中」に存在感を出す。包みが届く瞬間にロック画面やダイナミックアイランドで報せることで、開きたくなる理由を増やす
+
+---
+
+## 引き継ぎメモ(2026-09-17 時点)
+
+ここから再開する。まだ何も実装していない。
+
+### いまの状態
+
+- TestFlight のビルド4(2026-09-16 23:17 完了)に、朝のおしらせ通知まで入っている。ブランチ `art/plateless-trial`、main には未取り込み。昨夜の変更は[夜の開発レポート](../outputs/walk-town/2026-09-16-evening-report.md)。
+- `expo-notifications` を入れたとき、プッシュ通知の権限がプロファイルになくてEASビルドが失敗した。App Groups も同じ種類の「権限(entitlement)」なので、**Apple Developer で登録してから**ビルドしないと同じ失敗になる。直し方はアプリの `docs/TESTFLIGHT.md` の「プッシュ通知の権限でビルドが止まるとき」。
+- 権限を足し引きする Config Plugin の置き場所はすでにある(`plugins/withoutPushEntitlement.js`)。`app.json` のプラグインは後に書いたものから適用される。
+- ネイティブの確認は、Expo Go ではなく Release 構成のシミュレータービルドで先に行う(`docs/TESTFLIGHT.md` の手順)。EAS の無料枠を節約できる。
+
+### 最初にやる順番(範囲を小さくする)
+
+1. **すばる:** Apple Developer で App ID `com.subaruono.tekutekumachi` に App Groups を追加し、Group `group.com.subaruono.tekutekumachi` を作る。ウィジェット用の App ID `com.subaruono.tekutekumachi.widget` も同じ Group に入れる。ログインは本人。
+2. **Claude:** ウィジェットは Small だけ、表示は「次の包みまであと何歩」だけで作る。ダイナミックアイランド(Step 4)と Medium は後回し。
+3. **Claude:** 自前の Config Plugin を書く前に、Expo SDK 54 で動くウィジェット用パッケージ(例: `@bacons/apple-targets`)が使えるか調べる。使えればそちらを使う。
+4. **Claude:** Release のシミュレータービルドでウィジェットが出ることを確かめてから、EAS でビルドする。
+
+### 決まっていないこと
+
+- TestFlight の反応を見てから着手するか、先に作るか(2026-09-17 時点で保留)。
+- 歩数はアプリを開いたときにしか更新されない。ウィジェットの数字が古くなるのを許すか(「○時点」と表示する案)。
 
 ---
 
