@@ -141,3 +141,4 @@
 - 2026-09-17 10:48 · すばる · walk-town/note · ウィジェット計画に引き継ぎメモを追加(未実装、Small・歩数表示だけから始める、App Groupsはすばるが先に登録、権限でビルドが落ちた件の注意)。[計画](../plans/2026-09-15-walk-town-widget-dynamic-island.md)
 - 2026-09-17 11:11 · すばる · walk-town/research · TestFlightフィードバックをASC APIで全件取得(新規3件、クラッシュなし)。ドラッグ中のマス目表示、トレイからの直接ドラッグ、「どちらも一緒では？」の確認事項を[記録](../outputs/walk-town/2026-09-17-testflight-feedback.md)にまとめた
 - 2026-09-17 12:15 · すばる · walk-town/research · シミュレーターで「同じ意味のボタンが2つ」を再現確認。まとめて開けた画面のボタンは1つで、最後の包みを開けたときだけ「まちに飾りにいく」と「これを飾る」が同じ処理を呼ぶと判明。まとめて開けると同種の小物が2つ出る例も確認。[記録](../outputs/walk-town/2026-09-17-testflight-feedback.md)
+- 2026-09-17 12:53 · すばる · mac/build · Rustyvibes 1.0.9とNK Cream音源を導入し、音量30%で起動。起動ファイルを用意し、音源・キー割り当てを確認。聴感は本人確認待ち。[使い方](../docs/rustyvibes.md)
