@@ -139,3 +139,5 @@
 - 2026-09-16 22:24 · すばる · walk-town/build · 日替わりのお願いを5種足して16種に(舟・自転車・ソフトクリーム売店・ポスト・井戸)
 - 2026-09-16 23:18 · すばる · walk-town/ship · art/plateless-trial の今夜の状態でEASビルドしTestFlightへ自動提出。1回目(ビルド3)はexpo-notificationsが付けるプッシュ通知の権限がプロファイルになく失敗、権限を外すプラグインを足して2回目(ビルド4)は成功し提出を予約。手順はアプリのdocs/TESTFLIGHT.md
 - 2026-09-17 10:48 · すばる · walk-town/note · ウィジェット計画に引き継ぎメモを追加(未実装、Small・歩数表示だけから始める、App Groupsはすばるが先に登録、権限でビルドが落ちた件の注意)。[計画](../plans/2026-09-15-walk-town-widget-dynamic-island.md)
+- 2026-09-17 11:11 · すばる · walk-town/research · TestFlightフィードバックをASC APIで全件取得(新規3件、クラッシュなし)。ドラッグ中のマス目表示、トレイからの直接ドラッグ、「どちらも一緒では？」の確認事項を[記録](../outputs/walk-town/2026-09-17-testflight-feedback.md)にまとめた
+- 2026-09-17 12:15 · すばる · walk-town/research · シミュレーターで「同じ意味のボタンが2つ」を再現確認。まとめて開けた画面のボタンは1つで、最後の包みを開けたときだけ「まちに飾りにいく」と「これを飾る」が同じ処理を呼ぶと判明。まとめて開けると同種の小物が2つ出る例も確認。[記録](../outputs/walk-town/2026-09-17-testflight-feedback.md)
