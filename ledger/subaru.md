@@ -161,3 +161,5 @@
 - 2026-09-18 16:13 · すばる · 予定/research · 25日夜の東京→彦根の終電(21:12のぞみ291・彦根00:40着)と夜行バス、26日朝の彦根→今津の始発経路を確認。9/26の予定に集合8:30と会場・経路を反映
 - 2026-09-18 16:14 · すばる · walk-town/build · Mediumウィジェットとダイナミックアイランド(Live Activities)を実装しシミュレーターで確認。コンパクト表示に🎁と残り歩数、展開表示に歩数バー、Mediumにきょうの歩数・バー・届いた包み数。今日の散歩便を配り終えた状態をstepsToNext=-1で共有(0と区別できなかったため)。appleTeamId(7QD9M2757S)はDownloadsに残っていたTestFlightのIPAのプロビジョニングプロファイルから取得。画面は ~/Pictures/ai/20260918-1613-walktown-dynamicisland.png と 20260918-1614-walktown-widget-medium.png
 - 2026-09-18 17:15 · すばる · walk-town/note · Apple DeveloperでApp Groups登録を完了(Chromeのログイン済みセッションで操作)。group.com.subaruono.tekutekumachi を作成し、com.subaruono.tekutekumachi と新規作成した com.subaruono.tekutekumachi.widget の両方に割り当て。Identifier欄の「group.」は固定の接頭辞だった。EASビルドは承認待ち
+- 2026-09-18 17:41 · すばる · walk-town/ship · EASビルド5(コミット1696d51、ウィジェット・ダイナミックアイランド入り)が成功。App Groupsの権限でも署名が通り、9/16にプッシュ通知の権限で落ちた件は再発せず。ビルド完了だけではTestFlightに出ないため、すばるが eas submit を実行
+- 2026-09-18 18:07 · すばる · walk-town/note · ウィジェット計画のStep 1〜4が完了。残りは実機確認(Step 5)とTestFlightでの動作確認、art/plateless-trialのmainへの取り込み。[計画](../plans/2026-09-15-walk-town-widget-dynamic-island.md)
