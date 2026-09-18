@@ -163,3 +163,5 @@
 - 2026-09-18 17:15 · すばる · walk-town/note · Apple DeveloperでApp Groups登録を完了(Chromeのログイン済みセッションで操作)。group.com.subaruono.tekutekumachi を作成し、com.subaruono.tekutekumachi と新規作成した com.subaruono.tekutekumachi.widget の両方に割り当て。Identifier欄の「group.」は固定の接頭辞だった。EASビルドは承認待ち
 - 2026-09-18 17:41 · すばる · walk-town/ship · EASビルド5(コミット1696d51、ウィジェット・ダイナミックアイランド入り)が成功。App Groupsの権限でも署名が通り、9/16にプッシュ通知の権限で落ちた件は再発せず。ビルド完了だけではTestFlightに出ないため、すばるが eas submit を実行
 - 2026-09-18 18:07 · すばる · walk-town/note · ウィジェット計画のStep 1〜4が完了。残りは実機確認(Step 5)とTestFlightでの動作確認、art/plateless-trialのmainへの取り込み。[計画](../plans/2026-09-15-walk-town-widget-dynamic-island.md)
+
+- 2026-09-18 18:14 · すばる · terakoya/decision · 新規事業の会社名決定を本人から確認し、[会社の決定事項](../private/terakoya-ai-consulting/company.md)に記録。登記状況は未確認。
