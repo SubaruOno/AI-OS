@@ -32,4 +32,4 @@
 
 | When you're working on... | Doc | What it covers |
 |---|---|---|
-| *(nothing yet)* | | |
+| 新規事業の設立準備・共同経営の決定事項を確認するとき | [設立準備資料](../private/terakoya-ai-consulting/2026-09-18-petacot-incorporation.md) | 非公開。設立前の決定シート、手続き、費用、届出、担当案 |

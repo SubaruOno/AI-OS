@@ -165,3 +165,5 @@
 - 2026-09-18 18:07 · すばる · walk-town/note · ウィジェット計画のStep 1〜4が完了。残りは実機確認(Step 5)とTestFlightでの動作確認、art/plateless-trialのmainへの取り込み。[計画](../plans/2026-09-15-walk-town-widget-dynamic-island.md)
 
 - 2026-09-18 18:14 · すばる · terakoya/decision · 新規事業の会社名決定を本人から確認し、[会社の決定事項](../private/terakoya-ai-consulting/company.md)に記録。登記状況は未確認。
+
+- 2026-09-18 18:21 · すばる · terakoya/build · 公式資料を確認し、非公開の[設立準備資料](../private/terakoya-ai-consulting/2026-09-18-petacot-incorporation.md)を作成。決定シート・手続き・費用・届出期限・担当案を整理し、目次に追加。
