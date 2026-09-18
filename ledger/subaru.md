@@ -157,3 +157,4 @@
 - 2026-09-18 15:41 · すばる · walk-town/build · ウィジェット(Small・「つぎの包みまであと○歩」)を実装。@bacons/apple-targets v5でXcodeターゲットとApp Groupsを生成し、共有UserDefaultsを読むWidgetKitのSwift、書き込み用のローカルExpoモジュール(modules/app-group)を追加。ターゲット名を日本語にするとCocoaPodsがエンコーディングで落ちるため英字に。シミュレーターでの確認は未了(ビルド中)。実機とEASには appleTeamId とApple DeveloperでのApp Groups登録が必要。[計画](../plans/2026-09-15-walk-town-widget-dynamic-island.md)
 - 2026-09-18 15:47 · すばる · 予定/note · LINEの未読を確認し、オケの合奏(9/19)と大阪ガスの練習日(9/26ほか)をカレンダーへ。9/19はJKAセミナーと重複
 - 2026-09-18 15:56 · すばる · 予定/decision · 9/19はオケの合奏を優先し、JKA就活セミナー(9/3にAIが自動登録した枠)をカレンダーから削除
+- 2026-09-18 15:57 · すばる · walk-town/build · ウィジェットをシミュレーターで確認。拡張がappexとしてビルドされ、App Groupsの共有領域にアプリが書いた値(あと630歩)をウィジェットが読んで表示、ホーム画面にも設置できた。Step 3の確認条件を満たす。画面は ~/Pictures/ai/20260918-1557-walktown-widget-home.png
