@@ -155,3 +155,4 @@
 - 2026-09-18 15:38 · すばる · walk-town/build · フィードバック最後の1件「トレイから直接ドラッグで置く」を実装しシミュレーターで確認(タップして置く従来のやり方も維持)。詰まった3点: 横スクロールのトレイに指を取られる→縦方向を先に確保、開始時の`setSelectedId`でトレイが切り替わりジェスチャーを持つビューが消える→呼ばない形に、`townLayout`に`'worklet'`を付けると巻き上げが効かず未定義→JSスレッドで計算。`zoom`を親に持ち上げ`tileAtPoint`をTownGridと共有
 - 2026-09-18 15:36 · すばる · terakoya/note · 会社形態の比較資料で埋まらなかった社内情報3点(Terakoyaの資金余力、既存3社との取引内容、木村の週20時間の中身)をブレーンに聞くため、木村さん(Rick)へSlackでDM。19件の導入記録の中身とAI OSの原価も依頼
 - 2026-09-18 15:41 · すばる · walk-town/build · ウィジェット(Small・「つぎの包みまであと○歩」)を実装。@bacons/apple-targets v5でXcodeターゲットとApp Groupsを生成し、共有UserDefaultsを読むWidgetKitのSwift、書き込み用のローカルExpoモジュール(modules/app-group)を追加。ターゲット名を日本語にするとCocoaPodsがエンコーディングで落ちるため英字に。シミュレーターでの確認は未了(ビルド中)。実機とEASには appleTeamId とApple DeveloperでのApp Groups登録が必要。[計画](../plans/2026-09-15-walk-town-widget-dynamic-island.md)
+- 2026-09-18 15:47 · すばる · 予定/note · LINEの未読を確認し、オケの合奏(9/19)と大阪ガスの練習日(9/26ほか)をカレンダーへ。9/19はJKAセミナーと重複
