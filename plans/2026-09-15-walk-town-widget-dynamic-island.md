@@ -1,7 +1,7 @@
 # Plan: てくてくまち ウィジェット & ダイナミックアイランド
 
 **Created:** 2026-09-15
-**Status:** 進行中(2026-09-18 に Step 2・3・4 を実装。Step 1 の Apple Developer 登録だけすばる待ち)
+**Status:** 進行中(2026-09-18 に Step 1〜4 完了。EAS ビルドから再開する)
 **Request:** てくてくまちにホーム画面ウィジェットとダイナミックアイランドを追加する
 **Purpose:** アプリを開かなくても「歩いている途中」に存在感を出す。包みが届く瞬間にロック画面やダイナミックアイランドで報せることで、開きたくなる理由を増やす
 
@@ -36,9 +36,19 @@ Step 3 の確認条件(「ギャラリーに表示され、歩数が反映され
 - 今日の散歩便を配り終えた状態は `stepsToNext = -1` で共有する。0(あと一歩)と区別がつかなくなるため。
 - **`expo prebuild` は必ず `--clean` を付ける。** 付けないと apple-targets が既存ターゲットの入れ替えに失敗する(`Cannot read properties of undefined (reading 'removeFromProject')`)。`--clean` は `package.json` の scripts を書き換えるので戻すこと。
 
+### Step 1(App Groups 登録)完了、2026-09-18
+
+すばるの Chrome(ログイン済み)から Apple Developer で登録した。
+
+- App Group `group.com.subaruono.tekutekumachi`(Tekuteku Machi Group)
+- `com.subaruono.tekutekumachi` に App Groups を有効化し、上のグループを割り当て
+- ウィジェット用 App ID `com.subaruono.tekutekumachi.widget`(Tekuteku Machi Widget)を作成し、同じグループを割り当て
+
+Identifier 欄には `group.` が最初から入っているので、続きだけを入力する。capability を足すと既存のプロビジョニングプロファイルが無効になる警告が出るが、EAS が作り直すので Confirm でよい。
+
 残っていること:
 
-- **すばる:** Apple Developer で App ID `com.subaruono.tekutekumachi` に App Groups を追加し、`group.com.subaruono.tekutekumachi` を作る。ウィジェット用の App ID `com.subaruono.tekutekumachi.widget` も同じ Group に入れる。ログインが要るのでこれだけは本人の作業。実機と EAS ビルドの署名に必要で、シミュレーターでの確認には要らない。
+- EAS ビルド。すばるの許可が要る(自動承認の対象外)。
 - 実機確認(Step 5)、TestFlight(Step 6)。
 
 ### もとの引き継ぎメモ(2026-09-17 時点)
