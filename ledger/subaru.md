@@ -169,3 +169,5 @@
 - 2026-09-18 18:21 · すばる · terakoya/build · 公式資料を確認し、非公開の[設立準備資料](../private/terakoya-ai-consulting/2026-09-18-petacot-incorporation.md)を作成。決定シート・手続き・費用・届出期限・担当案を整理し、目次に追加。
 
 - 2026-09-18 18:30 · すばる · terakoya/build · [設立準備PDF](../private/terakoya-ai-consulting/2026-09-18-petacot-incorporation.pdf)を9ページで作成。会社法の条文、税務・保険の公式情報を確認し、設立手順・書類・共同経営ルール・担当案を整理。全ページの表示、文字抽出、出典リンクを確認。
+
+- 2026-09-18 19:05 · すばる · terakoya/build · 公式の設立・税務届出様式17ファイルを取得し、[利用案内](../private/terakoya-ai-consulting/official-forms-2026-09-18/README.md)とZIPを作成。PDF・Word・Excelのファイル形式とZIPの整合を確認。未記入・未提出。
