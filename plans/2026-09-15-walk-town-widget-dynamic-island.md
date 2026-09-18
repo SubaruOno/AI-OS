@@ -1,7 +1,7 @@
 # Plan: てくてくまち ウィジェット & ダイナミックアイランド
 
 **Created:** 2026-09-15
-**Status:** 進行中(2026-09-18 に Step 2・3 の Small ウィジェットを実装しシミュレーターで確認済み。Step 1 はすばる待ち、Step 4 以降は未着手)
+**Status:** 進行中(2026-09-18 に Step 2・3・4 を実装。Step 1 の Apple Developer 登録だけすばる待ち)
 **Request:** てくてくまちにホーム画面ウィジェットとダイナミックアイランドを追加する
 **Purpose:** アプリを開かなくても「歩いている途中」に存在感を出す。包みが届く瞬間にロック画面やダイナミックアイランドで報せることで、開きたくなる理由を増やす
 
@@ -28,10 +28,18 @@ Small ウィジェット(「つぎの包みまであと○歩」)まで実装し
 
 Step 3 の確認条件(「ギャラリーに表示され、歩数が反映されること」)は満たした。
 
+### 追加ぶん(同日、Medium とダイナミックアイランド)
+
+- Medium: 歩数バー + きょうの歩数 + きょう届いた包み数。`targets/widget/index.swift` に `MediumView` と `StepBar`。
+- ダイナミックアイランド / Live Activities: `targets/widget/LiveActivity.swift`(コンパクト・展開・ロック画面)と `modules/app-group/ios/LiveActivityModule.swift`(開始・更新・終了)。ActivityKit はアプリ側とウィジェット側を **Attributes の型名** で結ぶので、`WalkActivityAttributes` の中身を両方で同じに保つこと。
+- `app.json` に `NSSupportsLiveActivities` と `ios.appleTeamId`(`7QD9M2757S`)を追記。Team ID は Downloads に残っていた TestFlight の IPA の `embedded.mobileprovision` から読んだ。
+- 今日の散歩便を配り終えた状態は `stepsToNext = -1` で共有する。0(あと一歩)と区別がつかなくなるため。
+- **`expo prebuild` は必ず `--clean` を付ける。** 付けないと apple-targets が既存ターゲットの入れ替えに失敗する(`Cannot read properties of undefined (reading 'removeFromProject')`)。`--clean` は `package.json` の scripts を書き換えるので戻すこと。
+
 残っていること:
 
-- **すばる:** Apple Developer での App Groups 登録(Step 1)と、`app.json` への `ios.appleTeamId` の追記。実機と EAS ビルドの署名にこの2つが要る。シミュレーターでの確認は登録前でもできる。
-- Medium サイズ、ダイナミックアイランド(Step 4)、実機確認(Step 5)、TestFlight(Step 6)。
+- **すばる:** Apple Developer で App ID `com.subaruono.tekutekumachi` に App Groups を追加し、`group.com.subaruono.tekutekumachi` を作る。ウィジェット用の App ID `com.subaruono.tekutekumachi.widget` も同じ Group に入れる。ログインが要るのでこれだけは本人の作業。実機と EAS ビルドの署名に必要で、シミュレーターでの確認には要らない。
+- 実機確認(Step 5)、TestFlight(Step 6)。
 
 ### もとの引き継ぎメモ(2026-09-17 時点)
 
