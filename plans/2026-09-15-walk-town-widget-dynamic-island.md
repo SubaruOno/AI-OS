@@ -1,15 +1,30 @@
 # Plan: てくてくまち ウィジェット & ダイナミックアイランド
 
 **Created:** 2026-09-15
-**Status:** Backlog(MVP 検証後に着手。2026-09-17 に引き継ぎメモを追加)
+**Status:** 進行中(2026-09-18 に Step 2・3 の Small ウィジェットを実装。Step 1 はすばる待ち、Step 4 以降は未着手)
 **Request:** てくてくまちにホーム画面ウィジェットとダイナミックアイランドを追加する
 **Purpose:** アプリを開かなくても「歩いている途中」に存在感を出す。包みが届く瞬間にロック画面やダイナミックアイランドで報せることで、開きたくなる理由を増やす
 
 ---
 
-## 引き継ぎメモ(2026-09-17 時点)
+## 進捗メモ(2026-09-18)
 
-ここから再開する。まだ何も実装していない。
+Small ウィジェット(「つぎの包みまであと○歩」)まで実装した。Step 3 で「自前の Config Plugin より先に使えるパッケージを調べる」としていた件は、`@bacons/apple-targets` v5 が Expo 54 で使えたのでそちらを採用。Xcode ターゲットの作成と App Groups の権限付与をやってくれる。
+
+作ったもの:
+
+- `targets/widget/expo-target.config.js` — ウィジェットのターゲット定義。**ターゲット名は英字にすること。** 日本語にすると CocoaPods が `Unicode Normalization not appropriate for ASCII-8BIT` で落ちる。画面に出る名前は Swift 側の `configurationDisplayName`。
+- `targets/widget/index.swift` — WidgetKit の Provider と Small のビュー。共有 UserDefaults から `stepsToNext` と `giftsWaiting` を読むだけで、データベースには触らない。包みが待っているときは歩数ではなく包みの数を出す。歩数はアプリを開いたときしか動かないので「○時点」を添えた(計画の「決まっていないこと」への答え)。
+- `modules/app-group/` — アプリ側から共有 UserDefaults へ書くだけのローカル Expo モジュール。
+- `app.json` — App Groups の権限と `@bacons/apple-targets` プラグイン。
+- `app/(tabs)/index.tsx` — 歩数か包みの数が変わったら書き込む。
+
+残っていること:
+
+- **すばる:** Apple Developer での App Groups 登録(Step 1)と、`app.json` への `ios.appleTeamId` の追記。実機と EAS ビルドの署名にこの2つが要る。シミュレーターでの確認は登録前でもできる。
+- Medium サイズ、ダイナミックアイランド(Step 4)、実機確認(Step 5)、TestFlight(Step 6)。
+
+### もとの引き継ぎメモ(2026-09-17 時点)
 
 ### いまの状態
 
