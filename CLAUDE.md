@@ -133,6 +133,7 @@ shared, not by which folder the session happens to be in.
 | Apps (SHIGABASE, walk-town): design and usage | `docs/<app>.md`; code lives in each app's repo |
 | Completed work | `ledger/<seat>.md` |
 | Work being planned | `plans/` |
+| よく行く場所、住所、移動時間の目安 | `private/places.md` |
 | Feedback on how the assistant should work | Claude auto-memory; promote a lasting rule into this file and delete the memory |
 
 Do not write work logs or progress status into auto-memory; the ledger already
