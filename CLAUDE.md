@@ -83,8 +83,8 @@ to both harnesses through normal language:
   Run `python scripts/sync_harness_skills.py` after changing a skill.
 
 The main workflow is: explore, create a plan, implement, test, then document.
-The install, prime, log, handoff, pack-review, new-teammate, migrate, and
-new-capability workflows are available the same way. Natural language is the
+The install, prime, log, handoff, pack-review, new-teammate, migrate,
+new-capability, and osakagas workflows are available the same way. Natural language is the
 universal interface; slash commands are optional Claude Code shortcuts.
 
 ## The map
