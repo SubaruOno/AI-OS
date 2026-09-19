@@ -139,7 +139,18 @@ Do not write work logs or progress status into auto-memory; the ledger already
 holds them. Do not write counts or parameters into this file; name the file that
 holds the number instead, because numbers go stale first.
 
-Osaka Gas work has two standing routines, both kept in `private/`. Whenever a
+Petacot is a separate workspace, not a folder of this one. The company's
+material lives in `~/Petacot/brain`, and its shared long-term memory lives in
+Turso. Never connect to Turso from an AI-OS session, never treat a Turso
+authorisation prompt as an AI-OS problem, and never copy company material into
+this repository. Work on Petacot in a session opened in `~/Petacot/brain`. The
+two repositories also use different GitHub accounts: AI-OS pushes as
+`SubaruOno`, Petacot as `subaru-petacot`. A push that fails with a 403 usually
+means the active `gh` account belongs to the other workspace; report it and let
+すばる switch with `gh auth switch`, rather than changing accounts unasked. How
+the two fit together is described in [docs/petacot-brain.md](docs/petacot-brain.md).
+
+Osaka Gas work has two standing routines routines, both kept in `private/`. Whenever a
 session involves 大阪ガス硬式野球部 work (scouting material, game data entry,
 analysis), or すばる mentions offline work such as practice or games, append the
 real start and end times (from `date`) to `private/osakagas-worklog.md` without
