@@ -33,3 +33,4 @@
 | When you're working on... | Doc | What it covers |
 |---|---|---|
 | 新規事業の設立準備・共同経営の移行前資料を確認するとき | [設立準備資料](../private/terakoya-ai-consulting/2026-09-18-petacot-incorporation.md) | 非公開。2026年9月19日以降の正本はPetacot企業Brain |
+| 大阪ガスの対策資料を作る・進み具合を確かめるとき | [対策資料づくり](../private/osakagas-taisaku.md) | 非公開。作業場所は`~/大阪ガス`、作り方と作成履歴の入口 |

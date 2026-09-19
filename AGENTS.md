@@ -151,7 +151,9 @@ means the active `gh` account belongs to the other workspace; report it and let
 すばる switch with `gh auth switch`, rather than changing accounts unasked. How
 the two fit together is described in [docs/petacot-brain.md](docs/petacot-brain.md).
 
-Osaka Gas work has two standing routines routines, both kept in `private/`. Whenever a
+Osaka Gas work has two standing routines routines, both kept in `private/`. How the
+対策資料 themselves get made, and what has been made so far, lives in `~/大阪ガス`; the
+entry point is [対策資料づくり](private/osakagas-taisaku.md). Whenever a
 session involves 大阪ガス硬式野球部 work (scouting material, game data entry,
 analysis), or すばる mentions offline work such as practice or games, append the
 real start and end times (from `date`) to `private/osakagas-worklog.md` without
