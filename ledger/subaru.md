@@ -181,3 +181,4 @@
 - 2026-09-19 16:18 · すばる · petacot/build · Petacot Brainを3人共有の会社ワークスペースへ拡張。会社資料を用途別に移行し、[使い方](../docs/petacot-brain.md)、INDEX、両ledger、Turso記録#50を整備
 - 2026-09-19 19:29 · すばる · petacot/decision · AI-OSのセッションからはTursoへ接続しない方針を本人から確認し、[使い方](../docs/petacot-brain.md)に明記。Petacot Brainの検索・保存は`~/Petacot/brain`での作業に限定
 - 2026-09-19 19:33 · すばる · petacot/decision · PetacotとAI-OSを分けて扱う決まりを憲法(CLAUDE.md/AGENTS.md)に明文化。Tursoへ接続しない、会社資料を持ち込まない、GitHubアカウントは`SubaruOno`と`subaru-petacot`で別。一時的に置いていたauto-memoryは削除
+- 2026-09-19 19:39 · すばる · 予定/build · 9/19夜〜9/26のタイムブロック案を作成。起床から就寝まで区切り、締切は前日に出し切る形で配置。[下書き](../outputs/schedule/2026-09-19-week-timeblocks.md)。専用カレンダーはコネクタで作成できないため本人が作成待ち、9/25の所在など3点も確認中
