@@ -130,6 +130,7 @@ shared, not by which folder the session happens to be in.
 | すばる's background, preferences, way of working | [context/you.md](context/you.md) |
 | Job hunting: ES drafts, selection status, company notes | `private/job-hunt/` |
 | Osaka Gas: attendance, player data, team-internal matters | `private/` only, never a tracked file |
+| U-23日本代表: 大会日程、帯同の準備、相手国の情報 | [private/u23-wbsc-2026.md](private/u23-wbsc-2026.md) |
 | Apps (SHIGABASE, walk-town): design and usage | `docs/<app>.md`; code lives in each app's repo |
 | Completed work | `ledger/<seat>.md` |
 | Work being planned | `plans/` |
