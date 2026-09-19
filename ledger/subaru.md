@@ -173,3 +173,7 @@
 - 2026-09-18 19:05 · すばる · terakoya/build · 公式の設立・税務届出様式17ファイルを取得し、[利用案内](../private/terakoya-ai-consulting/official-forms-2026-09-18/README.md)とZIPを作成。PDF・Word・Excelのファイル形式とZIPの整合を確認。未記入・未提出。
 
 - 2026-09-18 19:21 · すばる · terakoya/decision · 本店所在地を本人の指定に更新。[公式様式集](../private/terakoya-ai-consulting/official-forms-2026-09-18/README.md)・設立ガイド・ZIPを管轄自治体に合わせて差し替え、届出期限と添付書類を確認。住所は非公開の会社情報に保存。
+- 2026-09-19 · すばる · terakoya/decision · Petacotの本店所在地について、家族所有者から会社の本店として登記・使用する承諾を本日取得済みと確認。
+- 2026-09-19 · すばる · terakoya/decision · 合同会社Petacotの正式な読み方を「ペタコット」と確認。
+- 2026-09-19 02:23 · すばる · terakoya/ship · 合同会社Petacotの定款に記載する事業目的5項目の案を、Slackで木村さんに確認依頼。
+- 2026-09-19 09:50 · すばる · petacot/research · shun-petacot/petacot-brain（Turso共有メモリ）のREADMEを確認。招待は承諾済み、clone→setup.sh→turso認証が手順。ただしTeam org未移行のため所有者以外はDBが見えず、shunさんの移行完了待ち。
