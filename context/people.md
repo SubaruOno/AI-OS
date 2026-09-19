@@ -12,7 +12,7 @@
 
 ### テラコヤ.AI(2024年9月〜長期インターン中の会社)
 
-すばるはBusiness Development Teamに所属。オフィスは東京・虎ノ門ヒルズビジネスタワー。Slack(terakoyaai.slack.com)で確認した、実際によく一緒に動くメンバー:
+すばるはBusiness Development Teamに所属。東京オフィス(TKO)は西麻布、千葉オフィス(CBO)は袖ケ浦駅前にあり、住所は[よく行く場所](../private/places.md)に置いている。Slack(terakoyaai.slack.com)で確認した、実際によく一緒に動くメンバー:
 
 - **Paul Li**(paul@terakoya.ai) — #general作成者。おそらく創業者。
 - **Shun / 佐藤竣**(shun@terakoya.ai)
