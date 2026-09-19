@@ -20,6 +20,8 @@ GitとTursoとledgerで、情報の役割を分けています。
 | すばる個人の作業履歴 | AI-OSの[ledger](../ledger/subaru.md) |
 | APIキーとアクセストークン | `~/Petacot/brain/.env`（Git対象外） |
 
+AI-OSのセッションからはTursoへ接続しません。Turso Brainの検索と保存は`~/Petacot/brain`で作業するときだけ行い、AI-OS側ではMCPの認証もしません。
+
 資料の入口は`~/Petacot/brain/INDEX.md`です。会社資料は`company/`、共同経営は`governance/`、設立は`incorporation/`、事業計画は`strategy/`、提案と営業は`sales/`へ置きます。
 
 顧客への診断、計測、導入、効果報告は`delivery/`です。予算と実績は`finance/`、契約と専門家への確認は`legal/`、会議記録は`meetings/`、再利用する雛形は`templates/`に置きます。古い版は`archive/`です。

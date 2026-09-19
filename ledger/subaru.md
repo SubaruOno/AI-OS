@@ -179,3 +179,4 @@
 - 2026-09-19 09:50 · すばる · petacot/research · shun-petacot/petacot-brain（Turso共有メモリ）のREADMEを確認。招待は承諾済み、clone→setup.sh→turso認証が手順。ただしTeam org未移行のため所有者以外はDBが見えず、shunさんの移行完了待ち。
 - 2026-09-19 10:30 · すばる · petacot/build · petacot-brainを導入。ターミナルのghを作業用アカウント(subaru-petacot)でログインし直し、~/Petacot/brain にclone、setup.shでClaude Code/Codex両方にpetacotbrainプラグインを導入。Turso認証はClaude Code再起動後に/mcpから実施予定、Codex側はCLIのOAuth非対応でエラー。
 - 2026-09-19 16:18 · すばる · petacot/build · Petacot Brainを3人共有の会社ワークスペースへ拡張。会社資料を用途別に移行し、[使い方](../docs/petacot-brain.md)、INDEX、両ledger、Turso記録#50を整備
+- 2026-09-19 19:29 · すばる · petacot/decision · AI-OSのセッションからはTursoへ接続しない方針を本人から確認し、[使い方](../docs/petacot-brain.md)に明記。Petacot Brainの検索・保存は`~/Petacot/brain`での作業に限定
