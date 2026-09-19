@@ -177,3 +177,4 @@
 - 2026-09-19 · すばる · terakoya/decision · 合同会社Petacotの正式な読み方を「ペタコット」と確認。
 - 2026-09-19 02:23 · すばる · terakoya/ship · 合同会社Petacotの定款に記載する事業目的5項目の案を、Slackで木村さんに確認依頼。
 - 2026-09-19 09:50 · すばる · petacot/research · shun-petacot/petacot-brain（Turso共有メモリ）のREADMEを確認。招待は承諾済み、clone→setup.sh→turso認証が手順。ただしTeam org未移行のため所有者以外はDBが見えず、shunさんの移行完了待ち。
+- 2026-09-19 10:30 · すばる · petacot/build · petacot-brainを導入。ターミナルのghを作業用アカウント(subaru-petacot)でログインし直し、~/Petacot/brain にclone、setup.shでClaude Code/Codex両方にpetacotbrainプラグインを導入。Turso認証はClaude Code再起動後に/mcpから実施予定、Codex側はCLIのOAuth非対応でエラー。
