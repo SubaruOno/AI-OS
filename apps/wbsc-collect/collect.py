@@ -183,24 +183,39 @@ def collect(key: str, out_root: Path) -> None:
             time.sleep(SLEEP_SECONDS)
 
         info = game.get("gameData") or {}
+        # 選手行にも home（0か1か）があるので、試合側は別の名前にする
         context = {
             "event": key,
             "gameid": game_id,
             "date": info.get("gamedate") or summary.get("gamedate"),
-            "away": info.get("awaylabel"),
-            "home": info.get("homelabel"),
+            "away_team": info.get("awaylabel"),
+            "home_team": info.get("homelabel"),
         }
 
         for team_id, spot, row in iter_box(game):
-            entry = {**context, "teamid": team_id, "spot": spot, **row}
+            side = "home_team" if str(row.get("home")) == "1" else "away_team"
+            entry = {
+                **context,
+                "team": context[side],
+                "teamid": team_id,
+                "spot": spot,
+                **row,
+            }
             if str(spot) == "90" or row.get("pitch_appear"):
                 pitching.append(entry)
             else:
                 batting.append(entry)
         for inning, half, play in iter_plays(game):
-            plays.append({**context, "inning": inning, "half": half, **play})
+            bat_side = "home_team" if str(play.get("home")) == "1" else "away_team"
+            plays.append({
+                **context,
+                "batting_team": context[bat_side],
+                "inning": inning,
+                "half": half,
+                **play,
+            })
 
-        print(f"  [{index}/{len(games)}] {context['away']} @ {context['home']}")
+        print(f"  [{index}/{len(games)}] {context['away_team']} @ {context['home_team']}")
 
     write_csv(out_dir / "batting.csv", batting)
     write_csv(out_dir / "pitching.csv", pitching)
