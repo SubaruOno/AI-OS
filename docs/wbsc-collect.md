@@ -51,6 +51,15 @@ python3 apps/wbsc-collect/collect.py --all
 `pitching.csv` は投球回・被安打・自責点に加えて、`pitch_pitches`（総球数）、
 `pitch_strikes`、`pitch_ground` と `pitch_fly`（ゴロとフライの数）まで入ります。
 
+**そして打席ごとに `utctimestamp` が入っています。** `gameData.gamevideo` に
+GameTimeの試合映像のURLが入るので、**この2つを突き合わせれば、打席の頭出しリストを
+自動で作れます。** 映像URLの有無は大会によって違います（2024年W杯は50試合すべて、
+欧州選手権は20試合すべて、北中米カリブ予選は24試合中12試合、アジア選手権は0件）。
+
+打球には `hitdistance`（飛距離）、`hitpull`（引っ張りか流しか）、`hitlaunch`（打球角度）が
+入ります。全打席ではなく、記録された打球のみです（2024年W杯で970件）。
+`exitvelo` の枠はありますが値は空でした。
+
 **入っていないもの**は `speed`（球速。全部ゼロ）、`pitchtype`（球種。-1で未分類）、
 `hitx` / `hity`（打球の落下点。ゼロ。サイトのスプレーチャートは守備位置からの推定表示）。
 球速と球種はTrackmanとBLASTの自前計測で埋める前提になります。
