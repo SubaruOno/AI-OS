@@ -27,6 +27,7 @@
 | SHIGABASE(大学野球部アプリ) | [shigabase.md](shigabase.md) | 構成・技術スタック・ディレクトリ、既知の課題(バージョン不一致、iOS 26クラッシュ対応) |
 | てくてくまち(散歩で街を作るアプリ) | [walk-town.md](walk-town.md) | 構成・技術スタック・主なファイル・現状と未確認の項目 |
 | Poitto(紙くず投げゲーム) | [poitto.md](poitto.md) | 構成・ステージ定義・確かめ方・TestFlight配布の状況 |
+| U-23W杯の対戦相手データを集めるとき | [wbsc-collect.md](wbsc-collect.md) | WBSCの大会サイトから試合データを取る道具。取れる項目と登録済みの大会 |
 
 ## Reference
 
