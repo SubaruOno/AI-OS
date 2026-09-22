@@ -142,6 +142,12 @@ Do not write work logs or progress status into auto-memory; the ledger already
 holds them. Do not write counts or parameters into this file; name the file that
 holds the number instead, because numbers go stale first.
 
+すばるはメールアドレスを2つ使い分けている。大学と部活の連絡はOutlookの
+`s5024131@st.shiga-u.ac.jp`、それ以外はGmailの`subaru.ono15@gmail.com`。
+接続されているGmailのツールから見えるのは後者だけなので、大学や部活のメールを
+探すときはChromeでOutlook（`outlook.office.com`）を開く。Gmailを検索して
+見つからないことは、そのメールが存在しないことを意味しない。
+
 Petacot is a separate workspace, not a folder of this one. The company's
 material lives in `~/Petacot/brain`, and its shared long-term memory lives in
 Turso. Never connect to Turso from an AI-OS session, never treat a Turso
