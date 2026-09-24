@@ -18,7 +18,18 @@ Expo SDK 54 / React Native 0.81.5 / React 19 / expo-router。保存は `expo-sql
 - `src/components/GiftOpenAnimation.tsx` — 包みを開ける演出(揺れ→リボン→小物が弾んで出る、レア度で光り方が変わる。Codex作)
 - `app/` — まち・図鑑・設定のタブと、おみやげ画面
 
-## 現状(2026-09-24 18:55)
+## 現状(2026-09-24 19:38)
+
+- 「ゲームとして拡張したい、アイテム過多でやることがない」という課題に着手。原因は「入り口が太い・出口が細い・目標がない」の3点。ブランチ `base/town-growth`。
+- **まちの事業**([src/town/projects.ts](https://github.com/SubaruOno/walk-town/blob/base/town-growth/src/town/projects.ts)、[app/projects.tsx](https://github.com/SubaruOno/walk-town/blob/base/town-growth/app/projects.tsx))を追加。住人が**タグ指定**で小物をまとめて要求し、まちに置いていない予備を出すと完成する。まちポイントが増え、しきい値(0/1/5/10/15/21)で**まちレベル**が「はじまりの村→小さな村→にぎわう村→湖の町→大きな町→湖の都」と上がる。レベルで新しい事業が解放。事業は複数同時に出て、どれを先に建てるか・おてつだいに回すかの選択がある。入口は**まち画面のLvチップ**または図鑑の「まちの事業」行。
+- **合成**([src/town/craft.ts](https://github.com/SubaruOno/walk-town/blob/base/town-growth/src/town/craft.ts))を追加。図鑑で、同じ小物の予備3つを次のレア度1つにまとめる(未所持が出やすい)。事業ほど大きくない、手元で完結する出口。
+- 検証: ①`scripts/check.sh`(型・lint・小物ID)通過。②[sim_projects.py](https://github.com/SubaruOno/walk-town/blob/base/town-growth/scripts/sim_projects.py) が**詰み**(Lv1の事業が2点なのにLv2のしきい値が3点で先へ進めない)を検出し、しきい値を修正。修正後はカジュアル(2包み/日)でLv6まで約22日、アクティブ(3包み/日)で約15日。③[sim_craft.py](https://github.com/SubaruOno/walk-town/blob/base/town-growth/scripts/sim_craft.py) で合成は30日で5〜10回、余りは40〜80個。**主な出口は事業(全事業で計51個消費)で、合成は補助**と確認。④iOSシミュレーターで起動し、事業の建設→Lv.2へ上昇→Lv2事業の解放→材料不足の無効表示、合成でベンチ4→1こ・図鑑2/18→3/18 を実機確認。
+- **落ちる不具合を1件修正**。小物を選んだまま「きょうのおてつだい」で同じ小物を住人に渡すと、在庫から消えた小物を配置できてしまい、在庫を指さない配置(孤児)ができて次回の読み込みでクラッシュしていた(`Cannot read property 'itemId' of undefined`)。`savePlacement` が在庫の存在を確認するようにし、起動時に孤児配置を削除するようにした(`src/db/index.ts`)。選択中の小物が消えたら選択を解除し、`useTown` も孤児を無視する。この不具合は「おてつだい」(ui/daily-help)の時点で起き得たもので、事業・合成で削除経路が増えて目立った。
+- **ホームと図鑑の画面を整理**([app/(tabs)/index.tsx](../../Projects/walk-town/app/(tabs)/index.tsx)、[app/(tabs)/collection.tsx](../../Projects/walk-town/app/(tabs)/collection.tsx))。散歩、おてつだい、手紙を常時表示する代わりに、画面下の「今日のこと」から開く形にまとめ、閉じた状態では島を広く見せる。歩数非対応の説明も短い表示にし、詳細はパネル内へ移した。Lvチップをホームのヘッダーに戻し、まちの事業を直接開ける。図鑑は「持っている小物」と「まだ出会っていない小物」に分け、未発見品の大きな灰色シルエットを小さな「？」に置き換えた。
+- 確認: `./scripts/check.sh` 通過。iPhone 17 Pro Max / iOS 26.4 シミュレーターでホーム、「今日のこと」パネル、図鑑、日誌、設定、まちの事業を開いて表示を確認。合成や建設の操作は今回のセーブデータ上で未実施。Web確認はExpo SQLiteのWeb用WASMが見つからず起動できなかったため、iOSシミュレーターを使った。
+- 未了: `ui/daily-help` の main 取り込み、`art/plateless-trial` の取り込み、ウィジェットの実機確認、事業でどれを先に作るかの選択が弱い点。
+
+## 以前の現状(2026-09-24 18:55)
 
 - 小物の使い道が「置く」しかなく、置いても11個の決まった隣接レシピ以外は何も起きないため、余った小物がトレイに溜まる一方だった。そこに出口と目標を足した。ブランチ `ui/daily-help`(2コミット、GitHubへpush済み)。
 - **きょうのおてつだい**([src/town/help.ts](https://github.com/SubaruOno/walk-town/blob/ui/daily-help/src/town/help.ts))を追加。引っ越し済みの住人が毎日2件、名指しで小物を1つ頼む。**まちに置いていない予備をわたす**と在庫から消え、なかよし度が増える。1件目は必ず「いま渡せるもの」、2件目は散歩が要ることもあるので、その日のうちに1件は達成できる。置いた小物は渡せないので「飾るか、あげるか」が初めての選択になる。
