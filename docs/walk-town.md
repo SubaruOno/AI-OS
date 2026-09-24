@@ -18,7 +18,7 @@ Expo SDK 54 / React Native 0.81.5 / React 19 / expo-router。保存は `expo-sql
 - `src/components/GiftOpenAnimation.tsx` — 包みを開ける演出(揺れ→リボン→小物が弾んで出る、レア度で光り方が変わる。Codex作)
 - `app/` — まち・図鑑・設定のタブと、おみやげ画面
 
-## 現状(2026-09-24 23:10)
+## 現状(2026-09-25 00:17)
 
 - 「ゲームとして拡張したい、アイテム過多でやることがない」という課題に着手。原因は「入り口が太い・出口が細い・目標がない」の3点。ブランチ `base/town-growth`。
 - **まちの事業**([src/town/projects.ts](https://github.com/SubaruOno/walk-town/blob/base/town-growth/src/town/projects.ts)、[app/projects.tsx](https://github.com/SubaruOno/walk-town/blob/base/town-growth/app/projects.tsx))を追加。住人が**タグ指定**で小物をまとめて要求し、まちに置いていない予備を出すと完成する。まちポイントが増え、しきい値(0/1/5/10/15/21)で**まちレベル**が「はじまりの村→小さな村→にぎわう村→湖の町→大きな町→湖の都」と上がる。レベルで新しい事業が解放。事業は複数同時に出て、どれを先に建てるか・おてつだいに回すかの選択がある。入口は**まち画面のLvチップ**または図鑑の「まちの事業」行。
@@ -31,6 +31,7 @@ Expo SDK 54 / React Native 0.81.5 / React 19 / expo-router。保存は `expo-sql
 - 追加確認: `./scripts/check.sh`、`git diff --check`、`npx expo lint` 通過。iOSシミュレーターで更新後のホームと「今日のこと」パネルを開き、持ち帰り候補・おてつだい・手紙まで表示されることを確認。テスト用の包みを開いて、閉じた案内から開封画面へ移る流れを確認。シミュレーター内に材料を揃えると、案内から「まちの事業」を開き、建設可能なカードと必要数が表示された。長い一覧でのスクロールは未確認。テスト用に追加した木の案内板と木のベンチがシミュレーターに残っている。持ち帰り候補の選択状態は元に戻した。
 - 追加改善(9/24 22:30): [設定画面](../../Projects/walk-town/app/(tabs)/settings.tsx)に一覧スクロールを追加。小さい端末や大きな文字設定で下部の記録コピー・データ削除に届かなくなる問題を防ぐ。変更後は `npx expo lint`、`npx tsc --noEmit`、小物ID検査、`git diff --check` を通過。iOSシミュレーターは CoreSimulatorService が接続エラーになり、画面での確認はできていない。ブランチ `base/town-growth` のコミット `0cee5c7` としてGitHubへpush済み。
 - 追加改善(9/24 23:10): [ホーム](../../Projects/walk-town/app/(tabs)/index.tsx)は、歩数が読めない説明を初期状態では1行に折りたたみ、内容量に合わせて「今日のこと」の高さを調整。画面に収まらないときは見出しに「下に続きがあります」と表示する。[手紙カード](../../Projects/walk-town/src/components/LetterCard.tsx)には開閉の山形を追加。iPhone 17 Pro Maxでは初期カードが見渡せ、iPhone 16eでは町名・おてつだい・完了手紙が多い状態でスクロール案内が表示されることを確認。スクロール操作そのものはSimulatorで反応を取れず未確認。設定画面はiPhone 16eでタイトル余白と全項目表示を確認。最初の設定画面修正時にタイトル左右余白が外れたのを発見し、戻して再確認。`./scripts/check.sh`通過。コミット`0cee5c7`と`d1ffe9b`をブランチ`base/town-growth`へpush済み。テスト用のiPhone 16e Simulatorには初回データとテスト用の木2本、進行1通が残る。iPhone 17 Pro Maxの既存データはリセットしていない。
+- 追加改善(9/25 00:17): [ホーム](../../Projects/walk-town/app/(tabs)/index.tsx)に島を90度ずつ回すボタンを追加。[表示とマス判定](../../Projects/walk-town/src/components/TownGrid.tsx)は4方向に連動し、建物の保存座標は変えない。向きは端末内に保存して、絵はがきにも使う。島画像の幅を画面内に収め、[土地の上限](../../Projects/walk-town/src/data/catalog.ts)は拡張条件の数から算出。手紙10通・12通で9×9・10×10へ広がる節目を追加した。iPhone 16e Simulatorで0/90/180/270度を表示し、0度へ戻ることを確認。4〜10マスの各サイズ、3段階ズーム、4方向で4,452点のマス中心判定を計算確認。`./scripts/check.sh`とiOS向けExpo書き出しが通過。再起動後の表示はMacの自動ロックで確認できず、Simulatorの表示角度は0度へ戻した。変更は`base/town-growth`にあり、コミットとpushは未実施。
 - 未了: `ui/daily-help` の main 取り込み、`art/plateless-trial` の取り込み、ウィジェットの実機確認、事業でどれを先に作るかの選択が弱い点。
 
 ## 以前の現状(2026-09-24 18:55)
