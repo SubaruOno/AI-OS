@@ -1,8 +1,8 @@
 # 就活リーダーボード
 
 > 就活の締切と選考状況を集めて、企業が「今どれだけ動くべきか」の順に並ぶアプリ。
-> コードは [apps/job-hunt-board](../apps/job-hunt-board/README.md)、元データは
-> `private/job-hunt/` に置いたままにしている。
+> コードは別リポジトリの [~/Projects/job-hunt-board](../../Projects/job-hunt-board/README.md)、元データは
+> AI-OS の `private/job-hunt/` に置いたままにしている。コードは環境変数 `AI_OS_DIR`（既定は `~/AI-OS`）から元データを読む。
 
 ## 何ができるか
 
@@ -70,9 +70,10 @@ IDにしているため。
 ## 確かめ方
 
 ```sh
-python3 -m unittest discover -s apps/job-hunt-board/tests
-sh apps/job-hunt-board/refresh.sh
-python3 apps/job-hunt-board/server.py
+cd ~/Projects/job-hunt-board
+python3 -m unittest discover -s tests
+sh refresh.sh
+python3 server.py
 ```
 
 ## 現状

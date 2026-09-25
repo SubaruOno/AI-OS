@@ -132,7 +132,7 @@ shared, not by which folder the session happens to be in.
 | Osaka Gas: attendance, player data, team-internal matters | `private/` only, never a tracked file |
 | U-23日本代表: 大会日程、帯同の準備、相手国の情報 | [private/u23-wbsc-2026.md](private/u23-wbsc-2026.md) |
 | 滋賀大オーケストラ: 部の常識、定演の日程、記録係の仕事 | [private/orchestra/滋賀オケ.md](private/orchestra/滋賀オケ.md) |
-| Apps (SHIGABASE, walk-town): design and usage | `docs/<app>.md`; code lives in each app's repo |
+| Apps (SHIGABASE, walk-town, job-hunt-board): design and usage | `docs/<app>.md`; code lives in each app's repo |
 | Completed work | `ledger/<seat>.md` |
 | Work being planned | `plans/` |
 | よく行く場所、住所、移動時間の目安 | `private/places.md` |
