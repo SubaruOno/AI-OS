@@ -26,6 +26,16 @@ __pycache__/
 venv/
 node_modules/
 
+# 就活ボード: 企業名や選考状況を含む生成物は private と同じ扱いにする
+apps/job-hunt-board/data/
+apps/job-hunt-board/mobile/.expo/
+apps/job-hunt-board/mobile/ios/
+apps/job-hunt-board/mobile/android/
+# ログインIDを含むので、アプリ同梱分もGitに載せない
+apps/job-hunt-board/mobile/assets/mypages.json
+# 企業名と選考状況を含むので、アプリ同梱のフィードもGitに載せない
+apps/job-hunt-board/mobile/assets/feed.json
+
 # Databases and generated local archives
 *.db
 *.db-shm

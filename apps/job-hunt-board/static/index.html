@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>就活ボード</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>就活ボード</h1>
+    <p class="meta" id="meta">読み込み中…</p>
+  </div>
+  <button id="reload" class="ghost" type="button">再読み込み</button>
+</header>
+
+<section class="summary" id="summary"></section>
+
+<section class="filters">
+  <label>区分
+    <select id="f-bucket">
+      <option value="all">すべて</option>
+      <option value="master">締切マスター</option>
+      <option value="candidate">追加候補</option>
+    </select>
+  </label>
+  <label>出典
+    <select id="f-source">
+      <option value="all">すべて</option>
+      <option value="email">メール確認済み</option>
+      <option value="navi">締め切りナビ</option>
+      <option value="mixed">メール＋ナビ</option>
+    </select>
+  </label>
+  <label>状態
+    <select id="f-status">
+      <option value="upcoming">これから（今日以降）</option>
+      <option value="pending">未対応すべて</option>
+      <option value="due">今日まで</option>
+      <option value="done">対応済み</option>
+      <option value="dismissed">見送り</option>
+      <option value="all">すべて</option>
+    </select>
+  </label>
+  <input id="f-query" type="search" placeholder="企業名・案件で検索" autocomplete="off">
+  <button id="clear" class="ghost small" type="button">条件を戻す</button>
+</section>
+
+<div id="notice" class="notice" hidden></div>
+
+<main id="list" class="list"></main>
+
+<section class="panel">
+  <h2>併願制限・前提条件</h2>
+  <ul id="rules"></ul>
+</section>
+
+<section class="panel">
+  <h2>応募済み・関係がある企業</h2>
+  <ul id="applied"></ul>
+</section>
+
+<footer id="legend" class="legend"></footer>
+<script src="/static/app.js"></script>
+</body>
+</html>

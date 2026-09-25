@@ -1,5 +1,17 @@
 # てくてくまち(walk-town)
 
+## 2026-09-25 03:35 まち画面をゲームワールドにする作業
+
+すばるの希望は、編集モードを増やさず、まちの画面をそのまま歩けるゲームにすること。90度ごとの回転UIもなくす。島を自由に歩き、カメラを連続的に動かし、配置物や住人に触れられる体験を軸にする。
+
+ゲームの遊び方は『あつまれ どうぶつの森』と『Stardew Valley』の公式案内を確認した。どうぶつの森は島を歩いて素材を集め、DIY家具を屋外に飾り、住人や施設と島を育てる。Stardew Valleyは農作業・釣り・採集などの毎日の選択を、クラフト、住人との関係、コミュニティの復旧、農場のカスタマイズへつなげる。てくてくまちでは、散歩で届く小物、島での発見、配置と場所の発生、住人との関係、まちの事業を同じ循環にまとめる。3Dモデルは遊びを支える道具として使う。[どうぶつの森:島の発展](https://www.nintendo.com/jp/ichikara/acbaa/02.html)、[DIYと島の拡張](https://www.nintendo.com/jp/ichikara/acbaa/02_en.html)、[Stardew Valley公式](https://www.stardewvalley.net/)、[公式プレス資料](https://www.stardewvalley.net/press/)。
+
+`base/town-growth`で開発中。ゲームの参考調査と3Dワールド試作の経緯は下記に記録。
+
+**2026-09-25 04:58 復旧:** R3F/Three.jsのCanvasを通常の街画面に接続した変更で、シミュレーター上の島と小物が消えていた。島を既存の`TownGrid`表示へ戻し、使われない3D実装と依存関係を撤去。ホームの90度回転ボタンも削除し、固定の見下ろし角にした。連続座標での自由配置とDBの実数座標対応は維持。iPhone 16e Simulatorでネイティブビルド・起動を確認し、街のUI要素が表示されること、型・lint・小物ID検査が通ることを確認。**島画像の視覚確認と配置のタップ実操作は未確認。** コミット・pushなし。
+
+---
+
 散歩するとおみやげの小物が届き、湖畔の6×6マスの街に飾って眺めるiOSアプリ。すばるが個人開発中の検証版(MVP)。計画は[MVP計画書](../plans/2026-09-15-walk-town-app-mvp.md)、アイデアの経緯は[アイデア出しの記録](../outputs/walk-town/2026-09-15-ideation-with-codex.md)。
 
 コードはこのワークスペースの外、`~/Projects/walk-town` にある。GitHub: `SubaruOno/walk-town`(private)。小物の絵の元データと透過処理後の画像は `~/Projects/tekuteku-art`。
@@ -15,10 +27,11 @@ Expo SDK 54 / React Native 0.81.5 / React 19 / expo-router。保存は `expo-sql
 - `src/db/index.ts` — SQLite(inventory, placements, gifts, events, meta)
 - `src/gifts/` — 歩数とデイリーの包み、抽選
 - `src/components/TownGrid.tsx` — 斜め見下ろしの街の描画、タップ位置の判定、長押しドラッグでの移動、ピンチでの拡大縮小(ドラッグとズームはCodex作)
+- `src/components/Island3DScene.tsx` — まち画面内の散歩モードで使う、SVGへ投影する簡易3D描画
 - `src/components/GiftOpenAnimation.tsx` — 包みを開ける演出(揺れ→リボン→小物が弾んで出る、レア度で光り方が変わる。Codex作)
 - `app/` — まち・図鑑・設定のタブと、おみやげ画面
 
-## 現状(2026-09-25 00:17)
+## 現状(2026-09-25 01:52)
 
 - 「ゲームとして拡張したい、アイテム過多でやることがない」という課題に着手。原因は「入り口が太い・出口が細い・目標がない」の3点。ブランチ `base/town-growth`。
 - **まちの事業**([src/town/projects.ts](https://github.com/SubaruOno/walk-town/blob/base/town-growth/src/town/projects.ts)、[app/projects.tsx](https://github.com/SubaruOno/walk-town/blob/base/town-growth/app/projects.tsx))を追加。住人が**タグ指定**で小物をまとめて要求し、まちに置いていない予備を出すと完成する。まちポイントが増え、しきい値(0/1/5/10/15/21)で**まちレベル**が「はじまりの村→小さな村→にぎわう村→湖の町→大きな町→湖の都」と上がる。レベルで新しい事業が解放。事業は複数同時に出て、どれを先に建てるか・おてつだいに回すかの選択がある。入口は**まち画面のLvチップ**または図鑑の「まちの事業」行。
@@ -32,6 +45,8 @@ Expo SDK 54 / React Native 0.81.5 / React 19 / expo-router。保存は `expo-sql
 - 追加改善(9/24 22:30): [設定画面](../../Projects/walk-town/app/(tabs)/settings.tsx)に一覧スクロールを追加。小さい端末や大きな文字設定で下部の記録コピー・データ削除に届かなくなる問題を防ぐ。変更後は `npx expo lint`、`npx tsc --noEmit`、小物ID検査、`git diff --check` を通過。iOSシミュレーターは CoreSimulatorService が接続エラーになり、画面での確認はできていない。ブランチ `base/town-growth` のコミット `0cee5c7` としてGitHubへpush済み。
 - 追加改善(9/24 23:10): [ホーム](../../Projects/walk-town/app/(tabs)/index.tsx)は、歩数が読めない説明を初期状態では1行に折りたたみ、内容量に合わせて「今日のこと」の高さを調整。画面に収まらないときは見出しに「下に続きがあります」と表示する。[手紙カード](../../Projects/walk-town/src/components/LetterCard.tsx)には開閉の山形を追加。iPhone 17 Pro Maxでは初期カードが見渡せ、iPhone 16eでは町名・おてつだい・完了手紙が多い状態でスクロール案内が表示されることを確認。スクロール操作そのものはSimulatorで反応を取れず未確認。設定画面はiPhone 16eでタイトル余白と全項目表示を確認。最初の設定画面修正時にタイトル左右余白が外れたのを発見し、戻して再確認。`./scripts/check.sh`通過。コミット`0cee5c7`と`d1ffe9b`をブランチ`base/town-growth`へpush済み。テスト用のiPhone 16e Simulatorには初回データとテスト用の木2本、進行1通が残る。iPhone 17 Pro Maxの既存データはリセットしていない。
 - 追加改善(9/25 00:17): [ホーム](../../Projects/walk-town/app/(tabs)/index.tsx)に島を90度ずつ回すボタンを追加。[表示とマス判定](../../Projects/walk-town/src/components/TownGrid.tsx)は4方向に連動し、建物の保存座標は変えない。向きは端末内に保存して、絵はがきにも使う。島画像の幅を画面内に収め、[土地の上限](../../Projects/walk-town/src/data/catalog.ts)は拡張条件の数から算出。手紙10通・12通で9×9・10×10へ広がる節目を追加した。iPhone 16e Simulatorで0/90/180/270度を表示し、0度へ戻ることを確認。4〜10マスの各サイズ、3段階ズーム、4方向で4,452点のマス中心判定を計算確認。`./scripts/check.sh`とiOS向けExpo書き出しが通過。再起動後の表示はMacの自動ロックで確認できず、Simulatorの表示角度は0度へ戻した。変更は`base/town-growth`にあり、コミットとpushは未実施。
+- **島の自由配置モードを追加**。ホーム下部の小物トレイに「マス / 自由」の切替を置き、「自由」では島の座標に沿ってタップ配置と長押しドラッグを連続的に行う。既存の整数座標セーブは維持し、保存列をREALにして小数座標も記録可能にした。小物同士の中心距離が0.48マス未満になる場所は拒否する。島を回した向きでドラッグ位置を島の座標へ戻す補正も追加。iPhone 16e Simulatorでモード切替と90度回転後の島表示を確認。Simulatorからのドラッグ移動と自由座標でのタップ配置は成立を確認できず。既存の事業・隣接場所判定は整数座標を前提とするので、小数座標ではそれらの組み合わせが成立しない場合がある。通常の「マス」モードへ戻せる試作。
+- **まち画面内の歩き回りモード**。街のヘッダーにある「歩く」から同じ画面のまま切り替える。方向パッドを押すとプレイヤーが島を歩き、海岸と街の配置物の周りで止まる。左右の矢印または画面右側のドラッグで追従カメラを回す。現在置いてある小物の座標を3D表示にも反映し、簡易立体形状で描く。「街に戻る」で従来の街表示に復帰。設定から開く独立した試作画面は削除した。iPhone 16e Simulatorでモード切替、移動と視点の操作UI、街への復帰を確認。簡易3Dなので、街の小物イラストと同じ精密な造形ではない。長押し移動と画面ドラッグの入力はSimulatorで未確認。
 - 未了: `ui/daily-help` の main 取り込み、`art/plateless-trial` の取り込み、ウィジェットの実機確認、事業でどれを先に作るかの選択が弱い点。
 
 ## 以前の現状(2026-09-24 18:55)
