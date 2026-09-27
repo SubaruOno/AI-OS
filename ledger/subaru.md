@@ -304,3 +304,4 @@
 - 2026-09-28 01:02 · すばる · 野球分析/decision · VBAの試合入力・分析ブックをiPad/iPhone/MacアプリとWindows Webで置き換える全体計画を作成。共通データ/API、オフライン同期、191列Excel互換、61分析マクロの段階移行を整理。[計画](../plans/2026-09-28-baseball-scoring-analysis-platform.md)
 - 2026-09-28 01:08 · subaru · shiga/build · BLASTと秋リーグ戦の関係の資料（6枚・PDF、打球強度は主観的なので除外）
 - 2026-09-28 01:04 · すばる · 野球分析/note · Claudeで続けられるよう、野球記録・分析プラットフォーム計画の背景、決定案、未決事項、次の作業を[引き継ぎ](../outputs/handoffs/2026-09-28-baseball-platform-plan.md)に保存
+- 2026-09-28 01:32 · subaru · shiga/note · 小倉先生宛の活動再開とお詫びのメールをsubaru.ono1@gmail.comに下書き（資料PDF4点添付）。予約送信は画面不具合のため本人が設定
