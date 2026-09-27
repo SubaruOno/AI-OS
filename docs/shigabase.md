@@ -42,3 +42,17 @@ react-native-gifted-charts・react-native-svgで投球コース図やスプレ�
 - bundle id `com.subaruono.shigabaseios`、EAS project `732321f9-86fe-4f12-bb36-312c6907839e`
 - 直近のコミットはiOS 26でのクラッシュ対応が中心。`react-native-reanimated`/`worklets`のバージョン不整合と、`messages.tsx`のフック順序違反によるスプラッシュ画面ハングを修正しているが、最新コミット(`8c28f2d`)がデバッグログ追加なので完全解決の確認はまだ途中と見られる
 - GitHubリモートは既に設定済み・private。[context/tech-stack.md](../context/tech-stack.md)のインテグレーションキューにあった「GitHub連携待ち」は解消済み
+
+## 投球コースの座標(試合データ共通)
+
+京滋リーグの全試合Excel(`コースX`・`コースY`)とアプリの `course_x`・`course_y` は同じ座標で、
+正本は `components/pitch-location-chart.tsx` の冒頭コメント。
+
+- 264×264、左上が原点、**捕手視点**。0は「記録なし」なので集計から外す
+- ストライクゾーンは両軸 53.25〜210.75、3×3の区切りは 105.75 と 158.25
+- Xが小さい左側が**右打者の内角・左打者の外角**。打者の左右は `打席左右` 列で取る
+- 打球位置(`打球位置X/Y`)は本塁が下、Xが小さい側が左翼の球場図
+
+`~/野球/対策資料/分析コード/` の旧スクリプトはこの判定が逆や左右無視になっていたため、
+2026年9月27日に `analyze_hits.py`・`analyze_outs.py`・`gen_shigaken_batter_md.py` を修正した。
+修正前のコピーは `~/野球/対策資料/分析コード_修正前バックアップ_20260927/`。
