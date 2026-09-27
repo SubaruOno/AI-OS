@@ -302,3 +302,4 @@
 - 2026-09-28 01:01 · subaru · shiga/research · 9月のBLASTとリーグ戦成績の関係を11人で分析（順位相関と並べ替え検定）
 - 2026-09-28 01:03 · subaru · shiga/research · BLASTと秋リーグ戦だけの成績の関係を10人で分析
 - 2026-09-28 01:02 · すばる · 野球分析/decision · VBAの試合入力・分析ブックをiPad/iPhone/MacアプリとWindows Webで置き換える全体計画を作成。共通データ/API、オフライン同期、191列Excel互換、61分析マクロの段階移行を整理。[計画](../plans/2026-09-28-baseball-scoring-analysis-platform.md)
+- 2026-09-28 01:08 · subaru · shiga/build · BLASTと秋リーグ戦の関係の資料（6枚・PDF、打球強度は主観的なので除外）
