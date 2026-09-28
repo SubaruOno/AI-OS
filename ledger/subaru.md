@@ -339,3 +339,4 @@
 - 2026-09-29 00:20 · subaru · baseball-platform/build · Codexがローカルsupabaseに試合記録の表・初期データ・計算エンジン・191列出力を作成（テスト14件成功）。ShigabaseiOSのfeature/scoring-localにコミット
 - 2026-09-29 00:48 · subaru · baseball-platform/build · Codex第2段階：試合記録の入口・マスタ管理・試合管理・入力画面の土台・端末保存と手動同期（テスト16件成功、feature/scoring-local）
 - 2026-09-29 01:05 · subaru · baseball-platform/build · シミュレーターで試合記録を実操作して保存失敗（AsyncStorage）と結果種類の不一致を修正。Codexに第3段階（入力画面の本格移植・打順選択）を依頼
+- 2026-09-29 01:24 · subaru · baseball-platform/decision · 入力画面はアプリの部品（React Native＋SVG）で試作と寸法・動きを1:1にする方針に決定。Codexに第4段階を依頼
