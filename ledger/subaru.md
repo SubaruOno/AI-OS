@@ -336,3 +336,4 @@
 - 2026-09-28 23:38 · subaru · baseball-platform/research · BASSの管理画面・端末内DB・試合作成と旧Excelのマスタ・選択肢を読み取りで調査し、private/03-bass-masters.mdと仕様案11.6にまとめ
 - 2026-09-28 23:47 · subaru · baseball-platform/decision · 入力中の試合は1つだけ、保存は端末内で完結させ同期は別操作とすることを決定
 - 2026-09-28 23:54 · subaru · baseball-platform/decision · アプリ実装をローカルSupabaseで開始。Codexに第1段階（ローカルDB・表・初期データ・計算部分の移植）を依頼
+- 2026-09-29 00:20 · subaru · baseball-platform/build · Codexがローカルsupabaseに試合記録の表・初期データ・計算エンジン・191列出力を作成（テスト14件成功）。ShigabaseiOSのfeature/scoring-localにコミット
