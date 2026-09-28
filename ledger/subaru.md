@@ -311,3 +311,4 @@
 - 2026-09-28 10:12 · すばる · SHIGABASE/build · Xcode 26でfmtがビルドエラーになる問題を、pod installのたびにfmtを直す設定プラグイン(withFmtConstevalFix)で修正。ビルド成功を確認、SHIGABASEにコミット(未push)
 - 2026-09-28 10:24 · すばる · SHIGABASE/research · 残りの画面(ブルペン、ウエイト、相手投手、資料、映像、投稿、分析)をiPad横向きで確認。崩れはなく、横向きホームがスクロールできない、タブバーが大きい、分析の見出しがルート名のまま、一覧が横に伸びる、の4点を[計画](../plans/2026-09-28-baseball-scoring-analysis-platform.md)に追記
 - 2026-09-28 10:34 · すばる · SHIGABASE/build · iPadの7つの課題を修正(scale()の頭打ち、横向きホーム、選手成績の2列、一覧の最大幅、凡例、分析の見出し)。iPad縦横とiPhoneで確認、SHIGABASEにコミット(未push)
+- 2026-09-28 11:04 · すばる · SHIGABASE/build · 縦に戻すとホームのロゴの帯が消える不具合などを修正(回転対応、iPad縦の選手成績、ウエイトのグラフのはみ出し、ブルペン詳細の幅)。iPadの縦↔横とiPhoneで確認、SHIGABASEにコミット(未push)
