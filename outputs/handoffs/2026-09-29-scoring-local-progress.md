@@ -39,3 +39,50 @@ npm test
 - `games` と `pitches` へ scoring から同期する実装は未作成です。設計では正本を scoring 側に置くことが決まっていますが、要件本文の「same-shape write」への変換は次段階です。
 - RLS は analyst/admin 書込、認証済み閲覧の初期形です。`scoring_is_team_member` はチーム単位のユーザー所属表が未設計なため、現在 own-team または analyst/admin に閲覧を許しています。誰をチームメンバーとみなすか、人の決定が必要です。
 - 191列の出力は基本の状態・スタメン・scoreboard を実装しました。交代後の最新守備履歴、H/R表記、全列の旧語彙変換と守備名表示は未完成です。
+
+## 第2段階（2026-09-29）
+
+### 作ったもの
+
+- `.env.local` を追加し、ExpoからローカルSupabase（API `http://127.0.0.1:55421`）へ接続します。`.gitignore` の `.env*.local` によりGit対象外です。本番の `.env` は読み出していません。
+- ローカルseedに次のAuthユーザーと `user_roles` を追加しました。どちらもローカルDBの初期化で作り直されます。
+  - analyst: `analyst@example.test` / `shigabase-test-2026`
+  - admin: `admin@example.test` / `shigabase-admin-2026`
+- トップ画面にanalyst/adminだけが見られる「試合記録」入口を追加しました。アプリ内ルートにも同じrole gateがあります。
+- 「試合」「マスタ」タブを追加し、チーム・選手・球場・カテゴリ・球種・結果・作戦・メモの一覧、追加、編集を実装しました。選手は投打・投球フォーム・守備位置、背番号、経歴、旧Excel名の別名欄を持ちます。無効化は選手引退またはマスタ表示フラグの無効化で行います。
+- 試合作成は端末内に下書き保存し、日付＋時刻の12桁表示番号、先攻/後攻、Season/Kind/Week/Day/GameNumberの初期値を作ります。テストロスターの先頭9人と投手を暫定スタメンに入れます。同時に進行できるローカル試合は1つです。
+- 入力画面は試合状態、打順/投手、スコア、カウント、塁状況と結果選択を表示し、`lib/scoring/engine.ts` で状態を再計算します。プレイはAsyncStorage（iOS/Android）またはlocalStorage（Web）へ保存し、手動の「同期」操作でゲーム・ラインアップ・プレイをローカルSupabaseへupsertします。
+- 同期時に既存 `games`/`pitches` も更新します。191列変換を経由しますが、詳細入力UIがない項目は空になります。
+- Webで既存Supabaseセッションを復元するときSecureStoreのネイティブAPIが落ちるため、WebだけlocalStorageを使うadapterを追加しました。
+
+### 起動・テスト
+
+```sh
+cd ~/Projects/TerakoyaAI/ShigabaseiOS
+supabase start
+supabase db reset
+npx expo start
+```
+
+ローカル接続はgitignored `.env.local` が指定します。iPadでは横向き、iPhoneでは縦スクロールで確認してください。Studioは `http://127.0.0.1:55423` です。
+
+### 検証結果
+
+- `supabase db reset`: 成功（ローカルmigrationとseedを再適用）。
+- `supabase db lint --local`: 成功、schema errorなし。
+- ローカルAuth/API確認: analystユーザーでログイン成功、`scoring_weather`をAPIから取得成功。
+- `npm test`: 成功、3ファイル16テスト。
+- `npx expo export --platform web`: 成功。出力に `/scoring`、`/scoring/[id]`、`/scoring/master` を含みます。既存notificationsのWeb対応警告と、Expoが最後にforce exitするメッセージは出ますがexportは0終了です。
+- `npx tsc --noEmit --pretty false`: 失敗。今回変更した画面・保存層からの型エラーはありません。既存の `app/opponent-pitchers/[name].tsx` の型アサーションと、Supabase Edge Functionを通常tscで検査できないDeno URL import / `Deno` 未定義が残ります。
+- `.env.local` は `git check-ignore .env.local` で無視を確認しました。
+
+### 未完了・すばるに確認したいこと
+
+- 試合作成フォームは本仕様どおりではありません。球場・天気・入力方法・タグ・審判・manual display number・ホーム/ビジター選択・9人の選手/守備選択・ラストオーダー・大谷ルール切替はまだ不足し、初期値で下書きを作ります。次段階ではどの項目を最初に必須にするか決めたいです。
+- マスタフォームはチーム/選手IDを文字列で直接入力する暫定形です。選手の守備位置は1つだけ、編集時の既存経歴・alias読込と一括置換UIは未完成です。追加で打順候補に選ぶ選手は仮の先頭9人です。
+- 球種・結果・作戦・メモは現状「追加」導線がありますが、ID採番/必須属性/内部flagをすべて編集できるフォームではありません。結果や球種の現行seedは削除・上書きせず維持する運用で良いか確認が必要です。
+- game/pitches再構築は191列の基本変換までです。入力画面では守備イベント・走者進塁・交代・球種・球速・コース等を十分入力できず、現時点の分析データは完成記録とみなせません。
+- 仕様にある「ラストオーダー」の具体的な最新ゲームの選び方（全履歴か同一大会/同じteamか）と、大谷ルールの適用時の打順/投手処理を確認したいです。
+- 球種のマスタseedはphase 1記載のとおり表示用13件のみです。BASS完全版37件の正確なリストが必要です。
+
+実装コミット: `06d7eab`（画面・端末保存・手動同期）、`542d095`（ローカルAuthユーザーseed）。seedのcommitは初回にGit index lock作成がOS sandboxで拒否されましたが、再試行で成功しています。ブランチは `feature/scoring-local`、pushしていません。

@@ -337,3 +337,4 @@
 - 2026-09-28 23:47 · subaru · baseball-platform/decision · 入力中の試合は1つだけ、保存は端末内で完結させ同期は別操作とすることを決定
 - 2026-09-28 23:54 · subaru · baseball-platform/decision · アプリ実装をローカルSupabaseで開始。Codexに第1段階（ローカルDB・表・初期データ・計算部分の移植）を依頼
 - 2026-09-29 00:20 · subaru · baseball-platform/build · Codexがローカルsupabaseに試合記録の表・初期データ・計算エンジン・191列出力を作成（テスト14件成功）。ShigabaseiOSのfeature/scoring-localにコミット
+- 2026-09-29 00:48 · subaru · baseball-platform/build · Codex第2段階：試合記録の入口・マスタ管理・試合管理・入力画面の土台・端末保存と手動同期（テスト16件成功、feature/scoring-local）
