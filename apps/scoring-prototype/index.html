@@ -214,7 +214,7 @@ function render(){
  ptypes.innerHTML=PT.map(([k,sh,rg],i)=>{const[x,y]=PT_POS[i],on=p.pitch_type===k;return`<button style="left:${x}px;top:${y}px;width:76px;height:48px;flex-direction:column;${on?'background:#4c9aff;color:#fff;border-color:#4c9aff':''}" onclick="cp().pitch_type=cp().pitch_type==='${k}'?null:'${k}';stamp();render()"><span style="display:flex;align-items:center;gap:6px;font-size:18px"><svg width="20" height="20" viewBox="-11 -11 22 22">${shape(sh,on?'#fff':'#212529','none',S.pov,ph)}</svg>${k}</span>${rg?`<span style="font-size:9px">${rg}</span>`:''}</button>`}).join('');
  drawZone(st,p,bh,ph);
  // 球速
- spd.textContent=p.ball_speed||'1';
+ spd.textContent=p.ball_speed||(p.speedPre===false?'':'1');
  pad.innerHTML=['7','8','9','4','5','6','1','2','3'].map((d,i)=>`<button style="left:${[100,138,175][i%3]}px;top:${638+Math.floor(i/3)*30}px;width:38px;height:30px;border-radius:0" onclick="key('${d}')">${d}</button>`).join('')+
   `<button style="left:100px;top:728px;width:75px;height:30px;background:#f03e5e;color:#fff;border:none" onclick="key('C')">クリア</button><button style="left:175px;top:728px;width:38px;height:30px;border-radius:0" onclick="key('0')">0</button>`;
  // 投球結果
@@ -258,8 +258,8 @@ function drawZone(st,p,bh,ph){
  const vx=x=>pov?200-x:x;let n=0;const list=[];
  for(let i=cur-1;i>=0;i--){const a=stateAt(i);if(a.half!==st.half||a.bi[a.half]!==st.bi[st.half])break;list.unshift(pages[i])}
  list.forEach(q=>{if(!q.pitch_type)return;n++;if(!q.course)return;const sh=(PT.find(z=>z[0]===q.pitch_type)||[])[1];const col=RCOL[q.res&&q.res.label]||'#fab005';
-  s+=`<g transform="translate(${vx(q.course[0])} ${q.course[1]}) scale(.62)" opacity=".75">${solidShape(sh,col,pov,hands(st).ph)}<text y="4" font-size="11" text-anchor="middle" fill="#fff">${n}</text></g><text x="${vx(q.course[0])}" y="${q.course[1]+11}" font-size="5" text-anchor="middle" fill="#868e96">${q.ball_speed||''}</text>`});
- if(p.course&&p.pitch_type){const sh=(PT.find(z=>z[0]===p.pitch_type)||[])[1];s+=`<g transform="translate(${vx(p.course[0])} ${p.course[1]}) scale(.62)">${solidShape(sh,RCOL[p.res&&p.res.label]||'#fd7e14',pov,ph)}</g>`}
+  s+=`<g transform="translate(${vx(q.course[0])} ${q.course[1]}) scale(.85)" opacity=".85">${solidShape(sh,col,pov,hands(st).ph)}<text y="3" font-size="8" text-anchor="middle" fill="#fff" font-weight="700">${n}</text></g><text x="${vx(q.course[0])}" y="${q.course[1]+14}" font-size="6" text-anchor="middle" fill="#868e96">${q.ball_speed||''}</text>`});
+ if(p.course&&p.pitch_type){const sh=(PT.find(z=>z[0]===p.pitch_type)||[])[1];s+=`<g transform="translate(${vx(p.course[0])} ${p.course[1]}) scale(.95)">${solidShape(sh,RCOL[p.res&&p.res.label]||'#fd7e14',pov,ph)}</g>`}
  else if(p.course)s+=`<circle cx="${vx(p.course[0])}" cy="${p.course[1]}" r="5" fill="#fd7e14" stroke="#333" stroke-width=".6"/>`;
  zone.innerHTML=s;
  zone.onclick=e=>{const r=zone.getBoundingClientRect();let x=(e.clientX-r.left)/r.width*200,y=(e.clientY-r.top)/r.height*250;if(S.pov)x=200-x;cp().course=[x,y];stamp();render()};
@@ -281,9 +281,9 @@ function drawField(st,pv,same,p){
    :`<text x="${x}" y="${y+4}" font-size="11" fill="#212529" text-anchor="middle" opacity=".6" pointer-events="none">${no}</text>`}
  // 打者と走者
  const mv=moves(st,p),bat=batterOf(st);
- const tok=(b,id)=>{const a=mv[b];let[x,y]=BASEXY[b];let fill=b===0?'#f03e5e':'#fff',col=b===0?'#fff':'#212529';
-  if(a&&a.to){[x,y]=a.to>=4?[HOME[0]+14,HOME[1]]:BASEXY[a.to];if(a.steal){fill='#ffd43b';col='#212529'}else{fill='#20c997';col='#fff'};const[fx,fy]=BASEXY[b];s+=`<line x1="${fx}" y1="${fy}" x2="${x}" y2="${y}" stroke="${a.steal?'#fab005':'#fff'}" stroke-width="1.2" stroke-dasharray="${a.steal?'3,2':''}"/>`}
-  if(a&&a.out){fill='#f03e5e';col='#fff'}
+ const tok=(b,id)=>{const a=mv[b];let[x,y]=BASEXY[b];let fill='#fff',col=b===0?'#e03131':'#212529';
+  if(a&&a.to){[x,y]=a.to>=4?[HOME[0]+20+b*6,HOME[1]+18]:BASEXY[a.to];if(a.steal){fill='#ffd43b';col='#212529'}else{fill='#20c997';col='#fff'};const[fx,fy]=BASEXY[b];s+=`<line x1="${fx}" y1="${fy}" x2="${x}" y2="${y}" stroke="${a.steal?'#fab005':'#fff'}" stroke-width="1.2" stroke-dasharray="${a.steal?'3,2':''}"/>`}
+  if(a&&a.out){fill='#f03e5e';col='#fff';id=id+'×'}
   const sel=runnerSel&&runnerSel.b===b;
   s+=`<g onclick="runnerClick(${b});event.stopPropagation()" style="cursor:pointer"><rect x="${x-9}" y="${y-9}" width="18" height="18" rx="${a&&a.to&&!a.out?9:0}" fill="${fill}" stroke="${sel?'#1c7ed6':'#adb5bd'}" stroke-width="${sel?2:1}"/><text x="${x}" y="${y+4}" font-size="10" fill="${col}" text-anchor="middle">${id}</text></g>`};
  st.bases.forEach((id,i)=>{if(id!=null)tok(i+1,id)});tok(0,bat);
@@ -313,6 +313,10 @@ function openErr(pos){const d=document.createElement('div');d.className='menu';d
   `<div style="display:flex;gap:4px;margin-top:6px"><span id="eok" style="background:#20c997;color:#fff;padding:5px 12px;border-radius:4px;cursor:pointer">OK</span><span onclick="this.closest('.menu').remove()" style="padding:5px 12px;cursor:pointer">キャンセル</span></div>`;
  stage.appendChild(d);d.querySelector('#eok').onclick=()=>{const ids=[...d.querySelectorAll('input:checked')].map(c=>ERRS[+c.value]);d.remove();if(!ids.length)return;cp().catch_fielder.push({pos,err:ids});render()}}
 function runnerClick(b){closePop();const st=stateAt(cur);if(b>0&&st.bases[b-1]==null)return;
+ // 走者を選んだあとに打者（本塁）を押したら、その走者の本塁生還として扱う
+ if(b===0&&runnerSel&&runnerSel.b>0){baseClick(4);return}
+ // 本塁に来ている走者を押したら「アウト・得点・打点」を開く
+ const m0=moves(st,cp())[b];if(m0&&m0.to>=4&&!(runnerSel&&runnerSel.b===b)){homeOpen=true;runnerSel=null;render();return}
  runnerSel={b,type:'adv'};
  const mv=moves(st,cp())[b];let[x,y]=BASEXY[b];if(mv&&mv.to)[x,y]=mv.to>=4?[HOME[0]+14,HOME[1]]:BASEXY[mv.to];
  const fr=field.getBoundingClientRect(),sr=stage.getBoundingClientRect(),k=sr.width/1512;
@@ -342,7 +346,8 @@ function record(st,p){const bb=p.batted_ball;return{page:cur+1,inning:st.inn,top
 
 // ===== 操作 =====
 function stamp(){if(!cp().time)cp().time=new Date().toTimeString().slice(0,8)}
-function key(d){const p=cp();if(d==='C')p.ball_speed='';else if(p.ball_speed.length<3)p.ball_speed+=d;render()}
+// 球速は最初から「1」が入っていて、下2桁だけ押せば1xxになる。クリアすると「1」も消えて自由に3桁まで入れられる
+function key(d){const p=cp();if(d==='C'){p.ball_speed='';p.speedPre=false}else if(p.ball_speed===''&&p.speedPre!==false)p.ball_speed='1'+d;else if(p.ball_speed.length<3)p.ball_speed+=d;render()}
 // 結果を選び直すと、その結果に付いていた走者の操作と打球の質は外れる（BASSと同じ）。盗塁は残す。
 function setRes(r){const p=cp();p.res=r;p.skip=false;p.pickoff_throw_to=0;p.feature=0;for(const b of Object.keys(p.ra))if(!p.ra[b].steal)delete p.ra[b];stamp()}
 function pitchRes(l,k){const p=cp();if(k==='F'){p.flags=p.flags.includes(l)?p.flags.filter(x=>x!==l):[...p.flags,l];render();return}
