@@ -282,7 +282,10 @@ function drawField(st,pv,same,p){
  // 打者と走者
  const mv=moves(st,p),bat=batterOf(st);
  const tok=(b,id)=>{const a=mv[b];let[x,y]=BASEXY[b];let fill='#fff',col=b===0?'#e03131':'#212529';
-  if(a&&a.to){[x,y]=a.to>=4?[HOME[0]+20+b*6,HOME[1]+18]:BASEXY[a.to];if(a.steal){fill='#ffd43b';col='#212529'}else{fill='#20c997';col='#fff'};const[fx,fy]=BASEXY[b];s+=`<line x1="${fx}" y1="${fy}" x2="${x}" y2="${y}" stroke="${a.steal?'#fab005':'#fff'}" stroke-width="1.2" stroke-dasharray="${a.steal?'3,2':''}"/>`}
+  if(a&&a.to){[x,y]=a.to>=4?[HOME[0]-4+(3-b)*5,HOME[1]-6-(3-b)*5]:BASEXY[a.to];if(a.steal){fill='#ffd43b';col='#212529'}else{fill='#20c997';col='#fff'}
+   // 塁を順にたどって線を引く（1→2→3→本塁）
+   const pts=[];for(let k=b;k<=Math.min(a.to,4);k++)pts.push(BASEXY[k%4]);
+   s+=`<polyline points="${pts.map(q=>q.join(',')).join(' ')}" fill="none" stroke="${a.steal?'#fab005':'#fff'}" stroke-width="1.4" stroke-dasharray="${a.steal?'3,2':''}"/>`}
   if(a&&a.out){fill='#f03e5e';col='#fff';id=id+'×'}
   const sel=runnerSel&&runnerSel.b===b;
   s+=`<g onclick="runnerClick(${b});event.stopPropagation()" style="cursor:pointer"><rect x="${x-9}" y="${y-9}" width="18" height="18" rx="${a&&a.to&&!a.out?9:0}" fill="${fill}" stroke="${sel?'#1c7ed6':'#adb5bd'}" stroke-width="${sel?2:1}"/><text x="${x}" y="${y+4}" font-size="10" fill="${col}" text-anchor="middle">${id}</text></g>`};
@@ -300,8 +303,10 @@ function drawHomePanel(st,p,mv){let el=document.getElementById('homep');if(el)el
  const who=Object.entries(mv).filter(([b,a])=>a.to>=4).map(([b])=>+b);if(!who.length){homeOpen=false;return}
  el=document.createElement('div');el.id='homep';el.style.cssText='position:absolute;left:1070px;top:220px;width:170px;background:#fff;border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,.25);padding:6px;z-index:25;font-size:12px';
  const id=b=>b===0?batterOf(st):st.bases[b-1];
- el.innerHTML=who.sort((a,b)=>b-a).map(b=>{const a=p.ra[b]||{};const seg=(l,on,f)=>`<span onclick="${f};render()" style="flex:1;text-align:center;padding:5px 0;border:1px solid #dee2e6;cursor:pointer;${on?'background:'+(l==='アウト'?'#f03e5e':'#40c057')+';color:#fff':''}">${l}</span>`;
-  return `<div style="margin-bottom:4px"><b>${b===0?'打者':b}: ${id(b)} #${id(b)}</b><div style="display:flex">${seg('アウト',a.homeOut,`setRA(${b},{homeOut:true})`)}${seg('得点',!a.homeOut,`setRA(${b},{homeOut:false})`)}${seg('打点',a.rbi,`setRA(${b},{rbi:!(cp().ra[${b}]||{}).rbi})`)}</div></div>`}).join('')+
+ // アウト・得点・打点は1つだけ選ぶ（打点は得点を含む）
+ el.innerHTML=who.sort((a,b)=>b-a).map(b=>{const a=p.ra[b]||{};const sel=a.homeOut?'out':a.rbi?'rbi':a.scored?'run':'';
+  const seg=(l,v,o)=>`<span onclick="setRA(${b},${o});render()" style="flex:1;text-align:center;padding:5px 0;border:1px solid #dee2e6;cursor:pointer;${sel===v?'background:'+(v==='out'?'#f03e5e':'#40c057')+';color:#fff':''}">${l}</span>`;
+  return `<div style="margin-bottom:4px"><b>${b===0?'打者':b}: ${id(b)} #${id(b)}</b><div style="display:flex">${seg('アウト','out','{homeOut:true,rbi:false,scored:false}')}${seg('得点','run','{homeOut:false,rbi:false,scored:true}')}${seg('打点','rbi','{homeOut:false,rbi:true,scored:true}')}</div></div>`}).join('')+
   `<div onclick="homeOpen=false;render()" style="background:#20c997;color:#fff;text-align:center;padding:6px;border-radius:4px;cursor:pointer;margin-top:4px">OK</div>`;
  stage.appendChild(el)}
 function setRA(b,o){const p=cp();const mv=moves(stateAt(cur),p)[b]||{};p.ra[b]=Object.assign({},p.ra[b]||{to:mv.to},o)}
