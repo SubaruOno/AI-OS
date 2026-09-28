@@ -172,7 +172,7 @@ Excel VBAに分かれている試合作成、プレイ入力、試合記録、�
 
 **Actions:**
 
-- Podfileで `fmt` のビルドエラーを恒久的に直す。
+- ~~Podfileで `fmt` のビルドエラーを恒久的に直す。~~ 9/28完了: SHIGABASEに設定プラグイン `plugins/withFmtConstevalFix.js` を追加(コミット7b41ba0)。
 - 残りの画面(ブルペン、ウエイト記録、相手投手、資料、映像、投稿)をiPadの縦・横で確認する。
 - `app.json` の `supportsTablet` を `true` にし、試合入力画面だけ横向きを許可する(他の画面は縦のままでよいか確認する)。
 - `npx expo start --web` でWeb版を動かし、通知、セキュアストア、写真選択、WebViewなどWebで動かない部品を洗い出して、Webでは隠すか代わりの処理にする。
