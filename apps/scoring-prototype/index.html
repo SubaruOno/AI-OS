@@ -29,7 +29,7 @@ table.sb{border-collapse:collapse;font-size:13px;position:absolute}table.sb td{b
  <!-- 上のバー -->
  <svg class="a" style="left:94px;top:16px" width="22" height="20" viewBox="0 0 24 22"><path d="M12 1 L23 11 H20 V21 H14 V14 H10 V21 H4 V11 H1 Z" fill="#20c997"/></svg>
  <div class="a" style="left:136px;top:17px;display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer" onclick="S.pov=!S.pov;render()"><span id="povsw" style="width:34px;height:19px;border-radius:10px;background:#adb5bd;position:relative;display:inline-block"><span id="povknob" style="position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff"></span></span>投手目線</div>
- <button style="left:231px;top:11px;width:98px;height:30px;background:#f1f3f5;border:none">タイブレーク</button>
+ <button id="tbbtn" style="left:231px;top:11px;width:98px;height:30px;background:#f1f3f5;border:none" onclick="openTB()">タイブレーク</button>
  <button style="left:727px;top:11px;width:30px;height:30px;background:#fcc419;border:none;border-radius:4px 0 0 4px" onclick="undoLast()">↺</button>
  <button style="left:757px;top:11px;width:98px;height:30px;background:#20c997;color:#fff;border:none;border-radius:0" onclick="sw()">⏱ Start/Stop</button>
  <div class="fld" style="left:854px;top:11px;width:70px;height:30px;padding:0 6px;font-family:monospace;border-radius:0" id="timer">00:00.00</div>
@@ -37,7 +37,7 @@ table.sb{border-collapse:collapse;font-size:13px;position:absolute}table.sb td{b
  <div class="a" id="pageno" style="left:960px;top:17px;font-size:14px"></div>
  <button style="left:1027px;top:11px;width:106px;height:30px;background:#3b5bdb;color:#fff;border:none;border-radius:15px" onclick="go(cur-1)">◀ 前のページ</button>
  <button style="left:1141px;top:11px;width:112px;height:30px;background:#3b5bdb;color:#fff;border:none;border-radius:15px" onclick="go(pages.length-1)">最後のページ ⏭</button>
- <button style="left:1260px;top:11px;width:74px;height:30px;background:#4c9aff;color:#fff;border:none" onclick="toast('選手交代は試作では未対応')">選手交代</button>
+ <button style="left:1260px;top:11px;width:74px;height:30px;background:#4c9aff;color:#fff;border:none" onclick="openSubs()">選手交代</button>
  <button style="left:1342px;top:11px;width:74px;height:30px;background:#f03e5e;color:#fff;border:none" onclick="askEnd()">入力終了</button>
 
  <!-- 情報 -->
@@ -105,7 +105,7 @@ const PT_POS=[[100,224],[184,224],[100,276],[184,276],[100,328],[184,328],[100,3
 const PRES=[['空振',221,594,'#fff9db','#c7a200','S'],['見送',221,632,'#fff9db','#c7a200','S'],['ボール',221,670,'#e6fcf5','#12b886','B'],['ファウル',221,708,'#e7f5ff','#339af0','FO'],
  ['逆球',342,594,'#f3f0ff','#343a40','F'],['ワンバウンド',342,632,'#f3f0ff','#343a40','F'],['クイック',342,670,'#f3f0ff','#343a40','F'],
  ['ﾜｲﾙﾄﾞﾋﾟｯﾁ',463,594,'#fff0f6','#f783ac','F'],['ﾊﾟｽﾎﾞｰﾙ',463,632,'#fff0f6','#f783ac','F'],['申告敬遠',463,670,'#fff9db','#c7a200','IBB'],['ボーク',463,708,'#edf2ff','#4263eb','BK']];
-const SIDE=[['犠打','sac','#e7f5ff','#1971c2'],['犠飛','sf','#e7f5ff','#1971c2'],['犠打失策','e','#e7f5ff','#1971c2'],['犠飛失策','e','#e7f5ff','#1971c2'],['死球','hbp','#e6fcf5','#0ca678'],['振り逃げ','e','#e6fcf5','#0ca678'],['野選','e','#fff0f3','#e03131'],['打撃妨害','e','#fff0f3','#e03131'],['守備妨害','out','#fff0f3','#e03131'],['走塁妨害','e','#fff0f3','#e03131']];
+const SIDE=[['犠打','sac','#e7f5ff','#1971c2'],['犠飛','sf','#e7f5ff','#1971c2'],['犠打失策','e','#e7f5ff','#1971c2'],['犠飛失策','e','#e7f5ff','#1971c2'],['死球','hbp','#e6fcf5','#0ca678'],['振り逃げ','e','#e6fcf5','#0ca678'],['野選','fc','#fff0f3','#e03131'],['打撃妨害','io','#fff0f3','#e03131'],['守備妨害','out','#fff0f3','#e03131'],['走塁妨害','io','#fff0f3','#e03131']];
 const BOT=[['凡打',774,578,56,'out','#e7f5ff','#1971c2'],['失策出塁',831,578,104,'e','#e7f5ff','#1971c2'],['単打',937,578,70,1,'#fff0f3','#212529'],['三塁打',1008,578,70,3,'#fff0f3','#212529'],
  ['邪飛',774,609,56,'out','#e7f5ff','#1971c2'],['ｽﾘｰﾊﾞﾝﾄ失敗',831,609,104,'out','#e7f5ff','#1971c2'],['二塁打',937,609,70,2,'#fff0f3','#212529'],['本塁打',1008,609,70,4,'#fff0f3','#212529']];
 const STRATS={バント:['セーフティーバント（1塁側）','セーフティーバント（3塁側）','セーフティーバント（投手方向）','スリーバント失敗','バントファウル','スクイズ','スクイズファウル','送りバント','セフティ','バスター','ドラッグ'],盗塁:['盗塁失敗','盗塁成功','ディレイドスティール','盗塁企画','ダブルスチール','ディレード'],エンドラン:['ヒットエンドラン','バスターエンドラン','HAR','RAH','BSAR','BAR']};
@@ -120,29 +120,33 @@ const RCOL={見送:'#ff8a65',空振:'#e64980',ボール:'#4dabf7',ファウル:'
 // ===== データ：1ページ＝1プレイ。入力だけを持ち、状況は毎回最初から計算し直す =====
 const S={pov:false,fielderMode:true};
 let pages=[blank()],cur=0,popup=null,runnerSel=null,pickMode=false,openMenu=null,errMode=false,homeOpen=false;
-function blank(){return{pitch_type:null,course:null,catcher_mitt_position:0,ball_speed:'',res:null,flags:[],plan:{},batted_ball:null,feature:0,rank:null,catch_fielder:[],ra:{},pickoff_throw_to:0,skip:false,skipOut:null,memo:'',time:null,handP:null,handB:null}}
+function blank(){return{subs:[],tb:null,pitch_type:null,course:null,catcher_mitt_position:0,ball_speed:'',res:null,flags:[],plan:{},batted_ball:null,feature:0,rank:null,catch_fielder:[],ra:{},pickoff_throw_to:0,skip:false,skipOut:null,memo:'',time:null,handP:null,handB:null}}
 function cp(){return pages[cur]}
-function initState(){return{inn:1,half:0,score:[0,0],hits:[0,0],line:[[],[]],outs:0,b:0,s:0,bases:[null,null,null],bi:[0,0],pcount:{},paLog:{}}}
-const batterOf=st=>TEAMS[st.half].order[st.bi[st.half]];
-const pitcherOf=st=>TEAMS[1-st.half].P;
+function initState(){return{inn:1,half:0,score:[0,0],hits:[0,0],line:[[],[]],outs:0,b:0,s:0,bases:[null,null,null],bi:[0,0],pcount:{},paLog:{},tie:false,subHalf:[[],[]],
+ lu:TEAMS.map(T=>({order:[...T.order],pos:[...T.pos],bats:[...T.bats],P:T.P,throws:T.throws}))}}
+const batterOf=st=>st.lu[st.half].order[st.bi[st.half]];
+const pitcherOf=st=>st.lu[1-st.half].P;
 function endPA(st,txt){const t=st.half,no=batterOf(st);(st.paLog[t+'-'+no]=st.paLog[t+'-'+no]||[]).push(txt);st.bi[t]=(st.bi[t]+1)%9;st.b=0;st.s=0}
 function addRun(st,n){if(!n)return;st.score[st.half]+=n;const L=st.line[st.half];L[st.inn-1]=(L[st.inn-1]||0)+n}
 function advanceAll(st,n,batter){const nb=[null,null,null];let r=0;for(let i=2;i>=0;i--)if(st.bases[i]!=null){const to=i+n;if(to>=3)r++;else nb[to]=st.bases[i]}if(batter!=null){if(n>=4)r++;else nb[n-1]=batter}st.bases=nb;addRun(st,r)}
 function force(st,bat){const b=st.bases;if(b[0]!=null){if(b[1]!=null){if(b[2]!=null)addRun(st,1);b[2]=b[1]}b[1]=b[0]}b[0]=bat}
 const cfPos=c=>typeof c==='object'?c.pos:c;
 function dirTxt(p){if(!p.catch_fielder.length)return'';return'投捕一二三遊左中右'[cfPos(p.catch_fielder[0])-1]}
-// BASSで確かめた自動の動き。走者が自動で進むのは四死球の押し出しと本塁打だけ。
+// BASSで確かめた自動の動き。四死球は押し出し、本塁打は全員、単打・野選・ボークは全員1つずつ。
+// 打撃妨害・走塁妨害は自動では動かない（手で動かさないと確定できない）。二塁打・三塁打の走者は未確認なので動かさない。
 function autoMoves(st,p){
  const k=p.res&&p.res.kind,m={};
  const walk=(k==='B'&&st.b>=3)||k==='IBB'||k==='hbp';
  if(walk){m[0]={to:1};let need=1;for(let i=1;i<=3;i++){if(st.bases[i-1]!=null&&need===i){m[i]={to:i+1};need=i+1}}}
  else if(k===4){m[0]={to:4};[1,2,3].forEach(i=>{if(st.bases[i-1]!=null)m[i]={to:4}})}
+ else if(k===1||k==='fc'||k==='BK'){if(k!=='BK')m[0]={to:1};[1,2,3].forEach(i=>{if(st.bases[i-1]!=null)m[i]={to:i+1}})}
  else if(typeof k==='number')m[0]={to:k};
  else if(k==='out'||k==='sac')m[0]={out:true};
  else if(k==='e')m[0]={to:1};
  return m}
-function moves(st,p){const m=autoMoves(st,p);for(const[b,a]of Object.entries(p.ra)){if(a.back){delete m[b];continue}m[b]=Object.assign({},m[b]||{},a);if(a.out)delete m[b].to;if(a.to)delete m[b].out}return m}
+function moves(st,p){const m=autoMoves(st,p);for(const[b,a]of Object.entries(p.ra)){if(a.back){delete m[b];continue}m[b]=Object.assign({},m[b]||{},a);if(a.out)delete m[b].to;else if(a.to)delete m[b].out}return m}
 function applyPage(st,p){
+ applyPre(st,p);
  const t=st.half,bat=batterOf(st),pid=pitcherOf(st),mv=moves(st,p);
  const move=()=>{let runs=0;const nb=[null,null,null];
   for(let i=3;i>=1;i--){const id=st.bases[i-1];if(id==null)continue;const a=mv[i];
@@ -154,39 +158,48 @@ function applyPage(st,p){
  if(p.pickoff_throw_to){move();three(st);return}
  if(p.skip){if(!mv[0]||(!mv[0].out&&!mv[0].to))return;const o=!!mv[0].out;move();endPA(st,o?'凡退':'出塁');three(st);return}
  if(!p.res)return;const k=p.res.kind;
- if(k!=='BK')st.pcount[pid]=(st.pcount[pid]||0)+1;
+ if(k!=='BK'&&k!=='IBB')st.pcount[pid]=(st.pcount[pid]||0)+1;
  if(k==='S')st.s=Math.min(st.s+1,3);else if(k==='B')st.b=Math.min(st.b+1,4);else if(k==='FO'){if(st.s<2)st.s++}
  const f=mv[0],ended=f&&(f.out||f.to);
  move();
  if(ended){let txt=p.res.label;
   if(k==='S')txt=p.res.label==='空振'?'空三振':'見三振';else if(k==='B')txt='四球';else if(k==='IBB')txt='敬遠';else if(k==='hbp')txt='死球';
+  else if(k==='fc')txt=dirTxt(p)+'野選';else if(k==='io')txt=p.res.label;
   else if(typeof k==='number'){st.hits[t]++;txt=dirTxt(p)+['','安','二','三','本'][k]}
   else if(k==='out')txt=p.res.label==='邪飛'?dirTxt(p)+'邪飛':dirTxt(p)+(p.feature===2?'飛':p.feature===3?'直':'ゴ');
   else if(k==='sf')txt=dirTxt(p)+'犠飛';else if(k==='sac')txt='犠打';else if(p.res.label==='失策出塁')txt=dirTxt(p)+'失';
   endPA(st,txt)}
  three(st)}
+// 選手交代：{t,slot(0-8 / 'P'),no,bats,pos}。走者の枠を代えたら代走になる。
+function applyPre(st,p){
+ for(const c of p.subs||[]){const L=st.lu[c.t];
+  if(c.slot==='P'){L.P=c.no;if(c.throws)L.throws=c.throws;continue}
+  const old=L.order[c.slot];
+  if(c.no!=null&&c.no!==old){L.order[c.slot]=c.no;if(c.bats)L.bats[c.slot]=c.bats;if(c.t===st.half)st.bases=st.bases.map(id=>id===old?c.no:id);st.subHalf[c.t].push(c.slot)}
+  if(c.pos!=null)L.pos[c.slot]=c.pos}
+ if(p.tb){const L=st.lu[st.half];st.tie=true;st.bi[st.half]=p.tb.bi;st.bases=p.tb.r.map(i=>i==null?null:L.order[i]);st.b=p.tb.b||0;st.s=p.tb.s||0;st.outs=p.tb.o||0}}
 // 確定できるか（BASSと同じ警告）
 function checkCommit(st,p){
  if(p.skip&&!(p.ra[0]&&(p.ra[0].out||p.ra[0].to)))return'打席結果（アウトまたは進塁）を入力してください';
  if(!p.res&&!p.skip&&!p.pickoff_throw_to)return'入力がありません';
  if(p.res&&p.res.kind==='FO'&&!p.feature)return'打球の質を選択してください';
- const bi=st.bi[st.half];if(TEAMS[st.half].bats[bi]==='両'&&!p.handB)return'右打席・左打席を選んでください';
+ const bi=st.bi[st.half];if(st.lu[st.half].bats[bi]==='両'&&!p.handB&&!(p.res&&p.res.kind==='IBB')&&!p.pickoff_throw_to)return'右打席・左打席を選んでください';
  if(p.res){const k=p.res.kind,mv=moves(st,p)[0],ended=mv&&(mv.out||mv.to);
-  const needs=(k==='S'&&st.s>=2)||k==='sf'||(k==='e'&&false);
+  const needs=(k==='S'&&st.s>=2)||k==='sf'||k==='io';
   if(needs&&!ended)return'打席結果（アウトまたは進塁）を入力してください'}
  return null}
-function three(st){if(st.outs>=3){st.outs=0;st.b=0;st.s=0;st.bases=[null,null,null];if(st.half){st.half=0;st.inn++}else st.half=1}}
-function stateAt(i){const st=initState();for(let k=0;k<i;k++)applyPage(st,pages[k]);return st}
+function three(st){if(st.outs>=3){st.outs=0;st.b=0;st.s=0;st.bases=[null,null,null];st.subHalf[st.half]=[];if(st.half){st.half=0;st.inn++}else st.half=1}}
+function stateAt(i,pre){const st=initState();for(let k=0;k<i;k++)applyPage(st,pages[k]);if(pre&&pages[i])applyPre(st,pages[i]);return st}
 
 // 打球の角度と方向区分（実測した仕様）
 function angleOf(x,y){let a=Math.atan2(HOME[1]-y,x-HOME[0])*180/Math.PI;return a<0?a+360:a}
 function dirs(a){if(a<0||a>90)return[0,0];return[a>=60?1:a>=30?2:3,a>=72?1:a>=54?2:a>=36?3:a>=18?4:5]}
 
 // ===== 表示 =====
-function hands(st){const t=st.half,bi=st.bi[t],p=cp();const ph=p.handP||TEAMS[1-t].throws;let bh=p.handB||TEAMS[t].bats[bi];if(bh==='両')bh=ph==='右'?'左':'右';return{ph,bh}}
+function hands(st){const t=st.half,bi=st.bi[t],p=cp();const ph=p.handP||st.lu[1-t].throws;let bh=p.handB||st.lu[t].bats[bi];if(bh==='両')bh=ph==='右'?'左':'右';return{ph,bh}}
 function render(){
- const st=stateAt(cur),p=cp(),t=st.half,bat=batterOf(st),pid=pitcherOf(st),{ph,bh}=hands(st);
- pageno.textContent='ページ: '+(cur+1);
+ const st=stateAt(cur,true),p=cp(),t=st.half,bat=batterOf(st),pid=pitcherOf(st),{ph,bh}=hands(st);
+ pageno.textContent='ページ: '+(cur+1);tbbtn.style.background=st.tie?'#20c997':'#f1f3f5';tbbtn.style.color=st.tie?'#fff':'';
  date.textContent='2026/09/28';pname.textContent='#'+pid+' '+pid;bname.textContent='#'+bat+' '+bat;phand.textContent=ph;bhand.textContent=bh;
  clock.textContent=p.time||new Date().toTimeString().slice(0,8);clock.style.color=p.time?'#f03e5e':'';
  pc.textContent=st.pcount[pid]||0;
@@ -237,7 +250,7 @@ function render(){
  dbg.textContent=JSON.stringify(record(st,p),null,1);
 }
 const hands_=document.getElementById('hands');
-function inPlay(p){return p.res&&(typeof p.res.kind==='number'||['out','sac','sf','e'].includes(p.res.kind))&&!['死球','打撃妨害'].includes(p.res.label)}
+function inPlay(p){return p.res&&(typeof p.res.kind==='number'||['out','sac','sf','e','fc'].includes(p.res.kind))&&!['死球','振り逃げ','守備妨害'].includes(p.res.label)}
 
 // 球種の形（捕手目線で右投手のスライダーは右向き。投手目線・左投手で反転）
 function shape(sh,fill,stroke,pov,ph){let flip=(ph==='左')!==pov;const f=flip?'transform="scale(-1,1)"':'';const st=`fill="${fill}" stroke="${stroke}" stroke-width="1"`;const ln=`fill="none" stroke="${fill}" stroke-width="2"`;
@@ -276,7 +289,7 @@ function drawField(st,pv,same,p){
  [0,1,2,3].forEach(b=>{const[x,y]=BASEXY[b];s+=`<rect x="${x-8}" y="${y-8}" width="16" height="16" fill="#fff" onclick="baseClick(${b===0?4:b});event.stopPropagation()" style="cursor:pointer"/>`});
  const bb=p.batted_ball;if(bb)s+=`<line x1="${HOME[0]}" y1="${HOME[1]}" x2="${bb.x}" y2="${bb.y}" stroke="#e03131" stroke-width="1"/><circle cx="${bb.x}" cy="${bb.y}" r="3.5" fill="#f03e5e"/>`;
  const def=1-st.half;
- for(let pos=1;pos<=9;pos++){const idx=TEAMS[def].pos.indexOf(pos);const no=pos===1?TEAMS[def].P:(idx>=0?TEAMS[def].order[idx]:'');const[x,y]=POSXY[pos];
+ for(let pos=1;pos<=9;pos++){const idx=st.lu[def].pos.indexOf(pos);const no=pos===1?st.lu[def].P:(idx>=0?st.lu[def].order[idx]:'');const[x,y]=POSXY[pos];
   s+=S.fielderMode?`<g onclick="fielder(${pos});event.stopPropagation()" style="cursor:pointer"><circle cx="${x}" cy="${y}" r="10.5" fill="#343a40" stroke="#555"/><text x="${x}" y="${y+4}" font-size="11" fill="#fff" text-anchor="middle">${no}</text></g>`
    :`<text x="${x}" y="${y+4}" font-size="11" fill="#212529" text-anchor="middle" opacity=".6" pointer-events="none">${no}</text>`}
  // 打者と走者
@@ -309,7 +322,7 @@ function drawHomePanel(st,p,mv){let el=document.getElementById('homep');if(el)el
   return `<div style="margin-bottom:4px"><b>${b===0?'打者':b}: ${id(b)} #${id(b)}</b><div style="display:flex">${seg('アウト','out','{homeOut:true,rbi:false,scored:false}')}${seg('得点','run','{homeOut:false,rbi:false,scored:true}')}${seg('打点','rbi','{homeOut:false,rbi:true,scored:true}')}</div></div>`}).join('')+
   `<div onclick="homeOpen=false;render()" style="background:#20c997;color:#fff;text-align:center;padding:6px;border-radius:4px;cursor:pointer;margin-top:4px">OK</div>`;
  stage.appendChild(el)}
-function setRA(b,o){const p=cp();const mv=moves(stateAt(cur),p)[b]||{};p.ra[b]=Object.assign({},p.ra[b]||{to:mv.to},o)}
+function setRA(b,o){const p=cp();const mv=moves(stateAt(cur,true),p)[b]||{};p.ra[b]=Object.assign({},p.ra[b]||{to:mv.to},o)}
 function fielder(pos){const p=cp();
  if(errMode){errMode=false;openErr(pos);return}
  if(!inPlay(p)&&!(p.res&&p.res.kind==='FO'))return;p.catch_fielder.push(pos);render()}
@@ -317,7 +330,7 @@ function openErr(pos){const d=document.createElement('div');d.className='menu';d
  d.innerHTML=ERRS.map((e,i)=>`<label style="display:block;padding:3px 0;font-size:13px"><input type="checkbox" value="${i}"> ${e}</label>`).join('')+
   `<div style="display:flex;gap:4px;margin-top:6px"><span id="eok" style="background:#20c997;color:#fff;padding:5px 12px;border-radius:4px;cursor:pointer">OK</span><span onclick="this.closest('.menu').remove()" style="padding:5px 12px;cursor:pointer">キャンセル</span></div>`;
  stage.appendChild(d);d.querySelector('#eok').onclick=()=>{const ids=[...d.querySelectorAll('input:checked')].map(c=>ERRS[+c.value]);d.remove();if(!ids.length)return;cp().catch_fielder.push({pos,err:ids});render()}}
-function runnerClick(b){closePop();const st=stateAt(cur);if(b>0&&st.bases[b-1]==null)return;
+function runnerClick(b){closePop();const st=stateAt(cur,true);if(b>0&&st.bases[b-1]==null)return;
  // 走者を選んだあとに打者（本塁）を押したら、その走者の本塁生還として扱う
  if(b===0&&runnerSel&&runnerSel.b>0){baseClick(4);return}
  // 本塁に来ている走者を押したら「アウト・得点・打点」を開く
@@ -330,7 +343,7 @@ function runnerClick(b){closePop();const st=stateAt(cur);if(b>0&&st.bases[b-1]==
  d.innerHTML=items.map(([l,c,a])=>`<div style="background:${c}" onclick="runnerAct(${b},'${a}');event.stopPropagation()">${l}</div>`).join('');stage.appendChild(d);popup=d;render()}
 function runnerAct(b,a){closePop();const p=cp();
  if(a==='back'){p.ra[b]={back:true};runnerSel=null;render();return}
- if(a==='out'){p.ra[b]={out:true};runnerSel=null;render();return}
+ if(a==='out'){const prev=p.ra[b]||{};p.ra[b]=prev.steal?{out:true,steal:true,stealTo:prev.to}:{out:true};runnerSel=null;render();return}
  runnerSel={b,type:'steal'};render()}
 function baseClick(base){const p=cp();
  if(pickMode){pickMode=false;p.pickoff_throw_to=base===4?0:base;p.res=null;stamp();render();return}
@@ -357,10 +370,11 @@ function key(d){const p=cp();if(d==='C'){p.ball_speed='';p.speedPre=false}else i
 function setRes(r){const p=cp();p.res=r;p.skip=false;p.pickoff_throw_to=0;p.feature=0;for(const b of Object.keys(p.ra))if(!p.ra[b].steal)delete p.ra[b];stamp()}
 function pitchRes(l,k){const p=cp();if(k==='F'){p.flags=p.flags.includes(l)?p.flags.filter(x=>x!==l):[...p.flags,l];render();return}
  if(p.res&&p.res.label===l){setRes(null);render();return}
- const st=stateAt(cur);
- if(k==='B'&&st.b>=3){modal_('四球になって打者は自動的に1塁に進出。よろしいですか？','OK',()=>{setRes({label:l,kind:k});render()});return}
- setRes({label:l,kind:k});render()}
-function batRes(l,k){const p=cp();if(p.res&&p.res.label===l){setRes(null);render();return}setRes({label:l,kind:isNaN(+k)?k:+k});if(+k===4)homeOpen=true;render()}
+ const st=stateAt(cur,true);
+ if(k==='B'&&st.b>=3){modal_('四球になって打者は自動的に1塁に進出。よろしいですか？','OK',()=>{setRes({label:l,kind:k});openHomeIf();render()});return}
+ setRes({label:l,kind:k});openHomeIf();render()}
+function batRes(l,k){const p=cp();if(p.res&&p.res.label===l){setRes(null);render();return}setRes({label:l,kind:isNaN(+k)?k:+k});openHomeIf();render()}
+function openHomeIf(){const mv=moves(stateAt(cur,true),cp());if(Object.values(mv).some(a=>a.to>=4))homeOpen=true}
 function menu(k,el){if(openMenu){const same=openMenu.dataset.k===k;openMenu.remove();openMenu=null;if(same)return}
  const m=document.createElement('div');m.className='menu';m.dataset.k=k;m.style.left=el.style.left;m.style.top=(parseInt(el.style.top)+32)+'px';
  m.innerHTML=`<div onclick="setPlan('${k}',null)">✕ クリア</div><div style="border-top:1px solid #eee;padding:0;margin:4px 0"></div>`+STRATS[k].map(x=>`<div class="${cp().plan[k]===x?'act':''}" onclick="setPlan('${k}','${x}')">${x}</div>`).join('');stage.appendChild(m);openMenu=m}
@@ -368,15 +382,48 @@ function setPlan(k,v){const p=cp();if(v&&p.plan[k]===v)v=null;if(v)p.plan[k]=v;e
 function clearPage(){pages[cur]=blank();pickMode=false;runnerSel=null;render()}
 function askSkip(){modal_('打席をスキップしますか?','OK',()=>{const p=cp();p.skip=true;p.res=null;p.pickoff_throw_to=0;stamp();render()})}
 function askEnd(){modal_('入力を終了しますか?','終了',openSummary)}
-function commit(){const p=cp(),st=stateAt(cur);
+function commit(){const p=cp(),st=stateAt(cur,true);
  const err=checkCommit(st,p);if(err){toast(err);return}
  const after=JSON.parse(JSON.stringify(st));applyPage(after,p);
  const go_=()=>{if(cur===pages.length-1)pages.push(blank());cur++;pickMode=false;errMode=false;homeOpen=false;runnerSel=null;closePop();render()};
- if(after.half!==st.half){const t=after.half,i0=after.bi[t];
-  const rows=TEAMS[t].order.map((no,i)=>`<tr style="${i===i0?'background:#20c997;color:#fff':''}"><td>${i+1}</td><td>${no}</td><td>${TEAMS[t].bats[i]}</td></tr>`).join('');
+ if(after.half!==st.half){const t=after.half,i0=after.bi[t],needSub=st.subHalf[st.half].length>0;
+  const rows=after.lu[t].order.map((no,i)=>`<tr style="${i===i0?'background:#20c997;color:#fff':''}"><td>${i+1}</td><td>${no}</td><td>${after.lu[t].bats[i]}</td></tr>`).join('');
   mtext.innerHTML=`<div style="font-size:18px;margin-bottom:8px">イニングの確認</div><table class="sb" style="position:static;width:100%"><tr><td>打順</td><td>#</td><td>打</td></tr>${rows}</table><div style="display:flex;gap:10px;margin-top:8px;font-size:13px"><span>${TEAMS[0].name} ${after.score[0]}</span><span>${TEAMS[1].name} ${after.score[1]}</span></div>`;
-  mok.textContent='OK';mok.style.background='#12b886';modal.style.display='flex';mok.onclick=()=>{closeModal();go_()};return}
+  mok.textContent='OK';mok.style.background='#12b886';modal.style.display='flex';mok.onclick=()=>{closeModal();go_();if(needSub)openSubs()};return}
  go_()}
+// ===== 選手交代（BASS：両チームの打順表。背番号・守備・左右を直して保存） =====
+const POSN=['','投','捕','一','二','三','遊','左','中','右','DH'];
+function panel(html){let d=document.getElementById('panel');if(!d){d=document.createElement('div');d.id='panel';d.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:40';stage.appendChild(d)}
+ d.innerHTML=`<div style="background:#fff;border-radius:6px;padding:14px 16px;min-width:420px;max-height:720px;overflow:auto;font-size:13px">${html}</div>`;return d}
+function closePanel(){const d=document.getElementById('panel');if(d)d.remove()}
+function openSubs(){const st=stateAt(cur,true);
+ const sel=(id,opts,v)=>`<select id="${id}">${opts.map(([val,l])=>`<option value="${val}" ${String(val)===String(v)?'selected':''}>${l}</option>`).join('')}</select>`;
+ const LR=[['右','右'],['左','左'],['両','両']],POS=[2,3,4,5,6,7,8,9,10].map(v=>[v,v===10?'DH':v]);
+ let h='<div style="font-size:18px;margin-bottom:8px">選手交代</div><div style="display:flex;gap:18px">';
+ [1,0].forEach(t=>{const L=st.lu[t];h+=`<div><div style="color:#4263eb;margin-bottom:4px">${TEAMS[t].name}${t===st.half?'（攻撃）':'（守備）'}</div><table class="sb" style="position:static"><tr><td>打順</td><td>守備</td><td>#</td><td>打</td></tr>`+
+  L.order.map((no,i)=>`<tr><td>${i+1}</td><td>${sel(`p${t}_${i}`,POS,L.pos[i])}</td><td><input id="n${t}_${i}" value="${no}" style="width:44px"></td><td>${sel(`b${t}_${i}`,LR,L.bats[i])}</td></tr>`).join('')+
+  `<tr><td>投手</td><td></td><td><input id="n${t}_P" value="${L.P}" style="width:44px"></td><td>${sel(`b${t}_P`,[['右','右'],['左','左']],L.throws)}</td></tr></table></div>`});
+ h+='</div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px"><button style="position:static;padding:6px 14px" onclick="closePanel()">キャンセル</button><button style="position:static;padding:6px 14px;background:#20c997;color:#fff;border:none" onclick="saveSubs()">保存</button></div>';
+ panel(h)}
+function saveSubs(){const st=stateAt(cur,true),v=id=>document.getElementById(id).value,subs=[];
+ for(const t of [0,1]){const L=st.lu[t],pos=L.order.map((_,i)=>+v(`p${t}_${i}`));
+  if([...pos].sort((a,b)=>a-b).join()!=='2,3,4,5,6,7,8,9,10'){toast((t===0?'先攻':'後攻')+'チームのポジションが無効です');return}
+  L.order.forEach((no,i)=>{const n=+v(`n${t}_${i}`),b=v(`b${t}_${i}`);if(n!==no||b!==L.bats[i]||pos[i]!==L.pos[i])subs.push({t,slot:i,no:n,bats:b,pos:pos[i]})});
+  const P=+v(`n${t}_P`),th=v(`b${t}_P`);if(P!==L.P||th!==L.throws)subs.push({t,slot:'P',no:P,throws:th})}
+ const p=cp();p.subs=[...(p.subs||[]),...subs];closePanel();render()}
+// ===== タイブレーク（BASS：走者・打者・カウントを選ぶ。試作では今の打者と前の2人を最初から入れておく） =====
+function openTB(){const st=stateAt(cur,true),L=st.lu[st.half],bi=st.bi[st.half],p=cp();
+ const d=p.tb||{bi,r:[(bi+8)%9,(bi+7)%9,null],b:0,s:0,o:0};
+ const opt=(v,empty)=>(empty?`<option value="" ${v==null?'selected':''}>空</option>`:'')+L.order.map((no,i)=>`<option value="${i}" ${v===i?'selected':''}>${i+1}. ${no} (#${no})</option>`).join('');
+ const num=(id,l,v)=>`<label style="margin-right:10px">${l} <input id="${id}" type="number" min="0" max="3" value="${v}" style="width:40px"></label>`;
+ panel(`<div style="font-size:18px;margin-bottom:8px">タイブレーク</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+  <label>走者3<br><select id="tr3">${opt(d.r[2],1)}</select></label><label>走者2<br><select id="tr2">${opt(d.r[1],1)}</select></label>
+  <label>バッター<br><select id="tbi">${opt(d.bi,0)}</select></label><label>走者1<br><select id="tr1">${opt(d.r[0],1)}</select></label></div>
+  <div style="margin-top:10px">${num('tbb','ボール',d.b)}${num('tbs','ストライク',d.s)}${num('tbo','アウト',d.o)}</div>
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">${p.tb?'<button style="position:static;padding:6px 14px" onclick="cp().tb=null;closePanel();render()">解除</button>':''}<button style="position:static;padding:6px 14px" onclick="closePanel()">キャンセル</button><button style="position:static;padding:6px 14px;background:#20c997;color:#fff;border:none" onclick="saveTB()">OK</button></div>`)}
+function saveTB(){const g=id=>{const x=document.getElementById(id).value;return x===''?null:+x};
+ cp().tb={bi:g('tbi'),r:[g('tr1'),g('tr2'),g('tr3')],b:g('tbb')||0,s:g('tbs')||0,o:g('tbo')||0};stamp();closePanel();render()}
 function go(i){if(i<0||i>=pages.length)return;cur=i;pickMode=false;runnerSel=null;closePop();render()}
 function goLast(){go(Math.max(0,pages.length-2)===cur?pages.length-1:pages.length-1)}
 function undoLast(){if(cur===pages.length-1&&cur>0){pages.pop();cur--;pages[cur]=pages[cur];render()}}
@@ -389,7 +436,7 @@ addEventListener('keydown',e=>{if(e.key==='d'&&e.target.tagName!=='TEXTAREA')dbg
 
 // 入力終了 → 試合編集（打席を押すとその打席の1球目へ）
 function openSummary(){const cells={};let st=initState();
- pages.forEach((p,i)=>{if(i===pages.length-1)return;const t=st.half,b=st.bi[t],k=t+'-'+b+'-'+st.inn,before=st.bi[t];if(!cells[k])cells[k]={start:i};applyPage(st,p);if(st.bi[t]!==before||st.half!==t){const log=st.paLog[t+'-'+TEAMS[t].order[b]];if(log)cells[k].txt=log[log.length-1]}});
+ pages.forEach((p,i)=>{if(i===pages.length-1)return;const t=st.half,b=st.bi[t],k=t+'-'+b+'-'+st.inn,before=st.bi[t];if(!cells[k])cells[k]={start:i};applyPage(st,p);if(st.bi[t]!==before||st.half!==t){const log=st.paLog[t+'-'+st.lu[t].order[b]];if(log)cells[k].txt=log[log.length-1]}});
  let h=`<div style="font-size:26px;margin-bottom:12px">試合編集</div><button style="right:14px;top:14px;width:120px;height:34px" onclick="summary.style.display='none'">入力に戻る</button>`;
  [0,1].forEach(t=>{h+=`<div style="margin:14px 0 4px;color:#4263eb">${TEAMS[t].name}</div><table class="sb" style="position:static;width:100%"><tr><td style="width:60px">No</td><td style="width:60px">#</td><td style="width:200px">名前</td>`+[1,2,3,4,5,6,7,8,9].map(i=>`<td>${i}</td>`).join('')+'</tr>';
   TEAMS[t].order.forEach((no,b)=>{h+=`<tr><td style="height:46px">${b+1}</td><td>${no}</td><td style="background:#fff9db">✎ ${no}</td>`+[1,2,3,4,5,6,7,8,9].map(i=>{const c=cells[t+'-'+b+'-'+i];return`<td>${c?`<span onclick="summary.style.display='none';go(${c.start})" style="display:block;margin:4px;padding:8px;background:#f1f3f5;cursor:pointer;color:${/安|二|三|本/.test(c.txt||'')?'#e03131':'#212529'}">${c.txt||'入力中'}</span>`:''}</td>`}).join('')+'</tr>'});h+='</table>'});
