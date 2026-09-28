@@ -313,3 +313,4 @@
 - 2026-09-28 10:34 · すばる · SHIGABASE/build · iPadの7つの課題を修正(scale()の頭打ち、横向きホーム、選手成績の2列、一覧の最大幅、凡例、分析の見出し)。iPad縦横とiPhoneで確認、SHIGABASEにコミット(未push)
 - 2026-09-28 11:04 · すばる · SHIGABASE/build · 縦に戻すとホームのロゴの帯が消える不具合などを修正(回転対応、iPad縦の選手成績、ウエイトのグラフのはみ出し、ブルペン詳細の幅)。iPadの縦↔横とiPhoneで確認、SHIGABASEにコミット(未push)
 - 2026-09-28 11:21 · すばる · SHIGABASE/ship · SHIGABASEの未pushの20コミット(iPad対応3つと以前の作業17、調査用ログ含む)をGitHubにpush
+- 2026-09-28 11:54 · すばる · 野球分析/research · 旧Excel(試合入力)のVBAを取り出して入力の流れを整理し、2025秋10試合分で191列の値を集計。列の並び順が2種類あること、選手名の表記ゆれ、後で修正・飛ばす工夫を確認。データ形式は191列のまま使うと決定し計画に反映。[調査その1](../private/baseball-platform/01-vba-input-survey.md)

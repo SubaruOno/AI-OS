@@ -19,7 +19,7 @@
 - 新アプリは作らず、SHIGABASE(Expo + Supabase)の「試合記録・分析」機能として組み込む。
 - 端末の役割: iPad=試合中の入力、iPhone=確認と簡単な入力、Mac・Windows=同じコードのWeb版をブラウザで開き、分析・資料出力・過去試合の取込。Mac専用アプリは作らない。
 - SHIGABASEは今iPhone縦向き専用(`supportsTablet: false`)。iPad対応とWeb版の確認が最初の作業。iPad対応をApp Storeに出すと後から外せないため、TestFlightで先に確かめる。
-- 191列形式はインポート/エクスポートの互換境界として残し、新しいデータは意味のまとまりでSupabaseに保存する。
+- データ形式は今のVBAの191列のまま使う(9/28決定)。UIと入力の流れはすばると一緒に決める。調査結果は[旧Excelの調査 その1](../../private/baseball-platform/01-vba-input-survey.md)。
 - 通信断では端末内へ一時保存し、復帰時に重複なく同期する。初期運用は1試合1端末入力。
 - 全分析を一度に置き換えず、現行Excelと同じデータで照合し、優先度順に移す。
 
