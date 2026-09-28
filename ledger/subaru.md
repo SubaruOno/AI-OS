@@ -309,3 +309,4 @@
 - 2026-09-28 07:34 · すばる · 野球分析/decision · 野球記録・分析プラットフォーム計画を見直し、新アプリではなくSHIGABASE(Expo+Supabase)に組み込む方針へ改訂。iPad=入力、iPhone=確認、Mac/Windows=Web版。VBA数・シート数の誤りと原本の場所も訂正。[計画](../plans/2026-09-28-baseball-scoring-analysis-platform.md)
 - 2026-09-28 09:58 · すばる · 野球分析/research · SHIGABASEをiPadシミュレーター(縦・横)で確認。崩れはなく、横向きホームのロゴの帯、選手成績の図の右側の空き、横に伸びる凡例・入力欄の3点が課題。今のXcodeではfmtのビルドエラーがありPodfileでの修正が必要。結果を[計画](../plans/2026-09-28-baseball-scoring-analysis-platform.md)に追記
 - 2026-09-28 10:12 · すばる · SHIGABASE/build · Xcode 26でfmtがビルドエラーになる問題を、pod installのたびにfmtを直す設定プラグイン(withFmtConstevalFix)で修正。ビルド成功を確認、SHIGABASEにコミット(未push)
+- 2026-09-28 10:24 · すばる · SHIGABASE/research · 残りの画面(ブルペン、ウエイト、相手投手、資料、映像、投稿、分析)をiPad横向きで確認。崩れはなく、横向きホームがスクロールできない、タブバーが大きい、分析の見出しがルート名のまま、一覧が横に伸びる、の4点を[計画](../plans/2026-09-28-baseball-scoring-analysis-platform.md)に追記
