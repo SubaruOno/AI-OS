@@ -335,3 +335,4 @@
 - 2026-09-28 23:22 · subaru · baseball-platform/research · SHIGABASE本番DBの表定義を読み取り確認（games・pitchesが既存、Excel取込は43列）。新入力もpitchesへ書く方針、チーム一覧の統合、名簿用の選手表を仕様案に追記
 - 2026-09-28 23:38 · subaru · baseball-platform/research · BASSの管理画面・端末内DB・試合作成と旧Excelのマスタ・選択肢を読み取りで調査し、private/03-bass-masters.mdと仕様案11.6にまとめ
 - 2026-09-28 23:47 · subaru · baseball-platform/decision · 入力中の試合は1つだけ、保存は端末内で完結させ同期は別操作とすることを決定
+- 2026-09-28 23:54 · subaru · baseball-platform/decision · アプリ実装をローカルSupabaseで開始。Codexに第1段階（ローカルDB・表・初期データ・計算部分の移植）を依頼
