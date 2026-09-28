@@ -333,3 +333,4 @@
 - 2026-09-28 22:53 · subaru · baseball-platform/decision · 旧列の入力方針・打席スキップ・大会項目必須・延長15回までを決定。実データ照合で仕様書の列順の誤り、175〜181列の正体、代打H・代走Rを訂正
 - 2026-09-28 23:10 · subaru · baseball-platform/decision · 試合入力の保存・範囲・権限・オフライン入力と選択同期・試合番号の方針を決定し仕様案に追記
 - 2026-09-28 23:22 · subaru · baseball-platform/research · SHIGABASE本番DBの表定義を読み取り確認（games・pitchesが既存、Excel取込は43列）。新入力もpitchesへ書く方針、チーム一覧の統合、名簿用の選手表を仕様案に追記
+- 2026-09-28 23:38 · subaru · baseball-platform/research · BASSの管理画面・端末内DB・試合作成と旧Excelのマスタ・選択肢を読み取りで調査し、private/03-bass-masters.mdと仕様案11.6にまとめ
