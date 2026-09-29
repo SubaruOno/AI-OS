@@ -355,3 +355,4 @@
 - 2026-09-29 16:15 · subaru · baseball-platform/build · Codexの高速化は途中で止まりフックの順序エラーを起こしたため取り消し（控えはscratchpad）。Dockerが再び固まり再起動
 - 2026-09-29 16:17 · subaru · baseball-platform/build · 安全確認のうえSHIGABASEをiPad対応に（app.json、iPhone縦固定・iPad全方向、feature/scoring-local）。本番用ビルドで実速度を確認中
 - 2026-09-29 16:22 · subaru · baseball-platform/decision · 本番用ビルドのiPad全画面で入力画面が十分軽いことをすばるが確認。画面分割の高速化は見送り、仕上げに進む
+- 2026-09-29 16:42 · subaru · baseball-platform/build · 試合入力までの流れをBASS並みに（トップ3択・再開・初回案内・新規試合1画面と入力チェック・試合管理）をCodexに依頼。完成後にClaudeが実操作で確認する方針
