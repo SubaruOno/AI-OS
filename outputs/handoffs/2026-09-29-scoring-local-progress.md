@@ -172,3 +172,11 @@ npx expo start
 - ローカル名簿永続化の`lib/scoring/local-store.ts`は、2件目のコミット時に`.git/index.lock`作成が`Operation not permitted`で拒否されたため、未コミットで残しています。強制操作はしていません。
 - 仮登録選手が同期対象になるタイミングと、登録後の選手情報をゲームラインナップへどの粒度で保持するかは未決です。現在は端末内名簿とページ交代イベントに保持し、サーバー送信はしていません。
 - 左右の「T」「B」は投・打の利き腕として表示しています。BASS欄の正確な略号の意味はノートで明示されていないため、この解釈にしました。
+
+## 第6段階
+
+- 選手モーダルが空になる原因は、`scoring_roster_players` に存在しない `uniform_no` を含めたSELECTがPostgREST 400となり、初期データ一式のロードを中断していたこと。背番号は `scoring_player_careers` の現行キャリアから取得し、チーム別に結合する `buildRosterPlayers` 関数とユニットテストを追加。守備側P・攻撃側Bのチーム切替は既存の `openPlayer` が正しく `1-state.half` / `state.half` を選んでいた。ラインナップ強調もチームIDを含めて判定するよう修正。
+- analyst@example.test でローカル55421へログインし、PostgREST経由で各チームID（`20000000-0000-4000-8000-000000000001/2`）のroster 12件・現行career背番号12件を確認。誤ったroster.uniform_noクエリは400「column ... does not exist」。指定された試合UUID・チームUUID（`...0001/...0002`）は現在のローカルDBに存在せず、実際のseedチームIDは20000000系列。RLSで analyst が阻害されているわけではないことも確認。
+- fieldsetラベルの共通表示を白背景・左寄せ・小padding付きでプロトタイプの `.cap` CSS（13px bold、line-height 18px）に合わせ、全対象欄のcaption配置を確認。走者欄はラインナップの選手名を引き、1〜3塁すべて `#背番号 名前` 表示へ変更。
+- 検証: `npm test` 4 files / 24 tests passed（roster list builder追加を含む）。`npx expo export --platform web` 成功、37 routesを `dist` へ出力。`git diff --check` clean。TypeScript全体チェックは既存の `app/opponent-pitchers/[name].tsx` の型不一致、Deno Supabase FunctionsのURL import・Deno global型不足で失敗（今回の変更とは無関係）。ブラウザー経由の画面確認はローカルfile URLをブラウザー制御ポリシーがブロックしたため実施できず。試合画面は指定試合がDBにないため実データ表示も確認できず。
+- コミット: `dd69e81 fix(scoring): restore player roster selection` は完了。ラベル修正・走者表示修正はコミット操作時の `.git/index.lock` 作成拒否により未コミットで残存（`app/scoring/[id].tsx`）。リモートpushなし。作業ツリーの `supabase/.temp/cli-latest` 自動更新は元の `v2.84.2` に戻した。
