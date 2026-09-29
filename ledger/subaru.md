@@ -357,3 +357,4 @@
 - 2026-09-29 16:22 · subaru · baseball-platform/decision · 本番用ビルドのiPad全画面で入力画面が十分軽いことをすばるが確認。画面分割の高速化は見送り、仕上げに進む
 - 2026-09-29 16:42 · subaru · baseball-platform/build · 試合入力までの流れをBASS並みに（トップ3択・再開・初回案内・新規試合1画面と入力チェック・試合管理）をCodexに依頼。完成後にClaudeが実操作で確認する方針
 - 2026-09-29 16:45 · subaru · baseball-platform/research · BASSの新規試合の入力チェック（試合ID 8〜15桁、日付・時刻、選手の重複、守備の重複）を処理から確認し調査メモに追記
+- 2026-09-29 16:57 · subaru · orchestra/note · 定演トランペットのエキストラ紹介に冨田先生へお礼を返信し、河野さんへのLINE文面を作成
