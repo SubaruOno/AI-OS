@@ -353,3 +353,4 @@
 - 2026-09-29 15:35 · subaru · baseball-platform/build · 入力画面の高速化をCodexに別worktree（feature/scoring-perf）で依頼。本番用設定のビルドで実速度を測定開始
 - 2026-09-29 16:00 · subaru · baseball-platform/research · 本番用ビルドで、SHIGABASEがiPad非対応設定（supportsTablet false・TARGETED_DEVICE_FAMILY 1）と判明。リリース前にiPad対応が必要。開発用アプリに戻し、高速化をCodexに再依頼
 - 2026-09-29 16:15 · subaru · baseball-platform/build · Codexの高速化は途中で止まりフックの順序エラーを起こしたため取り消し（控えはscratchpad）。Dockerが再び固まり再起動
+- 2026-09-29 16:17 · subaru · baseball-platform/build · 安全確認のうえSHIGABASEをiPad対応に（app.json、iPhone縦固定・iPad全方向、feature/scoring-local）。本番用ビルドで実速度を確認中
