@@ -180,3 +180,11 @@ npx expo start
 - fieldsetラベルの共通表示を白背景・左寄せ・小padding付きでプロトタイプの `.cap` CSS（13px bold、line-height 18px）に合わせ、全対象欄のcaption配置を確認。走者欄はラインナップの選手名を引き、1〜3塁すべて `#背番号 名前` 表示へ変更。
 - 検証: `npm test` 4 files / 24 tests passed（roster list builder追加を含む）。`npx expo export --platform web` 成功、37 routesを `dist` へ出力。`git diff --check` clean。TypeScript全体チェックは既存の `app/opponent-pitchers/[name].tsx` の型不一致、Deno Supabase FunctionsのURL import・Deno global型不足で失敗（今回の変更とは無関係）。ブラウザー経由の画面確認はローカルfile URLをブラウザー制御ポリシーがブロックしたため実施できず。試合画面は指定試合がDBにないため実データ表示も確認できず。
 - コミット: `dd69e81 fix(scoring): restore player roster selection` は完了。ラベル修正・走者表示修正はコミット操作時の `.git/index.lock` 作成拒否により未コミットで残存（`app/scoring/[id].tsx`）。リモートpushなし。作業ツリーの `supabase/.temp/cli-latest` 自動更新は元の `v2.84.2` に戻した。
+
+
+## 表示の高速化
+
+- `app/scoring/[id].tsx`でストップウォッチの50ms更新状態を`React.memo`の子コンポーネント内に移し、画面本体がタイマー更新で再描画されないようにしました。コース図のSVG要素配列は投手目線、打者・投手の利き腕、過去投球、現在球に依存する`useMemo`で保持しています。グラウンド図も描画要素を`useMemo`に移し、操作イベントはref経由で最新状態を参照します。開発用`PERF`フラグは`__DEV__ && false`で既定オフです。
+- 今回の環境ではiPad SimulatorのCoreSimulatorServiceへ接続できず、フラグを有効にしたタップ計測を実施できませんでした。変更前の実測は約170ms/タップ（SVGを隠すと約125ms）です。変更後の実測値は未取得で、60ms未満の達成を確認していません。画面の数百要素を領域別に`React.memo`境界へ分割する作業も未完了であり、この差分だけでは依頼の性能目標を満たしたとは判断できません。
+- 検証: `npm test` は4ファイル24テスト成功。`npx tsc --noEmit`は既存の別画面・Deno関数のエラーに加え、変更中に一時発生したスコアリング画面のエラーを修正し、最終実行では同画面固有のエラーなし。`npx expo export --platform web`は成功し、37ルートを出力しました。終了時にExpoがforce-exitしましたが、出力完了と成功コードを確認しました。iPad Simulator計測と完了確認は未実施です。
+- Git commitは`.git/index.lock`作成が`Operation not permitted`で拒否されたため未コミットです。作業ブランチは`feature/scoring-local`で、push・main・本番Supabaseへの操作はありません。
