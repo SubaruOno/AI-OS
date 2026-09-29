@@ -345,3 +345,4 @@
 - 2026-09-29 11:02 · subaru · baseball-platform/build · Codex第4段階で入力画面が試作とほぼ同じ配置に。シミュレーターで確認し、投手表示の誤り・日付欄の切れ・投手/打者欄の交代画面を第5段階として依頼
 - 2026-09-29 11:12 · subaru · baseball-platform/build · 採点画面第5段階の守備側投手/攻撃側打者マッピング、選手選択・交代、仮登録、fieldsetラベルを実装。テスト23件とWeb export成功、ローカル名簿保存変更はGit index拒否で未コミット。[引き継ぎ](../outputs/handoffs/2026-09-29-scoring-local-progress.md)
 - 2026-09-29 11:25 · subaru · baseball-platform/build · Codex第5段階（投手・打者の取り違え修正、欄の見出し、投手・打者欄からの交代と新規選手の仮登録、テスト23件）をコミット。Dockerが固まりローカルSupabaseが停止、すばるに再起動を依頼
+- 2026-09-29 11:34 · subaru · baseball-platform/build · Dockerを復旧しローカルSupabaseを再起動。第5段階を実機確認（ダミー選手名をB01〜に変更）、選手一覧が空・見出しずれ・走者表示をCodex第6段階に依頼
