@@ -146,3 +146,29 @@ npx expo start
 ### Git
 
 - 作業ブランチは`feature/scoring-local`のままです。pushはしていません。画面ファイルのcommitは未実施です。
+
+## 第5段階（2026-09-29）
+
+### 作ったもの
+
+- `teamSetupsFromLineup`のチーム順を明記し、先攻（teamIds[0]）が1回表の攻撃、後攻（teamIds[1]）が1回表の守備になるエンジンテストを追加しました。投手欄は守備側P枠、打者欄は攻撃側の現在打順スロットから表示します。1回裏では対応が反転します。
+- 選手表示を`#背番号 名前`にし、投手・打者欄タップで「ピッチャーを選択」「バッターを選択」を開くようにしました。名簿タブに守備フィルター、検索、引退選手切替、現在出場中の選手の強調表示、選択中選手からの交代確定を追加しました。
+- 打者の交代は現在の打順枠、投手の交代は守備側チームのP枠を対象に、通常の`Page.subs`へ記録します。エンジンテストで両方の枠が更新されることを確認します。
+- 新規選手フォームに日時入り初期名、背番号、守備、利き腕、打席位置、仮登録を用意しました。仮登録した名簿はチーム単位でlocalStoreへ保存し、再読込で復元します。
+- 上部フィールド、塁、捕球順、メモのラベル位置をfieldset風にずらし、日付などの文字に重ならない位置へ調整しました。
+
+### 検証
+
+- `npm test -- --run`: 3ファイル23テスト成功。
+- `npx expo export --platform web`: 成功。37ルートを出力しました。既存Expo通知のWeb警告と終了時force-exit表示があります。
+- `git diff --check`: 成功。
+- `npx tsc --noEmit`: 失敗。既存の opponent-pitchers 型、Supabase Edge FunctionのDeno環境型エラーに加え、元々あったlineup player_snapshotの`show_index`型不足が出たため型定義に追加しました。今回の入力画面由来のエラーは出ていません。
+- 要求されたiPad Simulatorスクリーンショット確認はこの作業環境では実施できていません。Web書き出しとテストで確認しました。
+
+### Gitと未完了事項
+
+- branchは`feature/scoring-local`のまま。pushも本番Supabaseへの書き込みもありません。
+- `51d1b88 test(scoring): verify top-bottom lineup mapping` と `1592b87 feat(scoring): add roster player selection substitutions` をコミットしました。
+- ローカル名簿永続化の`lib/scoring/local-store.ts`は、2件目のコミット時に`.git/index.lock`作成が`Operation not permitted`で拒否されたため、未コミットで残しています。強制操作はしていません。
+- 仮登録選手が同期対象になるタイミングと、登録後の選手情報をゲームラインナップへどの粒度で保持するかは未決です。現在は端末内名簿とページ交代イベントに保持し、サーバー送信はしていません。
+- 左右の「T」「B」は投・打の利き腕として表示しています。BASS欄の正確な略号の意味はノートで明示されていないため、この解釈にしました。
