@@ -350,3 +350,4 @@
 - 2026-09-29 14:53 · subaru · baseball-platform/build · すばるの指摘で入力画面の球速二重表示・日付の文字切れ・コースのタップ位置ずれを修正
 - 2026-09-29 15:00 · subaru · baseball-platform/build · 入力画面の操作の遅れを改善（押すたびの全ページ保存をまとめ、前の球の計算を1回に）
 - 2026-09-29 15:16 · subaru · baseball-platform/research · 入力画面の重さを実測で調査。原因は画面部品を関数内で定義していたことによる全部品の作り直し（約250ms→170ms）。残りは数百の部品の描き直しと図（約40ms）
+- 2026-09-29 15:35 · subaru · baseball-platform/build · 入力画面の高速化をCodexに別worktree（feature/scoring-perf）で依頼。本番用設定のビルドで実速度を測定開始
