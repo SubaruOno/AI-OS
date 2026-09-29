@@ -347,3 +347,4 @@
 - 2026-09-29 11:25 · subaru · baseball-platform/build · Codex第5段階（投手・打者の取り違え修正、欄の見出し、投手・打者欄からの交代と新規選手の仮登録、テスト23件）をコミット。Dockerが固まりローカルSupabaseが停止、すばるに再起動を依頼
 - 2026-09-29 11:34 · subaru · baseball-platform/build · Dockerを復旧しローカルSupabaseを再起動。第5段階を実機確認（ダミー選手名をB01〜に変更）、選手一覧が空・見出しずれ・走者表示をCodex第6段階に依頼
 - 2026-09-29 12:33 · subaru · baseball-platform/build · Codex第6段階（選手一覧の修正、走者表示）を確認・コミット。見出し位置を試作に合わせて修正、選手選択画面の一覧表示をシミュレーターで確認
+- 2026-09-29 14:53 · subaru · baseball-platform/build · すばるの指摘で入力画面の球速二重表示・日付の文字切れ・コースのタップ位置ずれを修正
