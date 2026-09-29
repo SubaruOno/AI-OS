@@ -341,3 +341,5 @@
 - 2026-09-29 01:05 · subaru · baseball-platform/build · シミュレーターで試合記録を実操作して保存失敗（AsyncStorage）と結果種類の不一致を修正。Codexに第3段階（入力画面の本格移植・打順選択）を依頼
 - 2026-09-29 01:24 · subaru · baseball-platform/decision · 入力画面はアプリの部品（React Native＋SVG）で試作と寸法・動きを1:1にする方針に決定。Codexに第4段階を依頼
 - 2026-09-29 01:44 · subaru · baseball-platform/research · BASSのピッチャー欄・バッター欄を押したときの動き（その場で投手交代・代打、新規選手の仮登録）を確認し調査メモに追記
+- 2026-09-29 01:48 · subaru · baseball-platform/build · SHIGABASE採点画面をHTMLの固定座標とSVG描画で移植、テスト20件とWeb export成功。headless/browser撮影は環境制御で未完了
+- 2026-09-29 11:02 · subaru · baseball-platform/build · Codex第4段階で入力画面が試作とほぼ同じ配置に。シミュレーターで確認し、投手表示の誤り・日付欄の切れ・投手/打者欄の交代画面を第5段階として依頼
