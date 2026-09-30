@@ -373,3 +373,4 @@
 - 2026-09-30 15:23 · subaru · baseball-platform/decision · 座標は旧Excelと同じ決まり（旧フォーム画像上のマウス座標）で保存・書き出すと決定。旧VBAはCourse_Picture/HitBallPosition_PictureのMouseDownのX,Yをそのまま記録と確認
 - 2026-09-30 15:39 · subaru · baseball-platform/build · 191列照合を計算のみで確認（状態84・打順70・投球93・打球89・走者83・得点98%、写しなしを自分で再測定）。旧Excelの入力画像を取り出し、打球図は旧Excelの球場に差し替え・コースも旧座標で保存する方針で、座標と191列の続きをCodexに依頼
 - 2026-09-30 15:40 · subaru · tools/build · 別の作業で作られたメニューバー用アプリ agent-usage-bar とインストールスクリプトを記録（.buildは除外）
+- 2026-09-30 15:42 · subaru · agent-usage-bar/build · Claude Code・Codex・OpenCodeの利用状況をmacOSメニューバーに出すSwiftアプリを作成し、Codex APIで取得確認。~/Applicationsに配置して起動。OpenCodeは利用枠を返すプロバイダーなし
