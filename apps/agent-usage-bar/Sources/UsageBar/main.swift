@@ -55,16 +55,20 @@ struct ProviderView: Identifiable {
     init() {
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in Task { @MainActor in self?.refresh() } }
+        NotificationCenter.default.addObserver(forName: .init("UsageBarDidRefresh"), object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.objectWillChange.send() }
+        }
     }
     func refresh() {
         guard !refreshing else { return }
         refreshing = true
         Task { [weak self] in
-            let claude = await Task.detached(priority: .utility) { Self.readClaude() }.value
-            let codex = await Task.detached(priority: .utility) { Self.readCodex() }.value
-            let openCode = await Task.detached(priority: .utility) { Self.readOpenCode() }.value
+            async let claude = Task.detached(priority: .utility) { Self.readClaude() }.value
+            async let codex = Task.detached(priority: .utility) { Self.readCodex() }.value
+            async let openCode = Task.detached(priority: .utility) { Self.readOpenCode() }.value
+            let results = await [claude, codex, openCode]
             guard let self else { return }
-            self.providers = [claude, codex, openCode]
+            self.providers = results
             self.refreshedAt = Date()
             self.refreshing = false
         }
@@ -128,7 +132,11 @@ struct ProviderView: Identifiable {
                 if let range = buffer.range(of: Data([10])) {
                     let line = buffer.subdata(in: 0..<range.lowerBound); buffer.removeSubrange(0..<range.upperBound); return line
                 }
-                if let part = try? reader.read(upToCount: 4096), !part.isEmpty { buffer.append(part) }
+                if let part = try? reader.read(upToCount: 4096), !part.isEmpty {
+                    buffer.append(part)
+                } else {
+                    Thread.sleep(forTimeInterval: 0.05)
+                }
             }
             return nil
         }
@@ -223,7 +231,7 @@ struct PopoverView: View {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem.button?.title = "AI Usage"
+        statusItem.button?.title = "AI ..."
         statusItem.button?.action = #selector(togglePopover)
         statusItem.button?.target = self
         popover = NSPopover(); popover.behavior = .transient; popover.contentSize = NSSize(width: 360, height: 340)
@@ -231,7 +239,8 @@ struct PopoverView: View {
         model.$providers.sink { [weak self] providers in
             Task { @MainActor in
                 let percent = providers.flatMap(\.windows).map(\.percent).max().map { Int($0.rounded()) }
-                self?.statusItem.button?.title = percent.map { "AI \(100 - $0)%" } ?? "AI Usage"
+                self?.statusItem.button?.title = percent.map { "AI \(100 - $0)%" } ?? "AI ..."
+                NotificationCenter.default.post(name: .init("UsageBarDidRefresh"), object: nil)
             }
         }.store(in: &subscriptions)
     }
