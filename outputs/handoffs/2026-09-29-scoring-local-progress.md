@@ -217,3 +217,9 @@ npx expo start
 - 検証: `npm test` は6ファイル33テスト成功。`npx tsc --noEmit` は既存 `app/opponent-pitchers/[name].tsx` の型エラー1件とSupabase Edge FunctionのDeno型・URL import不足で失敗し、今回の `app/scoring` / `lib/scoring` はエラーなし。`npx expo export --platform web` は `dist` を出力しましたが、Expoが終了待ちのあとforce-exit表示を出しました。`git diff --check` は成功。
 - コミット: `e0991ca feat(scoring): 同期データを分析テーブルへ反映`。pushなし。既存の `app/_layout.tsx` 変更とCLIによる `supabase/.temp/cli-latest` 更新は今回のコミットに含めていません。
 - すばるの手動確認: iPadでチームのカテゴリ・本拠地、選手の背番号と投打・守備・boolean表記を確認。小さな試合を入力して「試合管理」から同期し、同期済み表示と既存の試合分析・選手成績・相手投手・スカウト画面への反映を確認。ネットワーク切断時に同期エラーが各試合のカード内へ出て、同期済み扱いにならないことも確認してください。
+
+## 2026-09-30 scoring-local mapping fix
+- `to-pitches.ts` now maps scoring outcomes to the saved-file vocabulary, maps batted-ball feature/strength, preserves field SVG coordinates, and filters blank pages; sync writes runs and totals from the committed engine state.
+- Added coverage for result words, hit fields/coordinates, blank-page exclusion, and line score. `npm test`: 37 passed. `npx tsc --noEmit` still reports existing unrelated errors in `app/opponent-pitchers/[name].tsx` and Deno edge functions; no errors point to changed files.
+- No sync was run. Human follow-up: re-sync display game `202609290056` manually. Commit could not be created because writing `.git/index` was denied; changes remain uncommitted.
+- Coordinate convention: scoring UI stores absolute field-SVG coordinates (home near x=46,y=238; outward/upward), matching legacy import data and spray-chart rendering.
