@@ -206,3 +206,14 @@ npx expo start
 - `/scoring/masters` にチーム・選手・球場・カテゴリ・球種・結果・作戦・メモの8タブ一覧を復元しました。編集と追加から従来フォームへ移動し、保存・無効化後は一覧に戻ります。フォーカス時に再取得し、無効レコードと引退選手は切り替えて表示できます。選手にはチーム絞り込みと名前検索があります。
 - `npm test` は27件成功。`npx expo export --platform web` は成功しました。`npx tsc --noEmit` は既存の投球記録型アサーションとEdge FunctionのDeno型エラーで失敗し、今回のscoring画面のエラーはありません。
 - 実機/シミュレータでは、8タブの横スクロール、選手のチーム・引退・検索フィルター、編集・追加後の一覧再読込、ヘッダー名を確認してください。
+
+## 同期と既存画面への反映（2026-09-30）
+
+- Part A: `app/scoring/masters.tsx` のチーム一覧はカテゴリ名・本拠地球場名を参照表示し、選手一覧は `scoring_player_careers` の現行背番号を表示します。投打コードは右・左・両、守備位置コードは投・捕・一・二・三・遊・左・中・右・DH、boolean値は○・—へ置き換えました。
+- Part B: `lib/scoring/sync-game.ts` に試合・スタメン・プレイの同期、仮登録選手の作成、交代履歴の再構築、分析用 `games` / `pitches` のゲーム単位delete-then-insertを実装しました。プレイは `client_mutation_id` でupsertし、仮選手はローカルで同期用IDを保持して再試行時の重複登録を避けます。同期成功後だけローカルの `synced_at` を更新します。試合管理画面には各試合の日本語エラーを表示します。
+- `lib/scoring/to-pitches.ts` はエンジンの `stateAt` / `applyPage` を使う純粋変換です。既存Excel取込と同じ `pitches` の列意味・日本語語彙（表/裏、打席継続/完了、安打・凡打・三振・四球など）を出し、球種は `scoring_ball_types.old_excel_label` を参照します。変換テストはカウント推移、走者ありの安打、三振、四球、回・表裏の切替、交代の6ケースです。
+- 新規ローカルmigration `20260930000000_scoring_game_analysis_link.sql` で `games.scoring_game_id` を追加しました。既存migrationは編集していません。
+- ローカル Supabase（API 55421 / DB 55422）上でseed analystのIDを使い、同じ `syncScoringGame` 関数を小さな3プレイのゲームに実行しました。API照会結果は `games=1`、`pitches=3`、`scoring_plays=3` です。同期処理内で不足していた `pitches.game_day`列を送らないよう修正後に成功しました。本番Supabaseには接続していません。
+- 検証: `npm test` は6ファイル33テスト成功。`npx tsc --noEmit` は既存 `app/opponent-pitchers/[name].tsx` の型エラー1件とSupabase Edge FunctionのDeno型・URL import不足で失敗し、今回の `app/scoring` / `lib/scoring` はエラーなし。`npx expo export --platform web` は `dist` を出力しましたが、Expoが終了待ちのあとforce-exit表示を出しました。`git diff --check` は成功。
+- コミット: `e0991ca feat(scoring): 同期データを分析テーブルへ反映`。pushなし。既存の `app/_layout.tsx` 変更とCLIによる `supabase/.temp/cli-latest` 更新は今回のコミットに含めていません。
+- すばるの手動確認: iPadでチームのカテゴリ・本拠地、選手の背番号と投打・守備・boolean表記を確認。小さな試合を入力して「試合管理」から同期し、同期済み表示と既存の試合分析・選手成績・相手投手・スカウト画面への反映を確認。ネットワーク切断時に同期エラーが各試合のカード内へ出て、同期済み扱いにならないことも確認してください。
