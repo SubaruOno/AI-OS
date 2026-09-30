@@ -385,3 +385,4 @@
 - 2026-09-30 19:04 · subaru · shigabase/decision · 大谷ルールの試合だけ投手を打順に入れる交代を認めると決定・実装（ShigabaseiOS a061f79）
 - 2026-10-01 00:04 · subaru · shigabase/build · 座標の保存値を実機で確認（ゾーン中心・二塁ともずれ1.3以内）、開き直すと座標が変換し直される不具合を修正（ShigabaseiOS 973bce3）
 - 2026-10-01 00:34 · subaru · shigabase/build · 代走・大谷ルールの試合作成・延長を画面で確認、191列に自動進塁を書くよう修正（旧マクロは本進数＝打点）、試合作成の守備初期値を修正（ShigabaseiOS a133f98）
+- 2026-10-01 01:02 · subaru · shigabase/build · 191列の一致を57%→99.57%に（全グループ100%、その他99.55%）。残りは旧Excel自体の食い違いと交代行の記録のまちまちさで、理由をprivateに記録（ShigabaseiOS cf82090）
