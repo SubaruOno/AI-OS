@@ -231,7 +231,7 @@ struct PopoverView: View {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem.button?.title = "AI ..."
+        statusItem.button?.title = "AI残量"
         statusItem.button?.action = #selector(togglePopover)
         statusItem.button?.target = self
         popover = NSPopover(); popover.behavior = .transient; popover.contentSize = NSSize(width: 360, height: 340)
@@ -239,7 +239,7 @@ struct PopoverView: View {
         model.$providers.sink { [weak self] providers in
             Task { @MainActor in
                 let percent = providers.flatMap(\.windows).map(\.percent).max().map { Int($0.rounded()) }
-                self?.statusItem.button?.title = percent.map { "AI \(100 - $0)%" } ?? "AI ..."
+                self?.statusItem.button?.title = percent.map { "AI \(100 - $0)%" } ?? "AI残量"
                 NotificationCenter.default.post(name: .init("UsageBarDidRefresh"), object: nil)
             }
         }.store(in: &subscriptions)
