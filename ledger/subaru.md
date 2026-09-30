@@ -383,3 +383,4 @@
 - 2026-09-30 18:52 · subaru · shigabase/build · 交代・タイブレーク・打席スキップ・盗塁と牽制・併殺を画面とテストで確認、球数の混同・入力途中の消失・代打の名前など4件を修正（ShigabaseiOS 404876d）
 - 2026-09-30 19:02 · subaru · shigabase/build · 出場中・退いた選手を交代で出せないよう規則を追加、選手一覧の重複警告を解消（ShigabaseiOS 049d423）
 - 2026-09-30 19:04 · subaru · shigabase/decision · 大谷ルールの試合だけ投手を打順に入れる交代を認めると決定・実装（ShigabaseiOS a061f79）
+- 2026-10-01 00:04 · subaru · shigabase/build · 座標の保存値を実機で確認（ゾーン中心・二塁ともずれ1.3以内）、開き直すと座標が変換し直される不具合を修正（ShigabaseiOS 973bce3）
