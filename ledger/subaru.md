@@ -365,3 +365,4 @@
 - 2026-09-30 12:16 · subaru · orchestra/note · 冨田先生へ2通目を返信（河野さんへLINE済み、10/12のホール練で顔合わせ）
 - 2026-09-30 13:22 · subaru · baseball-platform/build · Codexがマスター一覧の表示修正と、同期後に既存のgames/pitchesへ反映する処理を実装（e0991ca、ローカルでgames 1・pitches 3を確認、テスト33件）
 - 2026-09-30 13:27 · subaru · shiga/ship · 明治医療戦の打球方向資料（状況別・1部2部比較、全員74p）を作成し小倉先生へ送付。監督とのメールはsubaru.ono1@gmail.comを使うことを憲法に追記
+- 2026-09-30 13:29 · subaru · shiga/build · 滋賀大ツールに打球方向の道具4本（マクロ形式・状況別・1部2部比較・守備位置試作）を追加し、[滋賀大 対策資料づくり](../docs/shiga-taisaku.md)に使い方を追記
