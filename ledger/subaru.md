@@ -376,3 +376,4 @@
 - 2026-09-30 15:42 · subaru · agent-usage-bar/build · Claude Code・Codex・OpenCodeの利用状況をmacOSメニューバーに出すSwiftアプリを作成し、Codex APIで取得確認。~/Applicationsに配置して起動。OpenCodeは利用枠を返すプロバイダーなし
 - 2026-09-30 15:51 · subaru · agent-usage-bar/build · メニューバー項目を「AI残量」テキストから短いゲージアイコンに変更し、最新ビルドを起動
 - 2026-09-30 16:22 · subaru · baseball-platform/build · 座標を旧Excel準拠に（Codex）。全53試合で上限263.35・0.75刻みを確認し定数を検証。移行式の単位誤り、点の描画位置、打球角度を修正。シミュレーターでコース中央→(132.1,131.3)、中堅フェンス→(132.4,35.4)を確認
+- 2026-09-30 16:25 · subaru · baseball-platform/note · 圧縮前に試合記録アプリの状態と次の作業を引き継ぎメモに記録

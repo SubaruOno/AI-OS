@@ -239,3 +239,18 @@ npx expo start
 - 座標（course_x/course_y/hit_x/hit_y、列43・44・51・52）は1260/1260一致（100%）。
 - グループ率: state 84.25%、lineup 69.61%、pitch 92.87%、battedBall 99.89%、runners 80.40%、runningScore 97.81%、other 24.39%。100%一致は不要、各グループ95%以上、未達箇所は差分列・行番号だけの理由記録が残作業です。
 - 比較スクリプトのグループ定義は領域が重ならない列リストに変更し、打球位置2列を打球率から分けて座標専用100%照合します。
+
+## 圧縮前のメモ（2026-09-30 夕方、Claude）
+
+- ブランチ `feature/scoring-local`（ShigabaseiOS）最新は 6fbedad。テスト51件成功。本番Supabase・mainには触れていない。
+- ローカル: Docker → `supabase start`（API 55421 / DB 55422）、Metro 8081（`npx expo start --dev-client`、ログは scratchpad/metro.log）。Dockerが固まったら `pkill -9 -f /Applications/Docker.app` → `open -a Docker` → `supabase start`。
+- シミュレーター: iPad Air 11 (M3) 76AE4C88-…（開発用アプリ入り）、iPad mini ED449E14-…（開発用アプリをインストール済み、未ログイン）。開発用アプリの控え: scratchpad/dev-app-backup/SHIGABASE.app。本番用ビルドは `LANG=en_US.UTF-8 npx expo run:ios --configuration Release`。
+- テスト用アカウント: analyst@example.test（seed.sql 参照）。
+- 座標: 旧Excel準拠（画像ピクセル×0.75ポイント、コース263.25、打球264.75）。全53試合の実データで上限263.35・0.75刻みを確認。シミュレーターでコース中央→(132.1,131.3)、中堅フェンス→(132.4,35.4)で一致。
+- 191列（計算のみ、写しなし）: 状態84・打順70・投球93・打球89・走者83・得点98%。測定は private/baseball-platform/export191-check/compare-computed.ts。
+
+### 次にやること
+1. 入力画面の見やすさ（すばるの依頼）：打球の図を旧画像と同じ形の線画で描き直し、スペースいっぱいに大きく。守備位置・塁・走者の印も大きく重ならないように。コースは正方形で表示（ゆがみなし）。保存は割合×旧サイズのままなので座標の正しさは変わらない。
+2. iPad mini・Air・Pro 13で同じ場所を押して保存値が同じか確認。
+3. 191列の残り（各群95%以上か理由の記録）。
+4. BASS球種の残り24件と作戦の細区分、本番Supabaseへの展開（要確認）、App Store提出（iPad対応はブランチに入れ済み）。
