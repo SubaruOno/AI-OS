@@ -371,3 +371,4 @@
 - 2026-09-30 14:57 · subaru · baseball-platform/build · 191列の照合をCodexに依頼（滋賀大の秋季リーグ1試合を旧Excel→取り込み→計算→書き出しで列ごとに比較、実名はprivateのみ）
 - 2026-09-30 15:10 · subaru · baseball-platform/research · Codexの191列照合100%は元の行を写しただけと判明。写しを外した実力値は行316→306、状態24%・打順18%・投球30%・走者3%・得点79%。計算だけで一致させる作業をCodexに再依頼
 - 2026-09-30 15:23 · subaru · baseball-platform/decision · 座標は旧Excelと同じ決まり（旧フォーム画像上のマウス座標）で保存・書き出すと決定。旧VBAはCourse_Picture/HitBallPosition_PictureのMouseDownのX,Yをそのまま記録と確認
+- 2026-09-30 15:39 · subaru · baseball-platform/build · 191列照合を計算のみで確認（状態84・打順70・投球93・打球89・走者83・得点98%、写しなしを自分で再測定）。旧Excelの入力画像を取り出し、打球図は旧Excelの球場に差し替え・コースも旧座標で保存する方針で、座標と191列の続きをCodexに依頼
