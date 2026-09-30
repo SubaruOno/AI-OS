@@ -223,3 +223,19 @@ npx expo start
 - Added coverage for result words, hit fields/coordinates, blank-page exclusion, and line score. `npm test`: 37 passed. `npx tsc --noEmit` still reports existing unrelated errors in `app/opponent-pitchers/[name].tsx` and Deno edge functions; no errors point to changed files.
 - No sync was run. Human follow-up: re-sync display game `202609290056` manually. Commit could not be created because writing `.git/index` was denied; changes remain uncommitted.
 - Coordinate convention: scoring UI stores absolute field-SVG coordinates (home near x=46,y=238; outward/upward), matching legacy import data and spray-chart rendering.
+
+
+## 座標を旧Excelに合わせる
+
+- 旧フォームの `course_a.jpg`（351×351px）と `hit_a.png`（353×353px）をアプリの `assets/` に置き、打球図は旧画像の形を背景にしました。画像上の割合を実際のレイアウト寸法から取得し、旧VBAの0.75ポイント/画素で得る旧コントロール寸法（コース263.25pt、打球264.75pt）を掛けて保存します。向き表示を変えてもコースは捕手目線の保存値を保ちます。
+- `lib/scoring/coords.ts` に座標定数と変換をまとめました。旧コントロール画像を保持しているページには版マークを付け、旧SVG座標だった未マークページだけを一度変換します。打球図の過去値変換は旧3塁・本塁・1塁の対応による近似です。旧Excel取込値は旧座標としてそのまま読み込みます。
+- 自動テスト49件成功。端末画面での実測（iPad各機種、縦横、iPhone）は未実施です。打球図上の守備位置は旧画像のベース形状を元にした初期配置で、各円の実測位置はシミュレーターで確認が必要です。旧VBA画像上のコース5×5グリッド（内側3×3ストライクゾーン）も画面へ反映済みです。シミュレーターで実位置を照合してください。
+- `compare-computed.ts` の座標列（43、44、51、52）は各315/315、一致100%です。191列の計算グループ率: state 5308/6300 (84.25%)、lineup 4824/6930 (69.61%)、pitch 4388/4725 (92.87%)、battedBall 1888/1890 (99.89%)、runners 2786/3465 (80.40%)、runningScore 9243/9450 (97.81%)、other 6299/25830 (24.39%)。全セルでは34472/60165 (57.30%)です。比較スクリプトはセル値や実名を表示せず、差分列番号だけを出します。残差の列番号一覧は同スクリプトの `diff-report-computed.md` にあります。
+- 191列の残り差は主に空値と0の旧Excel表現、マスタ情報/プレイ状態からまだ再現できない項目です。pitchは95%未達、state/lineup/runners/otherも未達で、個別差の理由調査が必要です。
+
+## 191列の照合（計算のみ）
+
+- 対象315行。比較スクリプトは saved rows との照合計算だけを行い、実行時出力に実名やセル値を含めません。
+- 座標（course_x/course_y/hit_x/hit_y、列43・44・51・52）は1260/1260一致（100%）。
+- グループ率: state 84.25%、lineup 69.61%、pitch 92.87%、battedBall 99.89%、runners 80.40%、runningScore 97.81%、other 24.39%。100%一致は不要、各グループ95%以上、未達箇所は差分列・行番号だけの理由記録が残作業です。
+- 比較スクリプトのグループ定義は領域が重ならない列リストに変更し、打球位置2列を打球率から分けて座標専用100%照合します。

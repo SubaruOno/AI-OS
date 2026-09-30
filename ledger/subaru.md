@@ -374,3 +374,5 @@
 - 2026-09-30 15:39 · subaru · baseball-platform/build · 191列照合を計算のみで確認（状態84・打順70・投球93・打球89・走者83・得点98%、写しなしを自分で再測定）。旧Excelの入力画像を取り出し、打球図は旧Excelの球場に差し替え・コースも旧座標で保存する方針で、座標と191列の続きをCodexに依頼
 - 2026-09-30 15:40 · subaru · tools/build · 別の作業で作られたメニューバー用アプリ agent-usage-bar とインストールスクリプトを記録（.buildは除外）
 - 2026-09-30 15:42 · subaru · agent-usage-bar/build · Claude Code・Codex・OpenCodeの利用状況をmacOSメニューバーに出すSwiftアプリを作成し、Codex APIで取得確認。~/Applicationsに配置して起動。OpenCodeは利用枠を返すプロバイダーなし
+- 2026-09-30 15:51 · subaru · agent-usage-bar/build · メニューバー項目を「AI残量」テキストから短いゲージアイコンに変更し、最新ビルドを起動
+- 2026-09-30 16:22 · subaru · baseball-platform/build · 座標を旧Excel準拠に（Codex）。全53試合で上限263.35・0.75刻みを確認し定数を検証。移行式の単位誤り、点の描画位置、打球角度を修正。シミュレーターでコース中央→(132.1,131.3)、中堅フェンス→(132.4,35.4)を確認
