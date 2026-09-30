@@ -363,3 +363,4 @@
 - 2026-09-29 17:44 · subaru · baseball-platform/build · すばるの指摘でマスター管理の一覧（8タブ）がトップ作り直し時に消えていたと判明。独立した一覧画面として戻す作業をCodexに依頼
 - 2026-09-29 17:51 · subaru · baseball-platform/build · マスター管理の一覧（8タブ）を戻しシミュレーターで確認（d61cc80）。残り：本拠地・カテゴリがID表示、選手の背番号が空、投打がR/L表示
 - 2026-09-30 12:16 · subaru · orchestra/note · 冨田先生へ2通目を返信（河野さんへLINE済み、10/12のホール練で顔合わせ）
+- 2026-09-30 13:22 · subaru · baseball-platform/build · Codexがマスター一覧の表示修正と、同期後に既存のgames/pitchesへ反映する処理を実装（e0991ca、ローカルでgames 1・pitches 3を確認、テスト33件）
