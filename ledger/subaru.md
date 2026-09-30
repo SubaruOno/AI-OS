@@ -382,3 +382,4 @@
 - 2026-09-30 18:28 · subaru · shigabase/build · 走者の表示をBASS風（塁より小さい丸）に直し、自動の動きを塁8通り×全結果の128件のテストで確認、3アウト目が打者のとき得点しない規則を修正（ShigabaseiOS 23b59ef）
 - 2026-09-30 18:52 · subaru · shigabase/build · 交代・タイブレーク・打席スキップ・盗塁と牽制・併殺を画面とテストで確認、球数の混同・入力途中の消失・代打の名前など4件を修正（ShigabaseiOS 404876d）
 - 2026-09-30 19:02 · subaru · shigabase/build · 出場中・退いた選手を交代で出せないよう規則を追加、選手一覧の重複警告を解消（ShigabaseiOS 049d423）
+- 2026-09-30 19:04 · subaru · shigabase/decision · 大谷ルールの試合だけ投手を打順に入れる交代を認めると決定・実装（ShigabaseiOS a061f79）
