@@ -370,3 +370,4 @@
 - 2026-09-30 14:52 · subaru · baseball-platform/build · pitchesへの書き出しを旧Excelの語彙・打球・未確定ページ除外・スコア反映に修正し、再同期で確認（4行、凡打死、0-0）。妨害3種を語のまま書くよう修正（a9fb5c3、テスト38件）
 - 2026-09-30 14:57 · subaru · baseball-platform/build · 191列の照合をCodexに依頼（滋賀大の秋季リーグ1試合を旧Excel→取り込み→計算→書き出しで列ごとに比較、実名はprivateのみ）
 - 2026-09-30 15:10 · subaru · baseball-platform/research · Codexの191列照合100%は元の行を写しただけと判明。写しを外した実力値は行316→306、状態24%・打順18%・投球30%・走者3%・得点79%。計算だけで一致させる作業をCodexに再依頼
+- 2026-09-30 15:23 · subaru · baseball-platform/decision · 座標は旧Excelと同じ決まり（旧フォーム画像上のマウス座標）で保存・書き出すと決定。旧VBAはCourse_Picture/HitBallPosition_PictureのMouseDownのX,Yをそのまま記録と確認
