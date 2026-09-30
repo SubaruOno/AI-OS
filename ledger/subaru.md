@@ -379,3 +379,4 @@
 - 2026-09-30 16:25 · subaru · baseball-platform/note · 圧縮前に試合記録アプリの状態と次の作業を引き継ぎメモに記録
 - 2026-09-30 17:37 · subaru · shigabase/build · 試合入力の図を大きく配置し直し、走者の指示をシミュレーターで一通り押して不具合6件を修正（ShigabaseiOS 6e73812）
 - 2026-09-30 18:08 · subaru · shigabase/build · 牽制・ボーク・WP・エラー・野選・振り逃げ・途中訂正を実機で確認し不具合5件を修正（ShigabaseiOS fad7d36）
+- 2026-09-30 18:28 · subaru · shigabase/build · 走者の表示をBASS風（塁より小さい丸）に直し、自動の動きを塁8通り×全結果の128件のテストで確認、3アウト目が打者のとき得点しない規則を修正（ShigabaseiOS 23b59ef）
