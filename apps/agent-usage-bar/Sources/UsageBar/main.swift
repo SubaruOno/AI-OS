@@ -59,12 +59,25 @@ final class HTTPResponseBox: @unchecked Sendable {
     }
 }
 
+enum UsageLog {
+    static func write(_ message: String) {
+        let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/AgentUsageBar.log")
+        let line = "\(ISO8601DateFormatter().string(from: Date())) \(message)\n"
+        guard let data = line.data(using: .utf8) else { return }
+        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        if FileManager.default.fileExists(atPath: url.path), let handle = try? FileHandle(forWritingTo: url) {
+            _ = try? handle.seekToEnd(); try? handle.write(contentsOf: data); try? handle.close()
+        } else { try? data.write(to: url) }
+    }
+}
+
 @MainActor final class UsageModel: ObservableObject {
     @Published var providers = [ProviderView]()
     @Published var refreshedAt: Date?
     @Published var refreshing = false
     private var timer: Timer?
     init() {
+        refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in Task { @MainActor in self?.refresh() } }
         NotificationCenter.default.addObserver(forName: .init("UsageBarDidRefresh"), object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.objectWillChange.send() }
@@ -73,21 +86,39 @@ final class HTTPResponseBox: @unchecked Sendable {
     func refresh() {
         guard !refreshing else { return }
         refreshing = true
+        UsageLog.write("refresh started")
         providers = [
             ProviderView(id: "claude", name: "Claude Code", status: "取得中", windows: []),
             ProviderView(id: "codex", name: "Codex", status: "取得中", windows: []),
             ProviderView(id: "opencode", name: "OpenCode", status: "取得中", windows: [])
         ]
-        Task { [weak self] in
-            async let claude = Task.detached(priority: .utility) { Self.readClaude() }.value
-            async let codex = Task.detached(priority: .utility) { Self.readCodex() }.value
-            async let openCode = Task.detached(priority: .utility) { Self.readOpenCode() }.value
-            let results = await [claude, codex, openCode]
-            guard let self else { return }
-            self.providers = results
-            self.refreshedAt = Date()
-            self.refreshing = false
-            NotificationCenter.default.post(name: .init("UsageBarDidRefresh"), object: nil)
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            let group = DispatchGroup()
+            let lock = NSLock()
+            var results = [String: ProviderView]()
+            for (id, read) in [("claude", Self.readClaude), ("codex", Self.readCodex), ("opencode", Self.readOpenCode)] {
+                group.enter()
+                DispatchQueue.global(qos: .utility).async {
+                    let result = read()
+                    UsageLog.write("\(id) finished: \(result.status.isEmpty ? "ok" : result.status)")
+                    lock.lock(); results[id] = result; lock.unlock()
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self else { return }
+                        lock.lock(); let current = results; lock.unlock()
+                        self.providers = [current["claude"], current["codex"], current["opencode"]].compactMap { $0 }
+                        NotificationCenter.default.post(name: .init("UsageBarDidRefresh"), object: nil)
+                    }
+                    group.leave()
+                }
+            }
+            group.notify(queue: .main) { [weak self] in
+                Task { @MainActor in
+                    guard let self else { return }
+                    self.refreshedAt = Date()
+                    self.refreshing = false
+                    UsageLog.write("refresh completed")
+                }
+            }
         }
     }
     nonisolated private static func readClaude() -> ProviderView {
@@ -129,7 +160,9 @@ final class HTTPResponseBox: @unchecked Sendable {
         return ProviderView(id: "claude", name: "Claude Code", status: windows.isEmpty ? "サブスクリプション利用枠がありません" : "", windows: windows)
     }
     nonisolated private static func readCodex() -> ProviderView {
+        UsageLog.write("codex locating CLI")
         guard let path = executable("codex") else { return ProviderView(id: "codex", name: "Codex", status: "Codex CLIが見つかりません", windows: []) }
+        UsageLog.write("codex CLI: \(path)")
         let process = Process()
         process.executableURL = URL(fileURLWithPath: path)
         process.arguments = ["app-server", "--stdio"]
@@ -137,6 +170,7 @@ final class HTTPResponseBox: @unchecked Sendable {
         process.standardInput = input; process.standardOutput = output; process.standardError = FileHandle.nullDevice
         do { try process.run() } catch { return ProviderView(id: "codex", name: "Codex", status: "Codex app-serverを起動できません", windows: []) }
         defer { if process.isRunning { process.terminate() } }
+        UsageLog.write("codex app-server started")
         let writer = input.fileHandleForWriting
         let reader = output.fileHandleForReading
         func send(_ value: [String: Any]) {
@@ -144,6 +178,7 @@ final class HTTPResponseBox: @unchecked Sendable {
             line += "\n"; writer.write(Data(line.utf8))
         }
         send(["method":"initialize", "id":1, "params":["clientInfo":["name":"UsageBar", "version":"1.0"], "capabilities":[:]]])
+        UsageLog.write("codex initialize sent")
         var buffer = Data()
         func nextLine(until deadline: Date) -> Data? {
             while Date() < deadline {
@@ -154,7 +189,12 @@ final class HTTPResponseBox: @unchecked Sendable {
                 let remaining = max(1, Int32(deadline.timeIntervalSinceNow * 1000))
                 let ready = poll(&descriptor, 1, min(remaining, 250))
                 if ready > 0, descriptor.revents & Int16(POLLIN) != 0 {
-                    if let part = try? reader.read(upToCount: 4096), !part.isEmpty { buffer.append(part) }
+                    var bytes = [UInt8](repeating: 0, count: 4096)
+                    let count = Darwin.read(reader.fileDescriptor, &bytes, bytes.count)
+                    if count > 0 { buffer.append(contentsOf: bytes.prefix(count)) }
+                    else { return nil }
+                } else if ready > 0, descriptor.revents & (Int16(POLLHUP) | Int16(POLLERR)) != 0 {
+                    return nil
                 }
             }
             return nil
@@ -165,8 +205,10 @@ final class HTTPResponseBox: @unchecked Sendable {
             if let m = try? JSONDecoder().decode(AppServerMessage.self, from: line), m.id == 1 { initialized = true; break }
         }
         guard initialized else { return ProviderView(id: "codex", name: "Codex", status: "Codex app-serverの応答がありません", windows: []) }
+        UsageLog.write("codex initialized")
         send(["method":"initialized", "params":[:]])
         send(["method":"account/rateLimits/read", "id":2, "params":[:]])
+        UsageLog.write("codex rate limits requested")
         let end = Date().addingTimeInterval(8)
         while let line = nextLine(until: end) {
             guard let m = try? JSONDecoder().decode(AppServerMessage.self, from: line), m.id == 2 else { continue }
@@ -199,9 +241,9 @@ final class HTTPResponseBox: @unchecked Sendable {
         return ProviderView(id: "opencode", name: "OpenCode", status: label + "\nプロバイダー利用枠・リセット時刻はローカル履歴にありません", windows: [])
     }
     nonisolated private static func executable(_ name: String) -> String? {
-        let result = ProcessResult.run("/bin/zsh", ["-lc", "command -v \(name)"])
-        let path = result.output.trimmingCharacters(in: .whitespacesAndNewlines)
-        return result.status == 0 && path.hasPrefix("/") ? path : nil
+        guard name == "codex" else { return nil }
+        let candidates = ["/opt/homebrew/bin/codex", "/usr/local/bin/codex", "/usr/bin/codex"]
+        return candidates.first { FileManager.default.isExecutableFile(atPath: $0) }
     }
 }
 
