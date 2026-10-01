@@ -254,3 +254,17 @@ npx expo start
 2. iPad mini・Air・Pro 13で同じ場所を押して保存値が同じか確認。
 3. 191列の残り（各群95%以上か理由の記録）。
 4. BASS球種の残り24件と作戦の細区分、本番Supabaseへの展開（要確認）、App Store提出（iPad対応はブランチに入れ済み）。
+
+## 2026-10-01 早朝の状態（Claude更新前の保存）
+
+- ShigabaseiOS `feature/scoring-local` 最新 `1f0f0da`。テスト205件すべて通過。push はしていない。
+- 9/30〜10/1にやったこと：
+  - 図の配置を大きくし、投球図を線で描き直し、走者を塁より小さい丸に。
+  - 走者まわりを実機で一通り確認し、不具合を多数修正。テストは塁8通り×全結果の網羅と、交代・タイブレーク・スキップ・併殺など。
+  - 座標の保存値を実機で確認。新しいページに旧Excel座標の印を付け、開き直しでずれる不具合を修正。
+  - 交代の規則（出場中・退いた選手は不可、大谷ルールの試合だけ投手を打順に入れられる）。
+  - 191列の一致 57%→99.57%。残りの理由は private/baseball-platform/export191-check/remaining-diffs.md。
+  - 球種を旧Excelの10種に統一（ボタン・マスタ・保存値）。
+  - 試しの試合は端末とローカルDBから削除済み。
+- 残り：iPad mini・Pro 13での確認（保留中）、ほかの試合の旧Excelで191列を再測定（ファイル待ち）、本番反映とApp Store提出（要確認）。
+- 再開時：Docker が固まっていたら `pkill -9 -f /Applications/Docker.app; open -a Docker` のあと `supabase start`。Metro は 8081。
