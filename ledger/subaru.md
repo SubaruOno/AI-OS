@@ -389,3 +389,4 @@
 - 2026-10-01 10:57 · subaru · shigabase/build · 球種を旧Excelの10種に統一（ボタン・マスタ・保存値）（ShigabaseiOS 1f0f0da）
 - 2026-10-01 11:14 · subaru · agent-usage-bar/build · usage取得の固まりを修正。Claude APIタイムアウト表示、Codex app-serverの応答待ちをpoll化、再起動して起動状態を確認
 - 2026-10-01 11:30 · subaru · shigabase/build · 旧Excelの実戦1試合（315行）をアプリに取り込み、入力画面・同期・試合詳細・191列書き出しまで通して確認。不具合7件を修正し、投球データの結果別件数が元と完全一致、191列99.77%（ShigabaseiOS c56a2ff）
+- 2026-10-01 11:47 · subaru · shigabase/build · 191列を旧Excelと全60,165セル一致（交代行の書き方と旧VBA GameData.frm の守備氏名の書き方を再現）（ShigabaseiOS 5a4d62d）
