@@ -398,3 +398,4 @@
 - 2026-10-01 14:35 · subaru · agent-usage-bar/build · Claude利用量が出ない原因を特定。AuthorizationヘッダーのBearer接頭辞不足を修正し、Anthropic API HTTP 200（5時間33%・週12%）とアプリログの3サービス取得完了を確認
 - 2026-10-01 14:40 · subaru · shigabase/build · 「Excelで書き出す」を実機で押して旧名・旧形のxlsxを確認、試合管理の一覧が空になる不具合を修正。出場選手シートはマスタ登録で代えると決定（ShigabaseiOS 9666748）
 - 2026-10-01 15:18 · subaru · shigabase/build · 最終確認：座標を実測（1px以内）、残りの全場面を実機で押して書き出し・同期・試合詳細まで確認。不具合11件を修正（ファウル確定不可、作戦メニュー空、入力終了で完了にならない、同期で交代選手エラー等）（ShigabaseiOS 6789a44）
+- 2026-10-01 15:46 · subaru · shigabase/build · 両打ちの打席の引き継ぎ、取り消しの確認、押し出し・延長サヨナラを画面で入力しExcelまで確認
