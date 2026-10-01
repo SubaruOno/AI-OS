@@ -395,3 +395,5 @@
 - 2026-10-01 13:59 · subaru · agent-usage-bar/build · Codex表示が取得中で止まる原因（Pipe.read(upToCount:)の待ち）を特定してPOSIX readへ変更。Claude/OpenCode/Codexがそれぞれ完了することをログで確認。Claudeは401で再ログインが必要
 - 2026-10-01 14:22 · subaru · shigabase/build · 旧Excel 61試合（約331万セル）で取り込み→191列が全セル一致。走者の「その他」記録を追加し、実機で37ページを押して書き出しまで確認。公開リポジトリに実名入りファイルを送ってしまったので外した（履歴の削除は未対応）（ShigabaseiOS dbf3edd）
 - 2026-10-01 14:34 · subaru · shigabase/decision · 同期した試合は全員の試合結果に出す・入力は1台と決定。書き出しを旧Excelと同じ名前と形のxlsxに変更（ShigabaseiOS 485f701）
+- 2026-10-01 14:35 · subaru · agent-usage-bar/build · Claude利用量が出ない原因を特定。AuthorizationヘッダーのBearer接頭辞不足を修正し、Anthropic API HTTP 200（5時間33%・週12%）とアプリログの3サービス取得完了を確認
+- 2026-10-01 14:40 · subaru · shigabase/build · 「Excelで書き出す」を実機で押して旧名・旧形のxlsxを確認、試合管理の一覧が空になる不具合を修正。出場選手シートはマスタ登録で代えると決定（ShigabaseiOS 9666748）
