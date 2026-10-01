@@ -392,3 +392,5 @@
 - 2026-10-01 11:47 · subaru · shigabase/build · 191列を旧Excelと全60,165セル一致（交代行の書き方と旧VBA GameData.frm の守備氏名の書き方を再現）（ShigabaseiOS 5a4d62d）
 - 2026-10-01 11:55 · subaru · shigabase/build · アプリ入力の試合の191列サンプルを作成し、打撃結果がボタン名のまま出る不具合を修正（ShigabaseiOS d1f41b2）
 - 2026-10-01 12:11 · subaru · shigabase/build · シミュレーターで16球を実際に押して入力し、アプリのボタンで191列を書き出して確認。強さボタンと試合終了の印の不具合を修正（ShigabaseiOS c6c89a3）
+- 2026-10-01 13:59 · subaru · agent-usage-bar/build · Codex表示が取得中で止まる原因（Pipe.read(upToCount:)の待ち）を特定してPOSIX readへ変更。Claude/OpenCode/Codexがそれぞれ完了することをログで確認。Claudeは401で再ログインが必要
+- 2026-10-01 14:22 · subaru · shigabase/build · 旧Excel 61試合（約331万セル）で取り込み→191列が全セル一致。走者の「その他」記録を追加し、実機で37ページを押して書き出しまで確認。公開リポジトリに実名入りファイルを送ってしまったので外した（履歴の削除は未対応）（ShigabaseiOS dbf3edd）
