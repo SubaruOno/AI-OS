@@ -387,3 +387,5 @@
 - 2026-10-01 00:34 · subaru · shigabase/build · 代走・大谷ルールの試合作成・延長を画面で確認、191列に自動進塁を書くよう修正（旧マクロは本進数＝打点）、試合作成の守備初期値を修正（ShigabaseiOS a133f98）
 - 2026-10-01 01:02 · subaru · shigabase/build · 191列の一致を57%→99.57%に（全グループ100%、その他99.55%）。残りは旧Excel自体の食い違いと交代行の記録のまちまちさで、理由をprivateに記録（ShigabaseiOS cf82090）
 - 2026-10-01 10:57 · subaru · shigabase/build · 球種を旧Excelの10種に統一（ボタン・マスタ・保存値）（ShigabaseiOS 1f0f0da）
+- 2026-10-01 11:14 · subaru · agent-usage-bar/build · usage取得の固まりを修正。Claude APIタイムアウト表示、Codex app-serverの応答待ちをpoll化、再起動して起動状態を確認
+- 2026-10-01 11:30 · subaru · shigabase/build · 旧Excelの実戦1試合（315行）をアプリに取り込み、入力画面・同期・試合詳細・191列書き出しまで通して確認。不具合7件を修正し、投球データの結果別件数が元と完全一致、191列99.77%（ShigabaseiOS c56a2ff）
