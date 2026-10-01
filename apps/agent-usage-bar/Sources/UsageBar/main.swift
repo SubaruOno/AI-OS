@@ -133,7 +133,7 @@ enum UsageLog {
         request.httpMethod = "GET"
         request.timeoutInterval = 12
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(token, forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("claude-code/2.1.59", forHTTPHeaderField: "User-Agent")
         request.setValue("oauth-2025-04-20", forHTTPHeaderField: "anthropic-beta")
         let semaphore = DispatchSemaphore(value: 0)
