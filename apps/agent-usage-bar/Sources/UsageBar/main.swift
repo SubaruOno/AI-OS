@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Security
+import Darwin
 import SQLite3
 
 struct UsageWindow: Decodable {
@@ -44,16 +45,26 @@ struct ProviderView: Identifiable {
     var windows: [WindowView]
 }
 
+final class HTTPResponseBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var responseData: Data?
+    private var responseStatus = 0
+    func store(data: Data?, status: Int) {
+        lock.lock(); defer { lock.unlock() }
+        responseData = data; responseStatus = status
+    }
+    func load() -> (Data?, Int) {
+        lock.lock(); defer { lock.unlock() }
+        return (responseData, responseStatus)
+    }
+}
+
 @MainActor final class UsageModel: ObservableObject {
     @Published var providers = [ProviderView]()
     @Published var refreshedAt: Date?
     @Published var refreshing = false
     private var timer: Timer?
-    private let decoder = JSONDecoder()
-    private let formatter = ISO8601DateFormatter()
-
     init() {
-        refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in Task { @MainActor in self?.refresh() } }
         NotificationCenter.default.addObserver(forName: .init("UsageBarDidRefresh"), object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.objectWillChange.send() }
@@ -62,6 +73,11 @@ struct ProviderView: Identifiable {
     func refresh() {
         guard !refreshing else { return }
         refreshing = true
+        providers = [
+            ProviderView(id: "claude", name: "Claude Code", status: "取得中", windows: []),
+            ProviderView(id: "codex", name: "Codex", status: "取得中", windows: []),
+            ProviderView(id: "opencode", name: "OpenCode", status: "取得中", windows: [])
+        ]
         Task { [weak self] in
             async let claude = Task.detached(priority: .utility) { Self.readClaude() }.value
             async let codex = Task.detached(priority: .utility) { Self.readCodex() }.value
@@ -71,6 +87,7 @@ struct ProviderView: Identifiable {
             self.providers = results
             self.refreshedAt = Date()
             self.refreshing = false
+            NotificationCenter.default.post(name: .init("UsageBarDidRefresh"), object: nil)
         }
     }
     nonisolated private static func readClaude() -> ProviderView {
@@ -89,13 +106,15 @@ struct ProviderView: Identifiable {
         request.setValue("claude-code/2.1.59", forHTTPHeaderField: "User-Agent")
         request.setValue("oauth-2025-04-20", forHTTPHeaderField: "anthropic-beta")
         let semaphore = DispatchSemaphore(value: 0)
-        var data: Data?, statusCode = 0
+        let responseBox = HTTPResponseBox()
         URLSession.shared.dataTask(with: request as URLRequest) { d, response, _ in
-            data = d
-            statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+            responseBox.store(data: d, status: (response as? HTTPURLResponse)?.statusCode ?? 0)
             semaphore.signal()
         }.resume()
-        _ = semaphore.wait(timeout: .now() + 15)
+        guard semaphore.wait(timeout: .now() + 15) == .success else {
+            return ProviderView(id: "claude", name: "Claude Code", status: "Anthropicへの接続がタイムアウトしました", windows: [])
+        }
+        let (data, statusCode) = responseBox.load()
         guard (200..<300).contains(statusCode), let data,
               let usage = try? JSONDecoder().decode(ClaudeUsage.self, from: data) else {
             let msg = statusCode == 401 ? "ログイン期限切れ。Claude Codeを一度開いてください" : "使用量を取得できません (HTTP \(statusCode))"
@@ -114,13 +133,12 @@ struct ProviderView: Identifiable {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: path)
         process.arguments = ["app-server", "--stdio"]
-        let input = Pipe(), output = Pipe(), error = Pipe()
-        process.standardInput = input; process.standardOutput = output; process.standardError = error
+        let input = Pipe(), output = Pipe()
+        process.standardInput = input; process.standardOutput = output; process.standardError = FileHandle.nullDevice
         do { try process.run() } catch { return ProviderView(id: "codex", name: "Codex", status: "Codex app-serverを起動できません", windows: []) }
         defer { if process.isRunning { process.terminate() } }
-        guard let writer = input.fileHandleForWriting as FileHandle?, let reader = output.fileHandleForReading as FileHandle? else {
-            return ProviderView(id: "codex", name: "Codex", status: "Codex通信を開始できません", windows: [])
-        }
+        let writer = input.fileHandleForWriting
+        let reader = output.fileHandleForReading
         func send(_ value: [String: Any]) {
             guard let bytes = try? JSONSerialization.data(withJSONObject: value), var line = String(data: bytes, encoding: .utf8) else { return }
             line += "\n"; writer.write(Data(line.utf8))
@@ -132,21 +150,24 @@ struct ProviderView: Identifiable {
                 if let range = buffer.range(of: Data([10])) {
                     let line = buffer.subdata(in: 0..<range.lowerBound); buffer.removeSubrange(0..<range.upperBound); return line
                 }
-                if let part = try? reader.read(upToCount: 4096), !part.isEmpty {
-                    buffer.append(part)
-                } else {
-                    Thread.sleep(forTimeInterval: 0.05)
+                var descriptor = pollfd(fd: reader.fileDescriptor, events: Int16(POLLIN), revents: 0)
+                let remaining = max(1, Int32(deadline.timeIntervalSinceNow * 1000))
+                let ready = poll(&descriptor, 1, min(remaining, 250))
+                if ready > 0, descriptor.revents & Int16(POLLIN) != 0 {
+                    if let part = try? reader.read(upToCount: 4096), !part.isEmpty { buffer.append(part) }
                 }
             }
             return nil
         }
         let initEnd = Date().addingTimeInterval(8)
+        var initialized = false
         while let line = nextLine(until: initEnd) {
-            if let m = try? JSONDecoder().decode(AppServerMessage.self, from: line), m.id == 1 { break }
+            if let m = try? JSONDecoder().decode(AppServerMessage.self, from: line), m.id == 1 { initialized = true; break }
         }
+        guard initialized else { return ProviderView(id: "codex", name: "Codex", status: "Codex app-serverの応答がありません", windows: []) }
         send(["method":"initialized", "params":[:]])
         send(["method":"account/rateLimits/read", "id":2, "params":[:]])
-        let end = Date().addingTimeInterval(10)
+        let end = Date().addingTimeInterval(8)
         while let line = nextLine(until: end) {
             guard let m = try? JSONDecoder().decode(AppServerMessage.self, from: line), m.id == 2 else { continue }
             guard let limits = m.result?.rateLimits else { return ProviderView(id: "codex", name: "Codex", status: m.error?.message ?? "Codex利用枠を取得できません", windows: []) }
