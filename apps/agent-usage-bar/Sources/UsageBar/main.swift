@@ -260,30 +260,98 @@ struct ProcessResult {
     }
 }
 
+struct UsageBarShape: Shape {
+    var percent: Double
+    func path(in rect: CGRect) -> Path {
+        Path(roundedRect: CGRect(x: rect.minX, y: rect.minY, width: rect.width * min(max(percent, 0), 100) / 100, height: rect.height), cornerRadius: 3)
+    }
+}
+
+func usageColor(for percent: Double) -> Color {
+    switch percent {
+    case ..<30: return .green
+    case ..<60: return .yellow
+    case ..<80: return .orange
+    default: return .red
+    }
+}
+
+func providerIcon(for id: String) -> String {
+    switch id {
+    case "claude": return "brain.head.profile"
+    case "codex": return "terminal"
+    case "opencode": return "chevron.left.forwardslash.chevron.right"
+    default: return "cpu"
+    }
+}
+
 struct PopoverView: View {
     @ObservedObject var model: UsageModel
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack { Text("AI Usage").font(.headline); Spacer(); Button { model.refresh() } label: { Image(systemName: "arrow.clockwise") }.disabled(model.refreshing) }
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("AI Usage").font(.system(size: 15, weight: .bold))
+                Spacer()
+                Button { model.refresh() } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .rotationEffect(.degrees(model.refreshing ? 360 : 0))
+                        .animation(model.refreshing ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: model.refreshing)
+                }.disabled(model.refreshing).buttonStyle(.plain)
+            }
             ForEach(model.providers) { provider in
-                VStack(alignment: .leading, spacing: 7) {
-                    Text(provider.name).font(.system(size: 14, weight: .semibold))
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 6) {
+                        Image(systemName: providerIcon(for: provider.id))
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(provider.windows.isEmpty ? .secondary : .primary)
+                        Text(provider.name).font(.system(size: 13, weight: .semibold))
+                    }
                     if !provider.windows.isEmpty {
                         ForEach(provider.windows) { window in
-                            HStack(spacing: 8) {
-                                Text(window.title).frame(width: 62, alignment: .leading)
-                                ProgressView(value: min(max(window.percent, 0), 100), total: 100).frame(width: 112)
-                                Text("\(Int(window.percent.rounded()))%").monospacedDigit().frame(width: 39, alignment: .trailing)
-                                if let reset = window.reset { Text("あと\(reset, style: .relative)").font(.caption).foregroundStyle(.secondary).frame(width: 64, alignment: .trailing) }
-                            }.font(.system(size: 12))
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack {
+                                    Text(window.title).font(.system(size: 11)).foregroundStyle(.secondary)
+                                    Spacer()
+                                    Text("\(Int(window.percent.rounded()))%")
+                                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                                        .monospacedDigit()
+                                        .foregroundStyle(usageColor(for: window.percent))
+                                    if let reset = window.reset {
+                                        Text("あと\(reset, style: .relative)")
+                                            .font(.system(size: 10))
+                                            .foregroundStyle(.tertiary)
+                                    }
+                                }
+                                ZStack(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: 3)
+                                        .fill(.quaternary)
+                                        .frame(height: 8)
+                                    UsageBarShape(percent: window.percent)
+                                        .fill(usageColor(for: window.percent).gradient)
+                                        .frame(height: 8)
+                                }
+                            }
                         }
                     }
-                    if !provider.status.isEmpty { Text(provider.status).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
+                    if !provider.status.isEmpty {
+                        Text(provider.status)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
-                if provider.id != model.providers.last?.id { Divider() }
+                .padding(10)
+                .background(RoundedRectangle(cornerRadius: 8).fill(.quaternary.opacity(0.5)))
+                if provider.id != model.providers.last?.id { Spacer().frame(height: 2) }
             }
-            HStack { Text(model.refreshedAt.map { "更新 \($0.formatted(date: .omitted, time: .shortened))" } ?? "取得中").font(.caption2).foregroundStyle(.tertiary); Spacer(); Button("終了") { NSApplication.shared.terminate(nil) }.buttonStyle(.plain).font(.caption).foregroundStyle(.secondary) }
-        }.padding(14).frame(width: 360)
+            HStack {
+                Text(model.refreshedAt.map { "更新 \($0.formatted(date: .omitted, time: .shortened))" } ?? "取得中…")
+                    .font(.caption2).foregroundStyle(.tertiary)
+                Spacer()
+                Button("終了") { NSApplication.shared.terminate(nil) }
+                    .buttonStyle(.plain).font(.caption).foregroundStyle(.secondary)
+            }
+        }.padding(16).frame(width: 380)
     }
 }
 
