@@ -136,6 +136,7 @@ shared, not by which folder the session happens to be in.
 | Completed work | `ledger/<seat>.md` |
 | Work being planned | `plans/` |
 | よく行く場所、住所、移動時間の目安 | `private/places.md` |
+| 予定とToDo（カレンダーで追えないやること、未定事項、週の組み方） | `private/schedule.md`; the calendar itself is the source of truth for times |
 | Feedback on how the assistant should work | Claude auto-memory; promote a lasting rule into this file and delete the memory |
 
 Do not write work logs or progress status into auto-memory; the ledger already

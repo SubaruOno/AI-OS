@@ -428,3 +428,4 @@
 - 2026-10-04 10:09 · subaru · shigabase/ship · 試合作成で背番号に表示順を使っていたため、マスターで直した背番号が入力に反映されず書き出しの名前がずれる不具合を修正。書き出しは出場選手の名前を優先。TestFlight build 43を提出
 - 2026-10-04 10:24 · subaru · mac/research · 10/4 0:36に全アプリが閉じた件を調査。原因はウイルスではなく、試合記録アプリ作業中のClaudeが実行した pkill -f "cat"（macOSでは後ろの -U/-x が効かず、名前に cat を含む全アプリが対象になった）
 - 2026-10-04 10:28 · subaru · shigabase/ship · 試合記録の作業ブランチ（feature/scoring-local）をmainに取り込み、GitHubに反映（テスト225件通過）
+- 2026-10-04 10:32 · すばる · 予定/build · 10/4〜10/18の予定とToDoをprivate/schedule.mdにまとめ、置き場所をCLAUDE.md/AGENTS.mdの表に追加。10/3の入力が未着手だったため10/4夜〜10/5朝に6試合をまとめる形へ組み直し
