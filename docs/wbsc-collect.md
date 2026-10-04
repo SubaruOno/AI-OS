@@ -116,7 +116,7 @@ U-23代表のスタッフと共有するサイトを、同じデータから組�
 ```bash
 cd apps/wbsc-collect
 python3 build_site.py
-npx wrangler pages deploy ~/野球/U23ワールドカップ2026/07_サイト/dist --project-name <プロジェクト名>
+sh deploy_site.sh   # Cloudflare Pages に上げる。プロジェクト名は private/u23-site-project
 ```
 
 **リンクを知っている人だけが開ける形です。** ページはすべて、推測できない24文字の合言葉の

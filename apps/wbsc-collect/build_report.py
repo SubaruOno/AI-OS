@@ -255,7 +255,7 @@ def spray_chart(batters: list[dict]) -> str:
     dots = []
     for angle, distance, kind in points:
         # 角度は0が中堅方向。負が左、正が右。
-        radians = math.radians(angle * 2)
+        radians = math.radians(angle)
         length = 190 * (distance / longest)
         x = 200 + length * math.sin(radians)
         y = 250 - length * math.cos(radians)
