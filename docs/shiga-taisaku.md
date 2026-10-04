@@ -140,3 +140,16 @@ cd ~/野球/対策資料/滋賀大ツール && python3 dakyu_jokyo.py <チーム
 - `shubi.py` … 守備位置対策の2ページ形式（試作。全員分はまだ作っていない）
 
 球速帯の区切りは `shubi.py` の冒頭にある。
+
+## 直したCSVから作る（2026秋 明治国際医療大学の回で追加）
+
+`convert_shiga.py`・`pitching_record.py`・`履歴設定.yaml` の files は、Excelの代わりに
+点検で直したCSVも読める。`ラベル=<…_clean.csv>@<期>` と書くと、CSVの 期 列がその値の行だけを使う。
+`試合日` 列があれば、入力が数日に分かれた試合の日付をそれにそろえる。
+
+```bash
+python3 ~/野球/対策資料/滋賀大ツール/convert_shiga.py 明治国際医療大学 <チームフォルダ> "春=<チームフォルダ>/clean/明治国際医療大学_全試合_clean.csv@2026春" "秋=<同じCSV>@2026秋"
+```
+
+変換し直すと `config.yaml` が作り直されるので、`pitchers`・`pitchers_short`・`forms` は書き戻す。
+滋賀大戦の見出しの期（「24秋・25春」など）は `履歴設定.yaml` の files のラベルから入る。
