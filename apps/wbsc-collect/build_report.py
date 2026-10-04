@@ -148,7 +148,7 @@ def collect_batters(rows: list[dict], team: str,
         entry["出塁率"] = rate(on_base, chances)
         entry["長打率"] = rate(bases, at_bats)
         entry["三振率"] = rate(entry["三振"], entry["打席"], 3)
-        hit = balls.get(entry.pop("_id", ""), {})
+        hit = balls.get(entry.get("_id", ""), {})
         ground = hit.get("ゴロ", 0)
         liner = hit.get("ライナー", 0)
         fly = hit.get("フライ", 0)
@@ -181,6 +181,7 @@ def collect_pitchers(rows: list[dict], team: str) -> list[dict]:
             "打者": 0, "ゴロ": 0, "フライ": 0, "暴投": 0,
         })
         entry["登板"] += 1
+        entry["_id"] = str(row.get("playerid"))
         entry["先発"] += int(number(row.get("pitch_gs")))
         entry["投球回"] += number(row.get("pitch_ip"))
         for label, field in (("被安打", "pitch_h"), ("失点", "pitch_r"),
