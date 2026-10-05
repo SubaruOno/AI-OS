@@ -1,9 +1,11 @@
 # ケタ感（数字を幅で当てる日替わりゲーム）
 
-1日5問、数字を「90%の自信で入る幅」で答えるブラウザゲーム。2026-10-06の深夜に一晩で作った。作った経緯と検証の結果は[開発レポート](../outputs/keta/report.md)にある。
+1日5問、数字を「90%の自信で入る幅」で答えるiPhoneアプリ。先にブラウザ版で中身を確かめ、同じ夜にiOS版（SwiftUI、iOS 26以降）にした。2026-10-06の深夜に一晩で作った。作った経緯と検証の結果は[開発レポート](../outputs/keta/report.md)にある。
 
-- 遊ぶ：<https://claude.ai/artifact/Rgen6tgcCC6uMrbNLAyTnH>（非公開のページ）
-- コード：[index.html](../apps/keta/index.html)、問題は[questions.json](../apps/keta/questions.json)
+- iOS版のコード：`~/Projects/Keta`（xcodegenの `project.yml` から作る。バンドルID `com.subaruono.Keta`）
+- iOS版のテスト：`xcodebuild test -project Keta.xcodeproj -scheme Keta -destination "id=<シミュレータのUDID>"`。数字の読み取り、日替わりの選び方、正直な幅が採点で勝つこと、日付の切り替えを確かめる
+- iOS版の画面確認：起動引数 `-screen play|reveal|result`
+- ブラウザ版：<https://claude.ai/artifact/Rgen6tgcCC6uMrbNLAyTnH>（非公開のページ）、コード：[index.html](../apps/keta/index.html)、問題は[questions.json](../apps/keta/questions.json)
 
 ## 仕組み
 
@@ -19,7 +21,17 @@
 
 答えが有名な問題（富士山の標高など）は迷う余地がないので入れない。手元で確かめるときは、`.claude/launch.json` の `keta` でサーバーを立てて `preview.html` を開く。
 
+## iOS版だけの機能
+
+- 数字キーボードの上の「千・万・億」ボタン
+- 初回だけ10問にして、1日目から自信の診断を出す
+- 的中率の推移グラフ、連続日数、毎朝8時の通知（任意）、共有シート
+- 答え合わせのあと0.5秒は「次へ」が効かない（誤タップで正解を見逃さないため）
+- 「みんなの的中率」はサーバーがないので未対応
+
 ## 未確認のこと
+
+- 実機での動作と、TestFlightでの配布。
 
 - 人が遊んだときに、本当に自信過剰が出るか（中心の仮説）。
 - データベースへの書き込みが実際の画面で動くか。読み取りだけ確認済み。
