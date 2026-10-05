@@ -447,3 +447,4 @@
 - 2026-10-04 20:02 · すばる · account/research · subaru@terakoya.ai の廃止に備え、登録サービスを洗い出した（メール約1,800通、Googleでログイン17件、ドライブ、手元の設定）。要対応はGitHub・Expo・Supabase通知先・ドライブ移行・Poitto証明書（rick-terakoyaのリポジトリ）・就活サイト。Vercel/Figma/Lovable/Cloudflare(Terakoya側)は未ログインで未確認
 - 2026-10-04 20:22 · subaru · seminar/note · 河本ゼミSlackでコープさっぽろ・ロッテの皆さまへ店舗施策のお礼を投稿
 - 2026-10-05 15:21 · すばる · job-hunt/build · メール3箱を確認。KDDI特別選考の面談(初回10/6 11:30、2回目10/9 17:00)をTeamsリンク付きでカレンダーに登録
+- 2026-10-05 16:16 · すばる · job-hunt/research · KDDI基本情報登録(送信前の確認画面PDF)を点検。大阪ガスの全国大会の書き方、Terakoyaの開始月、緊急連絡先の住所、言語の選択などを指摘
