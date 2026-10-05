@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ケタ感</title>
+<style>
+:root{--bg:#f6f3ec;--card:#fffdf8;--ink:#1d1b16;--sub:#6b665b;--line:#e2dccd;--acc:#d9480f;--hit:#2b8a3e;--miss:#c92a2a;--band:#ffd8a8}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16150f;--card:#211f18;--ink:#f1ede2;--sub:#a39d8d;--line:#3a362b;--acc:#ff8a4c;--hit:#69db7c;--miss:#ff8787;--band:#7a4a1c}}
+:root[data-theme="dark"]{--bg:#16150f;--card:#211f18;--ink:#f1ede2;--sub:#a39d8d;--line:#3a362b;--acc:#ff8a4c;--hit:#69db7c;--miss:#ff8787;--band:#7a4a1c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;line-height:1.6}
+main{max-width:520px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:2.2rem;margin:8px 0 0;letter-spacing:.05em}
+.lead{color:var(--sub);margin:4px 0 20px;font-size:.95rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+.prog{display:flex;gap:6px;margin-bottom:12px}.prog i{flex:1;height:6px;border-radius:3px;background:var(--line)}.prog i.on{background:var(--acc)}
+.qn{color:var(--sub);font-size:.85rem}.q{font-size:1.2rem;font-weight:700;margin:4px 0 14px}
+label{display:block;font-size:.85rem;color:var(--sub);margin-top:8px}
+.row{display:flex;align-items:center;gap:8px}
+input{flex:1;font-size:1.25rem;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);width:100%}
+.unit{min-width:3em;color:var(--sub)}
+.pv{font-size:.85rem;color:var(--acc);min-height:1.4em}
+button{font:inherit;font-weight:700;border:0;border-radius:12px;padding:14px;width:100%;background:var(--acc);color:#fff;cursor:pointer;margin-top:12px}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button:disabled{opacity:.4}
+.err{color:var(--miss);font-size:.85rem;min-height:1.3em}
+.bar{position:relative;height:46px;margin:18px 0 6px}
+.bar .axis{position:absolute;top:22px;left:0;right:0;height:2px;background:var(--line)}
+.bar .band{position:absolute;top:12px;height:22px;background:var(--band);border-radius:6px}
+.bar .pin{position:absolute;top:2px;width:3px;height:42px;background:var(--ink);transform:translateX(-1px)}
+.bar .t{position:absolute;top:-2px;font-size:.7rem;color:var(--sub);transform:translateX(-50%);white-space:nowrap}
+.big{font-size:2rem;font-weight:800}
+.hit{color:var(--hit)}.miss{color:var(--miss)}
+.src{font-size:.75rem;color:var(--sub)}.src a{color:var(--sub)}
+.grid{font-size:1.6rem;letter-spacing:.15em}
+.meter{height:12px;border-radius:6px;background:var(--line);position:relative;margin:8px 0}
+.meter b{position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:var(--acc)}
+.meter s{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);left:90%}
+.how li{margin-bottom:4px}
+.small{font-size:.85rem;color:var(--sub)}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script src="questions.js"></script>
+<script>
+const Z=0.1, K=25, N=5, KEY="keta-v1";
+const $=s=>document.querySelector(s), app=$("#app");
+const store={get(){try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return{}}},set(v){try{localStorage.setItem(KEY,JSON.stringify(v))}catch(e){}}};
+
+// "1.2万" "3億" "12,000" を数値に
+function parse(s){
+  if(!s)return NaN; s=s.replace(/[,，\s]/g,"").replace(/[０-９．]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0));
+  const m=s.match(/^(\d*\.?\d+)(兆|億|万|千)?$/); if(!m)return NaN;
+  return parseFloat(m[1])*({兆:1e12,億:1e8,万:1e4,千:1e3}[m[2]]||1);
+}
+function fmt(x){
+  if(!isFinite(x))return"";
+  const a=Math.abs(x), r=v=>(+v.toPrecision(3)).toLocaleString("ja-JP");
+  if(a>=1e12)return r(x/1e12)+"兆"; if(a>=1e8)return r(x/1e8)+"億"; if(a>=1e4)return r(x/1e4)+"万";
+  return r(x);
+}
+function score(l,u,x){ // log10空間のWinkler区間スコア → 点数
+  const L=Math.log10(l),U=Math.log10(u),X=Math.log10(x);
+  let s=U-L; if(X<L)s+=2/Z*(L-X); if(X>U)s+=2/Z*(X-U);
+  return Math.round(100-K*s);
+}
+// 日付から決まる問題（全員同じ）
+function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function today(){const d=new Date(Date.now()+9*3600e3);return d.toISOString().slice(0,10)}
+function dayNo(){return Math.floor((Date.parse(today())-Date.parse("2026-10-06"))/864e5)+1}
+function pick(seedStr){
+  let h=0;for(const c of seedStr)h=Math.imul(31,h)+c.charCodeAt(0)|0;
+  const r=rng(h), a=[...QUESTIONS]; for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}
+  return a.slice(0,N);
+}
+
+let S;
+function start(practice){
+  S={practice,qs:pick(practice?String(Math.random()):today()),i:0,res:[]};
+  ask();
+}
+function prog(){return`<div class="prog">${Array.from({length:N},(_,k)=>`<i class="${k<=S.i?"on":""}"></i>`).join("")}</div>`}
+function ask(){
+  const q=S.qs[S.i];
+  app.innerHTML=`${prog()}<div class="card">
+   <div class="qn">第${S.i+1}問 / ${N}</div><div class="q">${q.q}</div>
+   <div class="small">「90%の自信で、この間に入る」と言える幅を答えてください。</div>
+   <label>下限（これより小さいことはまずない）</label>
+   <div class="row"><input id="lo" inputmode="decimal" autocomplete="off" placeholder="例 3000 / 1.2万"><span class="unit">${q.unit}</span></div><div class="pv" id="plo"></div>
+   <label>上限（これより大きいことはまずない）</label>
+   <div class="row"><input id="hi" inputmode="decimal" autocomplete="off" placeholder="例 5万 / 2億"><span class="unit">${q.unit}</span></div><div class="pv" id="phi"></div>
+   <div class="err" id="err"></div>
+   <button id="go">答え合わせ</button></div>`;
+  const upd=()=>{const l=parse($("#lo").value),h=parse($("#hi").value);
+    $("#plo").textContent=isFinite(l)?"＝ "+fmt(l)+" "+q.unit:""; $("#phi").textContent=isFinite(h)?"＝ "+fmt(h)+" "+q.unit:"";};
+  $("#lo").oninput=$("#hi").oninput=upd; $("#lo").focus();
+  $("#hi").onkeydown=e=>{if(e.key==="Enter")$("#go").click()};
+  $("#lo").onkeydown=e=>{if(e.key==="Enter")$("#hi").focus()};
+  $("#go").onclick=()=>{
+    const l=parse($("#lo").value),h=parse($("#hi").value);
+    if(!(l>0)||!(h>0))return $("#err").textContent="数字を入れてください（「万」「億」も使えます）";
+    if(l>h)return $("#err").textContent="下限が上限より大きくなっています";
+    reveal(l,h);
+  };
+}
+function bar(l,h,x){
+  const L=Math.log10(l),H=Math.log10(h),X=Math.log10(x);
+  const lo=Math.min(L,X)-.3, hi=Math.max(H,X)+.3, p=v=>((v-lo)/(hi-lo)*100).toFixed(1)+"%";
+  return`<div class="bar"><div class="axis"></div><div class="band" style="left:${p(L)};width:calc(${p(H)} - ${p(L)})"></div>
+   <div class="pin" style="left:${p(X)}"></div><span class="t" style="left:${p(X)}">正解</span></div>`;
+}
+function reveal(l,h){
+  const q=S.qs[S.i], hit=l<=q.answer&&q.answer<=h, pt=score(l,h,q.answer), ratio=h/l;
+  S.res.push({id:q.id,l,h,hit,pt,ratio});
+  const note=hit?(ratio<3?"狭い幅で当てました。お見事。":ratio<30?"幅の中に入りました。":"当たりましたが、幅が広すぎて点が伸びません。")
+                :(q.answer<l?`正解は下限の${(l/q.answer).toFixed(1)}分の1でした。`:`正解は上限の${(q.answer/h).toFixed(1)}倍でした。`);
+  app.innerHTML=`${prog()}<div class="card"><div class="qn">第${S.i+1}問</div><div class="q">${q.q}</div>
+   <div class="big">${fmt(q.answer)} <small>${q.unit}</small></div>
+   <div class="small">あなたの幅：${fmt(l)}〜${fmt(h)} ${q.unit}</div>${bar(l,h,q.answer)}
+   <div class="${hit?"hit":"miss"}" style="font-weight:700">${hit?"的中":"はずれ"}　${pt>0?"+":""}${pt}点</div>
+   <div class="small">${note}</div>
+   <div class="src">出典：<a href="${q.url}" target="_blank" rel="noopener">${q.source}</a>（${q.year}）</div>
+   <button id="nx">${S.i<N-1?"次の問題":"結果を見る"}</button></div>`;
+  $("#nx").onclick=()=>{S.i++; S.i<N?ask():result()}; $("#nx").focus();
+}
+function result(){
+  const r=S.res, tot=r.reduce((a,b)=>a+b.pt,0), hits=r.filter(x=>x.hit).length;
+  const st=store.get(); st.all=st.all||{n:0,h:0};
+  if(!S.practice&&st.last!==today()){st.last=today();st.days=(st.days||0)+1;st.best=Math.max(st.best??-1e9,tot)}
+  st.all.n+=r.length; st.all.h+=hits; store.set(st);
+  const rate=st.all.h/st.all.n, grid=r.map(x=>!x.hit?"❌":x.ratio<3?"🎯":x.ratio<30?"🟧":"⬜").join("");
+  const diag=st.all.n<10?`まだ${st.all.n}問ぶん。10問を超えると診断の精度が上がります。`:
+    rate<.6?"かなりの自信過剰です。「まずない」と思った外側に、正解がよくあります。":
+    rate<.8?"やや自信過剰です。幅をもう少し広げると点が伸びます。":
+    rate<=.97?"よく較正されています。自分の知らなさを正しく分かっています。":"慎重すぎます。もっと狭くしても当たります。";
+  const share=`ケタ感 #${dayNo()}${S.practice?"（練習）":""} ${tot}点\n${grid}\n90%幅の的中 ${hits}/${N}`;
+  app.innerHTML=`<h1>結果</h1><div class="card"><div class="big">${tot}点</div><div class="grid">${grid}</div>
+   <div>90%のつもりの幅で、当たったのは <b>${hits}/${N}</b> 問</div></div>
+   <div class="card"><b>あなたの「自信」の正確さ</b>
+   <div class="meter"><b style="width:${(rate*100).toFixed(0)}%"></b><s></s></div>
+   <div class="small">これまでの的中率 ${(rate*100).toFixed(0)}%（${st.all.h}/${st.all.n}問）。縦線の90%が理想です。</div>
+   <p>${diag}</p>
+   <div class="small">多くの人は、90%のつもりの幅でも半分ほどしか当たりません（Alpert & Raiffa 1982 など）。</div></div>
+   <button id="sh">結果をコピーして共有</button>
+   <button class="ghost" id="pr">練習でもう5問</button><button class="ghost" id="hm">トップへ</button>`;
+  $("#sh").onclick=async()=>{try{if(navigator.share)await navigator.share({text:share});else{await navigator.clipboard.writeText(share);$("#sh").textContent="コピーしました"}}catch(e){}};
+  $("#pr").onclick=()=>start(true); $("#hm").onclick=home;
+}
+function home(){
+  const st=store.get(), done=st.last===today();
+  app.innerHTML=`<h1>ケタ感</h1><p class="lead">数字を「幅」で当てる、1日5問のゲーム。</p>
+   <div class="card how"><ol>
+   <li>「日本の島の数は？」のような問題が出ます。</li>
+   <li>ぴったり当てる必要はありません。<b>90%の自信で入る幅</b>を答えます。</li>
+   <li>幅が狭いほど高得点。外れると、はみ出した分だけ大きく減点。</li></ol>
+   <div class="small">広げすぎても、狭めすぎても損をします。正直な90%がいちばん点が出る採点です。</div></div>
+   <button id="st">${done?"今日の5問はプレイ済み（練習する）":`今日の5問 #${dayNo()}`}</button>
+   ${st.all?`<div class="small" style="margin-top:12px">これまで ${st.all.n}問 / 的中率 ${(st.all.h/st.all.n*100).toFixed(0)}%</div>`:""}`;
+  $("#st").onclick=()=>start(done);
+}
+home();
+</script>
+</body>
+</html>
