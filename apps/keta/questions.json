@@ -1,0 +1,254 @@
+[
+ {
+  "id": 1,
+  "q": "2024年10月1日現在の日本の総人口は？（人）",
+  "answer": 123802000,
+  "unit": "人",
+  "year": "2024",
+  "source": "総務省統計局 人口推計（2024年10月1日現在）",
+  "url": "https://www.stat.go.jp/data/jinsui/2024np/index.html"
+ },
+ {
+  "id": 2,
+  "q": "2024年10月1日現在の滋賀県の推計人口は？（人）",
+  "answer": 1400812,
+  "unit": "人",
+  "year": "2024",
+  "source": "滋賀県 滋賀県推計人口（令和6年10月1日現在）の概要",
+  "url": "https://www.pref.shiga.lg.jp/file/attachment/5530793.pdf"
+ },
+ {
+  "id": 3,
+  "q": "琵琶湖の面積は？（km²）",
+  "answer": 669.26,
+  "unit": "km²",
+  "year": "2024",
+  "source": "滋賀県 琵琶湖の概要",
+  "url": "https://www.pref.shiga.lg.jp/de51/2878.html"
+ },
+ {
+  "id": 4,
+  "q": "2024年12月時点のコンビニ店舗数（日本フランチャイズチェーン協会 正会員7社の合計）は？（店）",
+  "answer": 55736,
+  "unit": "店",
+  "year": "2024",
+  "source": "日本フランチャイズチェーン協会 コンビニエンスストア統計調査 2024年12月度",
+  "url": "https://www.jfa-fc.or.jp/particle/320.html"
+ },
+ {
+  "id": 6,
+  "q": "阪神甲子園球場の収容人員（高校野球開催時）は？（人）",
+  "answer": 47359,
+  "unit": "人",
+  "year": "2024",
+  "source": "阪神甲子園球場 施設概要",
+  "url": "https://koshien.hanshin.co.jp/stadium_guide/seat.html"
+ },
+ {
+  "id": 7,
+  "q": "2024年のプロ野球（NPB）セ・パ公式戦の入場者数の合計は？（人）",
+  "answer": 26681715,
+  "unit": "人",
+  "year": "2024",
+  "source": "NPB 2024年セ・パ公式戦 入場者数",
+  "url": "https://npb.jp/statistics/2024/attendance.html"
+ },
+ {
+  "id": 8,
+  "q": "大谷翔平が2024年のMLBレギュラーシーズンで打った本塁打の数は？（本）",
+  "answer": 54,
+  "unit": "本",
+  "year": "2024",
+  "source": "MLB.com 大谷翔平 選手成績",
+  "url": "https://www.mlb.com/player/shohei-ohtani-660271"
+ },
+ {
+  "id": 9,
+  "q": "2024年に日本で生まれた日本人の子どもの数（出生数・確定数）は？（人）",
+  "answer": 686173,
+  "unit": "人",
+  "year": "2024",
+  "source": "厚生労働省 令和6年(2024)人口動態統計（確定数）の概況",
+  "url": "https://www.mhlw.go.jp/toukei/saikin/hw/jinkou/kakutei24"
+ },
+ {
+  "id": 10,
+  "q": "東海道新幹線の東京〜新大阪の営業キロは？（km）",
+  "answer": 552.6,
+  "unit": "km",
+  "year": "2024",
+  "source": "国際高速鉄道協会 東海道新幹線の概要",
+  "url": "https://www.ihra-hsr.org/jp/hsr/_pdf/shinkansen_lines.pdf"
+ },
+ {
+  "id": 11,
+  "q": "2024年5月1日現在の日本の大学の数は？（校）",
+  "answer": 813,
+  "unit": "校",
+  "year": "2024",
+  "source": "文部科学省 令和6年度学校基本調査（確定値）",
+  "url": "https://www.mext.go.jp/content/20241213-mxt_chousa01-000037551_01.pdf"
+ },
+ {
+  "id": 12,
+  "q": "2024年の日本人女性の平均寿命は？（年）",
+  "answer": 87.13,
+  "unit": "年",
+  "year": "2024",
+  "source": "厚生労働省 令和6年簡易生命表の概況",
+  "url": "https://www.mhlw.go.jp/toukei/saikin/hw/life/life24/dl/life24-15.pdf"
+ },
+ {
+  "id": 14,
+  "q": "2024年3月末時点の郵便ポスト（郵便差出箱）の設置本数は？（本）",
+  "answer": 173935,
+  "unit": "本",
+  "year": "2024",
+  "source": "総務省 郵便事業の現状と今後の見通しについて（2024年7月）",
+  "url": "https://www.soumu.go.jp/main_content/001017125.pdf"
+ },
+ {
+  "id": 15,
+  "q": "2024年の1年間に日本を訪れた外国人の数（訪日外客数）は？（人）",
+  "answer": 36869900,
+  "unit": "人",
+  "year": "2024",
+  "source": "日本政府観光局（JNTO）訪日外客数 2024年推計値",
+  "url": "https://www.jnto.go.jp/news/_files/20250115_1615.pdf"
+ },
+ {
+  "id": 16,
+  "q": "2024年末時点の日本の自動販売機・自動サービス機の普及台数は？（台）",
+  "answer": 3910300,
+  "unit": "台",
+  "year": "2024",
+  "source": "日本自動販売システム機械工業会 自販機普及台数2024年版",
+  "url": "https://www.jvma.or.jp/information/information_3.html"
+ },
+ {
+  "id": 17,
+  "q": "国土地理院が数えた日本の島の数は？（島）",
+  "answer": 14125,
+  "unit": "島",
+  "year": "2023",
+  "source": "国土地理院 我が国の島を数えました",
+  "url": "https://www.gsi.go.jp/kihonjohochousa/pressrelease20230228.html"
+ },
+ {
+  "id": 18,
+  "q": "硬式野球ボールの縫い目の数は？（個）",
+  "answer": 108,
+  "unit": "個",
+  "year": "2021",
+  "source": "Full-Count 公式試合球の秘密",
+  "url": "https://full-count.jp/2021/02/23/post1053709/2/"
+ },
+ {
+  "id": 19,
+  "q": "2024年5月1日現在の日本の小学校の数は？（校）",
+  "answer": 18822,
+  "unit": "校",
+  "year": "2024",
+  "source": "文部科学省 令和6年度学校基本調査（確定値）",
+  "url": "https://www.mext.go.jp/content/20241213-mxt_chousa01-000037551_01.pdf"
+ },
+ {
+  "id": 20,
+  "q": "2023年度の日本人1人当たりの米の年間消費量は？（kg）",
+  "answer": 51.1,
+  "unit": "kg",
+  "year": "2023",
+  "source": "農林水産省 米の消費拡大の現状と対策について（食料需給表）",
+  "url": "https://www.maff.go.jp/j/council/seisaku/syokuryo/attach/attach/pdf/250326-59.pdf"
+ },
+ {
+  "id": 21,
+  "q": "日本一小さい都道府県、香川県の面積は？（km²）",
+  "answer": 1876.86,
+  "unit": "km²",
+  "year": "2024",
+  "source": "国土地理院 令和6年全国都道府県市区町村別面積調（4月1日時点）",
+  "url": "https://www.gsi.go.jp/KOKUJYOHO/MENCHO/backnumber/GSI-menseki20240401.pdf"
+ },
+ {
+  "id": 22,
+  "q": "2024年末時点の日本の歯科診療所の数は？（施設）",
+  "answer": 66378,
+  "unit": "施設",
+  "year": "2024",
+  "source": "厚生労働省 令和6年医療施設（動態）調査の概況",
+  "url": "https://www.mhlw.go.jp/toukei/saikin/hw/iryosd/24/dl/11gaikyou06.pdf"
+ },
+ {
+  "id": 23,
+  "q": "2025年3月末時点の日本の温泉地の数は？（か所）",
+  "answer": 2839,
+  "unit": "か所",
+  "year": "2025",
+  "source": "環境省 温泉利用状況（令和6年度）／観光経済新聞",
+  "url": "https://www.env.go.jp/nature/onsen/data/"
+ },
+ {
+  "id": 24,
+  "q": "2024年の全国の交通事故死者数は？（人）",
+  "answer": 2663,
+  "unit": "人",
+  "year": "2024",
+  "source": "警察庁 令和6年交通事故死者数（日本経済新聞報道）",
+  "url": "https://www.nikkei.com/article/DGXZQOUE065M70W5A100C2000000/"
+ },
+ {
+  "id": 25,
+  "q": "2024年度の高校の硬式野球部員数（全国）は？（人）",
+  "answer": 127031,
+  "unit": "人",
+  "year": "2024",
+  "source": "日本高等学校野球連盟 部員数統計（硬式）",
+  "url": "https://www.jhbf.or.jp/data/statistical/index_koushiki.html"
+ },
+ {
+  "id": 26,
+  "q": "2024年度の日本高野連 硬式の加盟校数は？（校）",
+  "answer": 3798,
+  "unit": "校",
+  "year": "2024",
+  "source": "日本高等学校野球連盟 部員数統計（硬式）",
+  "url": "https://www.jhbf.or.jp/data/statistical/index_koushiki.html"
+ },
+ {
+  "id": 27,
+  "q": "「東京ドーム何個分」の基準、東京ドームの建築面積は？（m²）",
+  "answer": 46755,
+  "unit": "m²",
+  "year": "2024",
+  "source": "東京ドーム 施設概要",
+  "url": "https://www.tokyo-dome.co.jp/dome/"
+ },
+ {
+  "id": 28,
+  "q": "2024年3月末時点で営業中の郵便局の数は？（局）",
+  "answer": 23512,
+  "unit": "局",
+  "year": "2024",
+  "source": "日本郵便 郵便局局数情報",
+  "url": "https://www.post.japanpost.jp/newsrelease/storeinformation/index02.html"
+ },
+ {
+  "id": 29,
+  "q": "琵琶湖の貯水量は約何億m³？（億m³）",
+  "answer": 275,
+  "unit": "億m³",
+  "year": "2024",
+  "source": "滋賀県 琵琶湖の概要",
+  "url": "https://www.pref.shiga.lg.jp/de51/2878.html"
+ },
+ {
+  "id": 30,
+  "q": "2024年のNPBセ・パ公式戦の1試合平均入場者数は？（人）",
+  "answer": 31098,
+  "unit": "人",
+  "year": "2024",
+  "source": "NPB 2024年セ・パ公式戦 入場者数",
+  "url": "https://npb.jp/statistics/2024/attendance.html"
+ }
+]

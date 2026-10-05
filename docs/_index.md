@@ -27,6 +27,7 @@
 | SHIGABASE(大学野球部アプリ) | [shigabase.md](shigabase.md) | 構成・技術スタック・ディレクトリ、既知の課題(バージョン不一致、iOS 26クラッシュ対応) |
 | てくてくまち(散歩で街を作るアプリ) | [walk-town.md](walk-town.md) | 構成・技術スタック・主なファイル・現状と未確認の項目 |
 | Poitto(紙くず投げゲーム) | [poitto.md](poitto.md) | 構成・ステージ定義・確かめ方・TestFlight配布の状況 |
+| ケタ感(数字を幅で当てる日替わりゲーム) | [keta.md](keta.md) | 採点の仕組み、問題の足し方、未確認の項目 |
 | 就活の締切と選考状況をまとめて見るとき | [job-hunt-board.md](job-hunt-board.md) | 締切マスター・締め切りナビ・Gmailを1つにまとめる道具。iOSアプリとWeb画面、選考段階の推定、メールの接続状況 |
 | 滋賀大の対戦相手の野手対策を作るとき | [shiga-taisaku.md](shiga-taisaku.md) | 京滋リーグの全試合Excelを大阪ガス形式に変換し、同じ道具で対策資料を作る手順。全体の流れ、データ点検、自チーム分析（打順・BLAST）、監督への送付、大阪ガス版との違い |
 | U-23W杯の対戦相手データを集めるとき | [wbsc-collect.md](wbsc-collect.md) | WBSCの大会サイトから試合データを取る道具。取れる項目と登録済みの大会 |
