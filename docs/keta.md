@@ -29,6 +29,9 @@
 - 単位は「円・人・枚」などの基本単位で持つ。万や億はアプリが表示時に付ける。
 - UIテスト `KetaUITests` が初回10問を通しで遊ぶ。画面確認用の起動引数は `-screen play|reveal|reveal-miss|result|share` と `-adjust`、記録を消すのは `-reset`。
 
+- 処方箋は `Calibration.prescription`（10問から）。豆知識は questions.json の `note`。効果音は `Sound.swift` で合成し、ホームでオフにできる。
+- 見本の記録で画面を確認するときは、開発版を `-seed` 付きで起動する。
+
 ## iOS版だけの機能
 
 - 数字キーボードの上の「千・万・億」ボタン
