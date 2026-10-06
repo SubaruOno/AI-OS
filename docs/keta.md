@@ -46,6 +46,12 @@
 - 答え合わせのあと0.5秒は「次へ」が効かない（誤タップで正解を見逃さないため）
 - 「みんなの的中率」はサーバーがないので未対応
 
+## 配布
+
+- App Store Connect:「ケタ感 - 数字を幅で当てる」（Apple ID 6819563229、SKU keta-2026、バンドルID `com.subaruono.Keta`）。2026-10-06 に作成。アプリの新規作成はAPIでは許されないので、ブラウザで行った。
+- 2026-10-06 に 1.0(1) をアップロードし、内部テストグループ「内部テスト」（全ビルドに自動で参加）に配布。テスターはアカウント所有者のみ。
+- アップロード手順: Release アーカイブ → `xcodebuild -exportArchive`（method app-store-connect）→ `xcrun altool --upload-app`。APIキーは `~/.appstoreconnect/private_keys/`、発行者IDは AI-OS の `.env` の `ASC_ISSUER_ID`。次のビルドは `CURRENT_PROJECT_VERSION` を上げてから。
+
 ## 未確認のこと
 
 - 実機での動作と、TestFlightでの配布。
