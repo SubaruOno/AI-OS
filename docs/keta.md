@@ -34,6 +34,10 @@
 
 - マスコットは `Penta.swift`（`PentaRig` が形と動き、`PentaView` がSwiftUIに置く部品）。台詞は `PlayView.pentaLine`。考え方のヒントは questions.json の `hint`。表情一覧は `-screen penta` で確認できる。
 
+- ジャンルは questions.json の `genre`（6種類、`Genre.all`）。記録画面は `RecordsView`、確認は `-seed -records`。
+- ウィジェットは `KetaWidget` ターゲット。アプリが `Store.publishSummary()` で App Group `group.com.subaruono.Keta` に要約を書き、ウィジェットが読む。表示部分 `WidgetViews.swift` はアプリ側にも入っていて `-screen widget` で確認できる。タップは `keta://play`。
+- 初回はチュートリアル（`OnboardingView` と `Tutorial.question`）。確認は `-screen onboarding`。
+
 ## iOS版だけの機能
 
 - 数字キーボードの上の「千・万・億」ボタン
