@@ -1,0 +1,326 @@
+[
+ {
+  "id": 201,
+  "q": "気象庁が定める日本の活火山の数は？（山）",
+  "answer": 111,
+  "unit": "山",
+  "year": "2017〜",
+  "source": "気象庁 活火山とは",
+  "url": "https://www.jma.go.jp/jma/kishou/know/kazan/rireki/rireki.html"
+ },
+ {
+  "id": 202,
+  "q": "2024年3月末時点の全国の美容所（美容室）の数は？（施設）",
+  "answer": 274070,
+  "unit": "施設",
+  "year": "2023年度末",
+  "source": "厚生労働省 令和5年度衛生行政報告例",
+  "url": "https://ribiyo-news.jp/?p=44330"
+ },
+ {
+  "id": 203,
+  "q": "2024年の日本の映画興行収入（全作品の合計）は？（億円）",
+  "answer": 2069,
+  "unit": "億円",
+  "year": "2024",
+  "source": "日本映画製作者連盟 全国映画概況",
+  "url": "https://www.eiren.org/toukei/"
+ },
+ {
+  "id": 204,
+  "q": "2024年末時点の日本の映画館のスクリーン数は？（スクリーン）",
+  "answer": 3675,
+  "unit": "スクリーン",
+  "year": "2024",
+  "source": "日本映画製作者連盟 全国映画概況",
+  "url": "https://www.eiren.org/toukei/"
+ },
+ {
+  "id": 205,
+  "q": "2024年の全国企業倒産件数（負債1,000万円以上）は？（件）",
+  "answer": 10006,
+  "unit": "件",
+  "year": "2024",
+  "source": "東京商工リサーチ 全国企業倒産状況",
+  "url": "https://www.tsr-net.co.jp/news/status/detail/1200857_1610.html"
+ },
+ {
+  "id": 206,
+  "q": "2023年の日本のアニメ産業市場（海外売上も含むユーザー支出）は？（億円）",
+  "answer": 33465,
+  "unit": "億円",
+  "year": "2023",
+  "source": "日本動画協会 アニメ産業レポート2024",
+  "url": "https://anime.eiga.com/news/123132/"
+ },
+ {
+  "id": 207,
+  "q": "2024年の日本で飼われている犬の推計頭数は？（万頭）",
+  "answer": 679.6,
+  "unit": "万頭",
+  "year": "2024",
+  "source": "ペットフード協会 全国犬猫飼育実態調査",
+  "url": "https://petfood.or.jp/pdf/data/2024/3.pdf"
+ },
+ {
+  "id": 208,
+  "q": "2024年の全国の救急車の出動件数は？（件）",
+  "answer": 7717000,
+  "unit": "件",
+  "year": "2024（速報値）",
+  "source": "総務省消防庁（時事通信報道）",
+  "url": "https://www.jiji.com/jc/article?k=2025032800901&g=soc"
+ },
+ {
+  "id": 209,
+  "q": "大阪・関西万博（2025年）の一般来場者数の累計は？（人）",
+  "answer": 25578986,
+  "unit": "人",
+  "year": "2025",
+  "source": "日本国際博覧会協会 確定値（nippon.com報道）",
+  "url": "https://www.nippon.com/ja/news/kd1350753341162259427/"
+ },
+ {
+  "id": 210,
+  "q": "2024年夏（開山日〜9月10日）に富士山の八合目を通った登山者数は？（人）",
+  "answer": 204316,
+  "unit": "人",
+  "year": "2024",
+  "source": "環境省関東地方環境事務所",
+  "url": "https://kanto.env.go.jp/press_00089.html"
+ },
+ {
+  "id": 211,
+  "q": "滋賀県内にある一級河川の数は？（本）",
+  "answer": 509,
+  "unit": "本",
+  "year": "2010",
+  "source": "滋賀県 河川整備方針",
+  "url": "https://www.pref.shiga.lg.jp/file/attachment/1016445.pdf"
+ },
+ {
+  "id": 212,
+  "q": "2024年の日本のアナログレコードの生産金額は？（億円）",
+  "answer": 78.87,
+  "unit": "億円",
+  "year": "2024",
+  "source": "日本レコード協会 音楽ソフト生産実績",
+  "url": "https://prtimes.jp/main/html/rd/p/000000586.000010908.html"
+ },
+ {
+  "id": 213,
+  "q": "2024年の滋賀県の延べ観光入込客数は？（人）",
+  "answer": 50438261,
+  "unit": "人",
+  "year": "2024",
+  "source": "滋賀県 観光入込客統計調査（確定値）",
+  "url": "https://www.pref.shiga.lg.jp/kensei/koho/e-shinbun/oshirase/346357.html"
+ },
+ {
+  "id": 214,
+  "q": "本州以南（北海道を除く）に生息するニホンジカの推定個体数（中央値）は？（万頭）",
+  "answer": 222,
+  "unit": "万頭",
+  "year": "2021年度末",
+  "source": "環境省 ニホンジカ及びイノシシの個体数推定",
+  "url": "https://www.env.go.jp/press/110760_00001.html"
+ },
+ {
+  "id": 215,
+  "q": "初代Nintendo Switch本体の世界累計販売台数は？（万台）",
+  "answer": 15659,
+  "unit": "万台",
+  "year": "2026年6月末",
+  "source": "任天堂 ゲーム専用機販売実績",
+  "url": "https://www.nintendo.co.jp/ir/finance/hard_soft/index.html"
+ },
+ {
+  "id": 216,
+  "q": "日本一高いダム、黒部ダムの高さ（堤高）は？（m）",
+  "answer": 186,
+  "unit": "m",
+  "year": "1963",
+  "source": "関西電力",
+  "url": "https://www.kepco.co.jp/sp/corporate/profile/community/pr/kurobe/kuroyon.html"
+ },
+ {
+  "id": 217,
+  "q": "日本の観測史上最高気温（2025年8月、群馬県伊勢崎市）は？（℃）",
+  "answer": 41.8,
+  "unit": "℃",
+  "year": "2025",
+  "source": "気象庁（上毛新聞報道）",
+  "url": "https://www.jomo-news.co.jp/articles/-/736298"
+ },
+ {
+  "id": 218,
+  "q": "2024年末時点で届け出のある日本の医師の数は？（人）",
+  "answer": 347772,
+  "unit": "人",
+  "year": "2024",
+  "source": "厚生労働省 医師・歯科医師・薬剤師統計",
+  "url": "https://www.mhlw.go.jp/toukei/saikin/hw/ishi/24"
+ },
+ {
+  "id": 219,
+  "q": "2024年度に製造する計画だった一万円札の枚数は？（億枚）",
+  "answer": 18.3,
+  "unit": "億枚",
+  "year": "2024年度",
+  "source": "財務省 令和6年度日本銀行券製造枚数",
+  "url": "https://www.mof.go.jp/policy/currency/bill/lot/2024ginnkoukennkeikaku.html"
+ },
+ {
+  "id": 220,
+  "q": "2023年に日本で出た書籍の新刊点数は？（点）",
+  "answer": 64905,
+  "unit": "点",
+  "year": "2023",
+  "source": "出版科学研究所 出版指標年報",
+  "url": "https://news.yahoo.co.jp/expert/articles/045122dc03934568f4dc0bd997b5e8315cdea230"
+ },
+ {
+  "id": 221,
+  "q": "2024年に国内で震度1以上を観測した地震の回数は？（回）",
+  "answer": 3678,
+  "unit": "回",
+  "year": "2024",
+  "source": "気象庁 令和6年の地震活動について",
+  "url": "https://www.jma.go.jp/jma/press/2501/14d/2412jishin2024.pdf"
+ },
+ {
+  "id": 222,
+  "q": "2026年用年賀はがきの当初発行枚数は？（万枚）",
+  "answer": 74841,
+  "unit": "万枚",
+  "year": "2026年用",
+  "source": "日本郵便",
+  "url": "https://www.post.japanpost.jp/notification/pressrelease/2025/00_honsha/0829_02_01.pdf"
+ },
+ {
+  "id": 223,
+  "q": "2024年のJRA（中央競馬）の売得金は？（億円）",
+  "answer": 33135,
+  "unit": "億円",
+  "year": "2024",
+  "source": "JRA（netkeiba報道）",
+  "url": "https://news.netkeiba.com/?pid=news_view&no=285560"
+ },
+ {
+  "id": 224,
+  "q": "2025年度末の全国の書店数は？（店）",
+  "answer": 9993,
+  "unit": "店",
+  "year": "2025年度末",
+  "source": "日本出版インフラセンター（日経報道）",
+  "url": "https://www.nikkei.com/article/DGXZQOUC086460Y6A600C2000000/"
+ },
+ {
+  "id": 225,
+  "q": "2024年に1年間勤めた会社員などの平均給与は？（万円）",
+  "answer": 478,
+  "unit": "万円",
+  "year": "2024",
+  "source": "国税庁 民間給与実態統計調査",
+  "url": "https://www.nta.go.jp/publication/statistics/kokuzeicho/minkan/gaiyou/2024.htm"
+ },
+ {
+  "id": 226,
+  "q": "1年間に発生する台風の数の平年値（1991〜2020年）は？（個）",
+  "answer": 25.1,
+  "unit": "個",
+  "year": "1991-2020",
+  "source": "気象庁 台風の平年値",
+  "url": "https://www.data.jma.go.jp/yoho/typhoon/statistics/average/average.html"
+ },
+ {
+  "id": 227,
+  "q": "日本一深い湖、田沢湖の最大水深は？（m）",
+  "answer": 423.4,
+  "unit": "m",
+  "year": "—",
+  "source": "国土地理院 湖沼調査（仙北市）",
+  "url": "https://www.city.semboku.akita.jp/sightseeing/travel/nature/index.html"
+ },
+ {
+  "id": 228,
+  "q": "大阪・万博記念公園の太陽の塔の高さは？（m）",
+  "answer": 70,
+  "unit": "m",
+  "year": "1970",
+  "source": "万博記念公園",
+  "url": "https://www.expo70-park.jp/cause/expo/tower-of-sun/"
+ },
+ {
+  "id": 229,
+  "q": "2024年冬のコミックマーケット105（2日間）の来場者数は？（人）",
+  "answer": 300000,
+  "unit": "人",
+  "year": "2024",
+  "source": "コミックマーケット準備会",
+  "url": "https://www.comiket.co.jp/info-a/C105/C105AfterReport.html"
+ },
+ {
+  "id": 230,
+  "q": "1927年に滋賀県の伊吹山で観測された、世界記録の積雪の深さは？（cm）",
+  "answer": 1182,
+  "unit": "cm",
+  "year": "1927",
+  "source": "京都新聞",
+  "url": "https://www.kyoto-np.co.jp/articles/-/701659"
+ },
+ {
+  "id": 231,
+  "q": "避雷針を含めた通天閣の高さは？（m）",
+  "answer": 108,
+  "unit": "m",
+  "year": "2016〜",
+  "source": "通天閣（Wikipedia等）",
+  "url": "https://ja.wikipedia.org/wiki/%E9%80%9A%E5%A4%A9%E9%96%A3"
+ },
+ {
+  "id": 232,
+  "q": "2024年度のふるさと納税の寄附額（全国合計）は？（億円）",
+  "answer": 12728,
+  "unit": "億円",
+  "year": "2024年度",
+  "source": "総務省 ふるさと納税に関する現況調査",
+  "url": "https://shirube.zaikyo.or.jp/article/2025/08/04/10330174.html"
+ },
+ {
+  "id": 233,
+  "q": "明石海峡大橋の中央支間（主塔と主塔の間）の長さは？（m）",
+  "answer": 1991,
+  "unit": "m",
+  "year": "1998",
+  "source": "本州四国連絡高速道路",
+  "url": "https://www.jb-honshi.co.jp/corp_index/technology/introduction/introduction_akashi.html"
+ },
+ {
+  "id": 234,
+  "q": "2024年に京都市を訪れた観光客数（日本人と外国人の合計）は？（万人）",
+  "answer": 5606,
+  "unit": "万人",
+  "year": "2024",
+  "source": "京都市 京都観光総合調査",
+  "url": "https://www.city.kyoto.lg.jp/sankan/cmsfiles/contents/0000341/341863/R6honsatsu.pdf"
+ },
+ {
+  "id": 235,
+  "q": "2023年10月時点の日本の空き家の数は？（戸）",
+  "answer": 9002000,
+  "unit": "戸",
+  "year": "2023",
+  "source": "総務省 令和5年住宅・土地統計調査",
+  "url": "https://x.com/MIC_JAPAN/status/1838825718467449004"
+ },
+ {
+  "id": 236,
+  "q": "映画『名探偵コナン 100万ドルの五稜星』（2024年）の興行収入は？（億円）",
+  "answer": 158.0,
+  "unit": "億円",
+  "year": "2024",
+  "source": "日本映画製作者連盟 2024年興行収入10億円以上番組",
+  "url": "https://www.eiren.org/toukei/"
+ }
+]

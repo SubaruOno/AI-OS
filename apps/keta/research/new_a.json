@@ -1,0 +1,326 @@
+[
+ {
+  "id": 101,
+  "q": "2024年のMLBレギュラーシーズンの観客動員数の合計は？（人）",
+  "answer": 71348366,
+  "unit": "人",
+  "year": "2024",
+  "source": "Forbes (Maury Brown) MLB attendance 2024",
+  "url": "https://www.forbes.com/sites/maurybrown/2024/10/01/mlb-attendance-sees-second-consecutive-year-of-increase-tops-71-million/"
+ },
+ {
+  "id": 102,
+  "q": "2025年の日本プロ野球（支配下・日本人選手）の平均年俸は？（万円）",
+  "answer": 4905,
+  "unit": "万円",
+  "year": "2025",
+  "source": "日本プロ野球選手会 年俸調査結果",
+  "url": "https://jpbpa.net/2025/04/21/12358/"
+ },
+ {
+  "id": 103,
+  "q": "2024年のセ・リーグ公式戦の平均試合時間は？（分）",
+  "answer": 188,
+  "unit": "分",
+  "year": "2024",
+  "source": "NPB 2024年 セ・パ公式戦 平均試合時間（3時間8分）",
+  "url": "https://npb.jp/statistics/2024/time.html"
+ },
+ {
+  "id": 104,
+  "q": "2025年夏の甲子園（第107回大会）の総入場者数は？（人）",
+  "answer": 724700,
+  "unit": "人",
+  "year": "2025",
+  "source": "阪神甲子園球場 第107回全国高等学校野球選手権大会",
+  "url": "https://koshien.hanshin.co.jp/highschool/summer2025/"
+ },
+ {
+  "id": 105,
+  "q": "日本野球連盟に加盟する社会人野球の企業チームの数は？（チーム）",
+  "answer": 95,
+  "unit": "チーム",
+  "year": "2023",
+  "source": "日本野球連盟 組織概要（2023年8月現在、専門学校含む）",
+  "url": "https://www.jaba.or.jp/about/organization/"
+ },
+ {
+  "id": 106,
+  "q": "2023年度の中学校の軟式野球部員数（男女計、中体連加盟）は？（人）",
+  "answer": 133725,
+  "unit": "人",
+  "year": "2023",
+  "source": "野村総合研究所 中体連加盟人数推計（スポーツ庁掲載）",
+  "url": "https://www.mext.go.jp/sports/content/20240502-spt_oripara01-000013015_02.pdf"
+ },
+ {
+  "id": 107,
+  "q": "2024年のJ1リーグの年間総入場者数は？（人）",
+  "answer": 7734871,
+  "unit": "人",
+  "year": "2024",
+  "source": "Jリーグ 2024シーズン年間総入場者数",
+  "url": "https://www.jleague.jp/news/article/29612/"
+ },
+ {
+  "id": 108,
+  "q": "2024年度の日本サッカー協会の登録選手数（全種別合計）は？（人）",
+  "answer": 838657,
+  "unit": "人",
+  "year": "2024",
+  "source": "JFA データボックス サッカー選手登録数",
+  "url": "https://www.jfa.jp/about_jfa/organization/databox/player.html"
+ },
+ {
+  "id": 109,
+  "q": "2022年FIFAワールドカップ・カタール大会の全64試合の総得点は？（点）",
+  "answer": 172,
+  "unit": "点",
+  "year": "2022",
+  "source": "サッカーキング（大会史上最多）",
+  "url": "https://www.soccer-king.jp/news/world/wc/20221219/1721249.html"
+ },
+ {
+  "id": 110,
+  "q": "2025年の大相撲夏場所（15日間）で懸けられた懸賞の本数は？（本）",
+  "answer": 3563,
+  "unit": "本",
+  "year": "2025",
+  "source": "共同通信（東京新聞）懸賞3563本で新記録",
+  "url": "https://www.tokyo-np.co.jp/article/490326"
+ },
+ {
+  "id": 111,
+  "q": "大相撲の年寄名跡（親方株）の数は？（一代年寄を除く）（個）",
+  "answer": 105,
+  "unit": "個",
+  "year": "1927年確定",
+  "source": "国立国会図書館 レファレンス協同データベース",
+  "url": "https://crd.ndl.go.jp/reference/entry/index.php?id=1000041930&page=ref_view"
+ },
+ {
+  "id": 112,
+  "q": "パリ2024オリンピックに日本が派遣した選手の数は？（人）",
+  "answer": 409,
+  "unit": "人",
+  "year": "2024",
+  "source": "JOC パリ五輪開幕へ、409選手を派遣",
+  "url": "https://www.joc.or.jp/news/20240726035351.html"
+ },
+ {
+  "id": 113,
+  "q": "パリ2024終了時点で、日本が夏季オリンピックで獲得した金メダルの通算数は？（個）",
+  "answer": 189,
+  "unit": "個",
+  "year": "2024",
+  "source": "Spocale オリンピック日本のメダル数 歴代（JOC集計に基づく）",
+  "url": "https://spocale.com/blog/japan_olympic_medals_history/"
+ },
+ {
+  "id": 114,
+  "q": "2024年の日本のインスタントラーメンの総需要は？（食）",
+  "answer": 5900000000,
+  "unit": "食",
+  "year": "2024",
+  "source": "世界ラーメン協会 2024年世界総需要（日本59.0億食）",
+  "url": "https://kyodonewsprwire.jp/release/202505028328"
+ },
+ {
+  "id": 115,
+  "q": "2024年の日本のコーヒー消費量は？（トン）",
+  "answer": 400218,
+  "unit": "トン",
+  "year": "2024",
+  "source": "全日本コーヒー協会 統計資料",
+  "url": "https://coffee.ajca.or.jp/data/"
+ },
+ {
+  "id": 116,
+  "q": "2024年の二人以上世帯1世帯当たりの納豆への年間支出額（全国平均）は？（円）",
+  "answer": 4769,
+  "unit": "円",
+  "year": "2024",
+  "source": "総務省 家計調査（GD Freak集計）",
+  "url": "https://jp.gdfreak.com/public/detail/jp010050001070100127/4"
+ },
+ {
+  "id": 117,
+  "q": "2024年、外食のラーメンへの1世帯当たり年間支出額が全国1位だった山形市の金額は？（円）",
+  "answer": 22389,
+  "unit": "円",
+  "year": "2024",
+  "source": "日本経済新聞（総務省 家計調査）",
+  "url": "https://www.nikkei.com/article/DGXZQOCC307GP0Q5A130C2000000/"
+ },
+ {
+  "id": 118,
+  "q": "2023年度の成人1人当たりの年間酒類消費数量（全国）は？（L）",
+  "answer": 75.6,
+  "unit": "L",
+  "year": "2023",
+  "source": "国税庁 酒のしおり（令和6年）",
+  "url": "https://www.nta.go.jp/taxes/sake/shiori-gaikyo/shiori/2024/pdf/0002.pdf"
+ },
+ {
+  "id": 119,
+  "q": "2024年12月末時点の日本マクドナルドの店舗数は？（店）",
+  "answer": 2988,
+  "unit": "店",
+  "year": "2024",
+  "source": "日本マクドナルドHD 2024年12月期 決算短信／IRセールスリポート",
+  "url": "https://www.mcd-holdings.co.jp/ir/sales_report/"
+ },
+ {
+  "id": 120,
+  "q": "2025年2月時点の吉野家の国内店舗数は？（店）",
+  "answer": 1259,
+  "unit": "店",
+  "year": "2025",
+  "source": "吉野家ホールディングス 決算資料（報道ベース）",
+  "url": "https://www.ryutsuu.biz/accounts/s040983.html"
+ },
+ {
+  "id": 121,
+  "q": "2024年の国内の回転寿司の店舗数は？（店）",
+  "answer": 4270,
+  "unit": "店",
+  "year": "2024",
+  "source": "富士経済調査（みなと新聞）",
+  "url": "https://www.minato-yamaguchi.co.jp/minato/e-minato/articles/152852"
+ },
+ {
+  "id": 122,
+  "q": "2024年の全国のスーパーマーケットの店舗数（スーパーマーケット3協会調査）は？（店）",
+  "answer": 23039,
+  "unit": "店",
+  "year": "2024",
+  "source": "全国スーパーマーケット協会ほか スーパーマーケット年次統計調査 2024",
+  "url": "https://www.super.or.jp/wp/wp-content/uploads/2024/10/2024nenji-tokei.pdf"
+ },
+ {
+  "id": 123,
+  "q": "2021年の経済センサスで数えた全国の喫茶店の数（民営事業所）は？（事業所）",
+  "answer": 58669,
+  "unit": "事業所",
+  "year": "2021",
+  "source": "全日本コーヒー協会（総務省・経産省 経済センサス-活動調査）",
+  "url": "https://ajca.or.jp/pdf/data-jigyosho-jyugyoin2021.pdf"
+ },
+ {
+  "id": 124,
+  "q": "2024年度のJR東日本で1日平均の乗車人員が最も多い新宿駅の乗車人員は？（人）",
+  "answer": 666809,
+  "unit": "人",
+  "year": "2024",
+  "source": "JR東日本 各駅の乗車人員 2024年度",
+  "url": "https://www.jreast.co.jp/company/data/passenger/"
+ },
+ {
+  "id": 125,
+  "q": "2024年度の東海道新幹線の1日平均の運転本数（臨時列車含む）は？（本）",
+  "answer": 383,
+  "unit": "本",
+  "year": "2024",
+  "source": "JR東海 ファクトシート2025",
+  "url": "https://company.jr-central.co.jp/ir/factsheets/_pdf/factsheets2025-02-01.pdf"
+ },
+ {
+  "id": 126,
+  "q": "青函トンネル（全長53.85km）のうち、海の下を通る部分の長さは？（km）",
+  "answer": 23.3,
+  "unit": "km",
+  "year": "1988",
+  "source": "JR北海道 青函トンネルのあらまし",
+  "url": "https://www.jrhokkaido.co.jp/network/seikan/01.html"
+ },
+ {
+  "id": 127,
+  "q": "2023年時点の全国の踏切の数は？（か所）",
+  "answer": 32371,
+  "unit": "か所",
+  "year": "2023",
+  "source": "鉄道ホビダス（国土交通省資料に基づく）",
+  "url": "https://rail.hobidas.com/feature/462923/"
+ },
+ {
+  "id": 128,
+  "q": "2024年の羽田空港の年間旅客数（国内線＋国際線）は？（人）",
+  "answer": 85900617,
+  "unit": "人",
+  "year": "2024",
+  "source": "Aviation Wire（日本空港ビルデング・TIAT集計）",
+  "url": "https://www.aviationwire.jp/archives/319562"
+ },
+ {
+  "id": 129,
+  "q": "2024年の成田空港の航空機発着回数は？（回）",
+  "answer": 242071,
+  "unit": "回",
+  "year": "2024",
+  "source": "成田国際空港 2024年 空港運用状況",
+  "url": "https://prtimes.jp/main/html/rd/p/000000819.000004762.html"
+ },
+ {
+  "id": 130,
+  "q": "国土交通省の空港一覧に載っている日本の空港の数は？（ヘリポート等除く）（か所）",
+  "answer": 97,
+  "unit": "か所",
+  "year": "2026",
+  "source": "国土交通省 空港一覧",
+  "url": "https://www.mlit.go.jp/koku/15_bf_000310.html"
+ },
+ {
+  "id": 131,
+  "q": "2025年6月時点で国に登録されている全国の「道の駅」の数は？（駅）",
+  "answer": 1230,
+  "unit": "駅",
+  "year": "2025",
+  "source": "国土交通省 「道の駅」の第63回登録について",
+  "url": "https://www.mlit.go.jp/road/Michi-no-Eki/topics.html"
+ },
+ {
+  "id": 132,
+  "q": "2024年度末時点の全国のガソリンスタンド（給油所）の数は？（か所）",
+  "answer": 27009,
+  "unit": "か所",
+  "year": "2024",
+  "source": "資源エネルギー庁 令和6年度末揮発油販売業者数及び給油所数",
+  "url": "https://www.enecho.meti.go.jp/category/resources_and_fuel/distribution/hinnkakuhou/250730.html"
+ },
+ {
+  "id": 133,
+  "q": "2025年3月末時点の自家用乗用車（軽含む）の保有台数は？（台）",
+  "answer": 61832213,
+  "unit": "台",
+  "year": "2025",
+  "source": "自動車検査登録情報協会 わが国の自動車保有動向",
+  "url": "https://www.airia.or.jp/publish/statistics/trend.html"
+ },
+ {
+  "id": 134,
+  "q": "2024年の国内新車販売台数（登録車＋軽自動車）は？（台）",
+  "answer": 4421494,
+  "unit": "台",
+  "year": "2024",
+  "source": "日本自動車販売協会連合会・全国軽自動車協会連合会（nippon.com）",
+  "url": "https://www.nippon.com/ja/japan-data/h02260/"
+ },
+ {
+  "id": 135,
+  "q": "2024年末時点の日本の運転免許保有者数は？（人）",
+  "answer": 81742303,
+  "unit": "人",
+  "year": "2024",
+  "source": "警察庁 運転免許統計 令和6年版",
+  "url": "https://www.npa.go.jp/publications/statistics/koutsuu/r06main.pdf"
+ },
+ {
+  "id": 136,
+  "q": "2025年3月末時点で、乗用車（軽除く）が登録から抹消されるまでの平均使用年数は？（年）",
+  "answer": 13.35,
+  "unit": "年",
+  "year": "2025",
+  "source": "自動車検査登録情報協会 平均使用年数",
+  "url": "https://www.airia.or.jp/publish/file/shiyounensuu_2025.pdf"
+ }
+]
