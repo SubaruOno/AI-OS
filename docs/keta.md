@@ -32,6 +32,8 @@
 - 処方箋は `Calibration.prescription`（10問から）。豆知識は questions.json の `note`。効果音は `Sound.swift` で合成し、ホームでオフにできる。
 - 見本の記録で画面を確認するときは、開発版を `-seed` 付きで起動する。
 
+- マスコットは `Penta.swift`（`PentaRig` が形と動き、`PentaView` がSwiftUIに置く部品）。台詞は `PlayView.pentaLine`。考え方のヒントは questions.json の `hint`。表情一覧は `-screen penta` で確認できる。
+
 ## iOS版だけの機能
 
 - 数字キーボードの上の「千・万・億」ボタン
