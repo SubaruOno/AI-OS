@@ -37,3 +37,4 @@ outputs/**/*.zip
 .seat
 outputs/walk-town/store-upload/
 .expo/
+outputs/tmp-attach/
