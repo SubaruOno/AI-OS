@@ -527,3 +527,4 @@
 - 2026-10-08 16:19 · subaru · shigabase/ship · 本番のブルペン表をログインした人だけ読めるように変更（すばるが実行）。ログインなしの読み取りが拒否されることを本番で確認
 - 2026-10-08 16:27 · subaru · shigabase/build · ブルペン記録の削除機能を追加しiPadシミュレーターで確認。profilesをログインした人だけ読める変更ファイルを作成（本番未反映）
 - 2026-10-08 16:28 · subaru · shigabase/ship · 本番のprofilesをログインした人だけ読めるように変更（すばるが実行）。ログインなしの読み取りが拒否されることを確認
+- 2026-10-08 16:30 · subaru · shigabase/ship · fix/bullpen-input をmainに取り込みGitHubへ送信（4cf9411）。1.7.0 ビルド45をEASで開始、TestFlightへの自動提出を予約
