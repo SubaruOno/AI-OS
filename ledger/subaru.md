@@ -518,3 +518,4 @@
 - 2026-10-08 14:10 · すばる · seminar/note · JX金属：電流・電圧の負の値は両方0に置換と講師が回答、メモと引き継ぎ資料に反映
 - 2026-10-08 14:11 · subaru · infra/build · japan-baseball削除を確認し、家計簿用Supabaseプロジェクトpair-kakeiboを東京に作成
 - 2026-10-08 14:12 · subaru · shiga/build · 明治医療の野手・投手対策を全ページ確認（はみ出しは大海の球種ページ1か所、短くして修正）。野手一枚まとめを最新データ・指定打順で作り直し、控えを秋の打席数順に（generate_ippai_matome.pyに rest_order 対応）
+- 2026-10-08 14:46 · subaru · shiga/ship · 明治医療の野手対策（仕上げ版47枚）をLINEのアナリスト班に送信
