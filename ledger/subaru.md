@@ -528,3 +528,4 @@
 - 2026-10-08 16:27 · subaru · shigabase/build · ブルペン記録の削除機能を追加しiPadシミュレーターで確認。profilesをログインした人だけ読める変更ファイルを作成（本番未反映）
 - 2026-10-08 16:28 · subaru · shigabase/ship · 本番のprofilesをログインした人だけ読めるように変更（すばるが実行）。ログインなしの読み取りが拒否されることを確認
 - 2026-10-08 16:30 · subaru · shigabase/ship · fix/bullpen-input をmainに取り込みGitHubへ送信（4cf9411）。1.7.0 ビルド45をEASで開始、TestFlightへの自動提出を予約
+- 2026-10-08 17:07 · subaru · shigabase/ship · App Storeに1.7.0（ビルド45）を審査提出。iPad対応で必須になった13インチiPadの画面写真3枚（架空のテスト用データで撮影）を追加、審査後に自動リリース
