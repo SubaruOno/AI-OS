@@ -1,1 +1,1 @@
-{"version":"0.0.1","configurations":[{"name":"keta","runtimeExecutable":"python3","runtimeArgs":["-m","http.server","8765","-d","apps/keta"],"port":8765}]}
+{"version": "0.0.1", "configurations": [{"name": "keta", "runtimeExecutable": "python3", "runtimeArgs": ["-m", "http.server", "8765", "-d", "apps/keta"], "port": 8765}, {"name": "shigabase-web", "runtimeExecutable": "bash", "runtimeArgs": ["-c", "cd ~/Projects/TerakoyaAI/ShigabaseiOS && CI=1 npx expo start --web --port 8091"], "port": 8091}]}
