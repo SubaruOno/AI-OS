@@ -533,3 +533,4 @@
 - 2026-10-09 10:00 · subaru · shigabase/build · Macアプリで資料が0件に見えた件を調査。DBは正常、原因はログイン期限切れ（アプリ復帰時の自動更新なし）。lib/supabase.ts に自動更新を追加（fix/auth-auto-refresh、未ビルド）
 - 2026-10-09 10:52 · subaru · osakagas/research · 伊勢大会の宿泊費比較（祖母宅・彦根から通う場合と球場近くに泊まる場合、出典つき）を private/ise-taikai-stay-cost.html にまとめた
 - 2026-10-09 11:06 · subaru · osakagas/research · 伊勢の宿の10/14〜16の空室と料金をじゃらんで日付指定して調べ、比較資料に反映（神嘗祭と重なり高騰、安いのは丸二ホテル伊勢のみ）
+- 2026-10-09 11:10 · subaru · osakagas/research · 松阪駅周辺の宿の10/14〜16の空室と料金を調べ、比較資料に追加（松阪3泊が最安、2人で約4.0万円）
