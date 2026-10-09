@@ -531,3 +531,4 @@
 - 2026-10-08 17:07 · subaru · shigabase/ship · App Storeに1.7.0（ビルド45）を審査提出。iPad対応で必須になった13インチiPadの画面写真3枚（架空のテスト用データで撮影）を追加、審査後に自動リリース
 - 2026-10-08 17:11 · すばる · shigabase/research · SHIGABASEの開発費と維持費を各サービスの請求履歴から集計。金額はprivate/に保存
 - 2026-10-09 10:00 · subaru · shigabase/build · Macアプリで資料が0件に見えた件を調査。DBは正常、原因はログイン期限切れ（アプリ復帰時の自動更新なし）。lib/supabase.ts に自動更新を追加（fix/auth-auto-refresh、未ビルド）
+- 2026-10-09 10:52 · subaru · osakagas/research · 伊勢大会の宿泊費比較（祖母宅・彦根から通う場合と球場近くに泊まる場合、出典つき）を private/ise-taikai-stay-cost.html にまとめた
