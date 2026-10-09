@@ -541,3 +541,4 @@
 - 2026-10-09 12:36 · subaru · osakagas/build · 宿泊比較資料をルートイン松阪駅東の4パターン（今の予定・近藤だけ・2人で乗り合わせ・2人別々）に整理
 - 2026-10-09 12:39 · subaru · apps/build · 3D Brain Kitでapps/3d-brainを作成（Subaru Brain、7カテゴリ146メモ）
 - 2026-10-09 12:42 · subaru · osakagas/ship · 宿泊比較資料をPDFに書き出し（private/伊勢大会_宿泊費の比較.pdf）
+- 2026-10-09 13:20 · subaru · osakagas/decision · 野手分析コードをWindows向けのzipパッケージにまとめて後輩へ渡す計画を作成（野手のみ、架空サンプル同梱、実データは入れない）
