@@ -26,3 +26,6 @@ SHIGABASEのGitHub連携は接続済み(`SubaruOno/ShigabaseiOS`、private)。�
 
 新アプリ「てくてくまち」のコードは `~/Projects/walk-town`(GitHub: `SubaruOno/walk-town`、private)。詳細は
 [docs/walk-town.md](../docs/walk-town.md)を参照。
+
+対策資料の分析アプリ「分析デスク」のコードは `~/Projects/analysis-desk`（まだGitHubには上げていない）。
+詳細は[docs/analysis-desk.md](../docs/analysis-desk.md)を参照。
