@@ -539,3 +539,5 @@
 - 2026-10-09 12:28 · subaru · osakagas/decision · 宿泊交渉は案A（2人とも松阪の旅籠屋）を本命、案B（近藤だけ宿泊）を代わりの案とし、比較資料の結論を書き換え
 - 2026-10-09 12:32 · subaru · osakagas/decision · 宿泊交渉は近藤だけルートイン松阪駅東に3泊する案に決定。燃費13km/L・一般道込みで再計算（2人で約6.3万→約5.7万円）
 - 2026-10-09 12:36 · subaru · osakagas/build · 宿泊比較資料をルートイン松阪駅東の4パターン（今の予定・近藤だけ・2人で乗り合わせ・2人別々）に整理
+- 2026-10-09 12:39 · subaru · apps/build · 3D Brain Kitでapps/3d-brainを作成（Subaru Brain、7カテゴリ146メモ）
+- 2026-10-09 12:42 · subaru · osakagas/ship · 宿泊比較資料をPDFに書き出し（private/伊勢大会_宿泊費の比較.pdf）
