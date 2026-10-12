@@ -1,4 +1,4 @@
-# U-23W杯2026 相手国メンバー調査（2026-10-12時点）
+# U-23W杯2026 相手国メンバー調査（2026-10-12時点、2回目の調査を反映）
 
 第6回WBSC U-23ワールドカップ（11/6〜15、ニカラグア）に出る相手11カ国の、メンバー発表状況と選手一覧です。
 日本の名簿は部外秘なので、このファイルには入れていません。何のために集めているかは
@@ -10,38 +10,46 @@
   綴り・ポジション・所属は原文で確かめる前提で使ってください。根拠のURLは国ごとの節に付けています。
 - 最終24人を発表した国は、10/12時点で**1カ国もありません**。
 - 公式名簿（生年月日・投打つき）はWBSCの[チームページ](https://www.wbsc.org/en/events/2026-vi-wbsc-u-23-baseball-world-cup/teams)に出るはずなので、10月下旬からChromeで確認します。
+- 前半が1回目の調査、末尾の「2回目の調査」が同じ日の追加分です。食い違うときは2回目を優先します。
 
 ## 一覧
 
 | 組 | 国 | 発表状況 | 手元にある名前 | 監督 |
 |---|---|---|---|---|
-| B | キューバ | 予備45人（9/10）。最終は10/20以降 | 45人 | Guillermo Carmona |
-| B | 韓国 | 何も出ていない | 0人 | 이연수（成均館大） |
-| B | ベネズエラ | 55〜60人に絞り込み中、氏名非公表 | 0人（参考に2025南米予選13人） | Néstor Corredor |
-| B | イギリス | 未発表 | 2025欧州選手権の20人 | 不明（前任Crammanはメッツ傘下へ） |
-| B | 南アフリカ | 未発表 | 0人（参考に2024W杯23人） | Clive Pretorius |
+| B | キューバ | 予備45人（9/10）。合宿は解散し、選ばれた24人だけが10月末にハバナへ再集合 | 45人 | Guillermo Carmona |
+| B | 韓国 | 選手は何も出ていない。コーチ3人も未公表 | 0人 | 이연수（成均館大） |
+| B | ベネズエラ | 55〜60人から24人に絞り込み中、氏名非公表 | 0人（参考に2025南米予選） | Néstor Corredor |
+| B | イギリス | 未発表。監督も不明 | 2025欧州選手権の約24人 | 不明（Crammanが続投かは不明） |
+| B | 南アフリカ | **30人の強化メンバーを発表済み**（最終24人の母集団とみられる） | 8人＋1人（名前だけ） | Clive Pretorius |
 | A | 台湾 | 培訓隊26人（10/7） | 26人 | 湯登凱 |
-| A | パナマ | 予備42人（9/10）、10月上旬に削減 | 43人（＋捕手Tait） | Aníbal Reluz |
+| A | パナマ | 予備42人（9/10）、10/7に削減を発表、残った顔ぶれは不明 | 43人（＋捕手Tait） | Aníbal Reluz |
 | A | ニカラグア | 予備36人（9/17）。合宿は42人 | 36人 | Aníbal Vega |
-| A | プエルトリコ | 何も出ていない | 2025予選の約18人 | 未確認（2025はJuan González） |
+| A | プエルトリコ | 何も出ていない | 2025予選の投手12人ほか | 未確認（2025はJuan González） |
 | A | オーストラリア | 未発表 | 2025オセアニア予選の17人 | Shayne Watson |
 | A | チェコ | 未発表 | 2025欧州選手権の20人 | 未確認（2025はPetr Čech） |
 
 ## 日本と同じB組で目を付けておく選手
 
-- キューバ：Darío Sarduy（投、ソフトバンク）、Randy Román Martínez（左投、中日育成）、Jonathan Moreno（遊、ソフトバンク育成、2007年生）
-- ベネズエラ：コーチ陣にMiguel Cabrera・Víctor Martínez・Robinson Chirinos。MLB傘下の選手は球団の許可待ちで、顔ぶれは予選と大きく変わる見込み
-- イギリス：Andrew Campbell（右投、2025欧州選手権の最優秀投手）、Zac Sohosky（左投、同奪三振王）、Jack Wallis（内、同MVP）
-- 南アフリカ：候補者の名前はまだ取れていない
-- 韓国：名前はまだ取れていない。台湾は2025アジア選手権で韓国に10-0で勝っている
+- キューバ
+  - Darío Sarduy（投、ソフトバンク育成、2005年生）。投げる手は資料で食い違うが、左の可能性が高い
+  - Randy Román Martínez（左投、中日育成、2003年生）
+  - Jonathan Moreno（遊、ソフトバンク育成、2007年生）
+  - Jean Lucas Baldoquín（内）。国内リーグで10/11時点で打率.500
+  - 抑えの候補はYosney García。前季に新人でセーブ数リーグ1位
+  - 投手Fher Cejasは中国のプロリーグでプレー中で、11月に合流できるか分からない
+- ベネズエラ：コーチ陣にMiguel Cabrera・Víctor Martínez・Robinson Chirinos。メジャー球団傘下の選手は球団の許可が要り、顔ぶれは予選から大きく変わる見込み。初戦は11/6の南アフリカ戦
+- イギリス：Andrew Campbell（右投、Cal Poly Pomona、2025欧州選手権の最優秀投手）、Zac Sohosky（左投、2024W杯でオランダから9奪三振完投）、Jack Wallis（内、2025決勝で本塁打）。日本との初戦は11/7の予定（非公式の日程表から）
+- 南アフリカ：30人のうち、2024年U-23W杯の経験者はJamie Brookes（外）、Creedon Cockrell（捕）、Ethan Grobler（内）の3人を確認
+- 韓国：名前はまだ取れていない。11/12〜15のアジアプロ野球チャンピオンシップと重なるため、大学生や尚武（軍の野球チーム）の選手が中心になる可能性がある（報道ではなく推測）
 
 ## 次に確かめること
 
-1. 10/20以降、キューバの最終24人
-2. WBSCのチームページをChromeで開き、公式名簿が出たら各国の表を差し替える
-3. 韓国：大韓野球ソフトボール協会の発表をNaverスポーツで追う
-4. 南アフリカ：citizen.co.zaの8/1の記事「Cardinals trio ready for World Cup challenge」と、sabaseball.co.zaの予選名簿
-5. パナマ：10月上旬の削減で残った選手と、追加される投手
+1. 南アフリカ協会の[U23のページ](https://sabaseball.co.za/category/south-africa-baseball-u23/)をChromeで開き、30人全員の名前を取る。この環境からは開けない
+2. 10月末にキューバの最終24人が出る
+3. WBSCのチームページをChromeで開き、公式名簿が出たら各国の表を差し替える
+4. 韓国：アジアプロ野球チャンピオンシップの韓国代表が発表されたら、U-23にどの層が回るか分かる。10月末の出国や壮行会（출국・결단식）の記事も追う
+5. パナマ：TVN「Temblor en Panamá: Fedebeis expone estado de preselecciones」とEl Sigloの記事に、削減後の顔ぶれが出ている見込み
+6. 開幕日の食い違い：日本の連盟サイトの断片に11/7〜16とある。公式の日程で確かめる
 
 ---
 
@@ -1105,6 +1113,413 @@ CPBL 10人の内訳: 中信兄弟4（吳瑞聰・徐磊・蔡琞傑・黃鈞麟�
 1. オーストラリアの最終24人（未発表）。予選メンバーの残り3人、打投、生年月日、球速。
 2. 南アフリカの2026年メンバー全体。まず Benoni City Times の2026-08-01の記事と、sabaseball.co.za のU23カテゴリページを読む。
 3. wbsc.org の大会チームページ（https://www.wbsc.org/en/events/2026-vi-wbsc-u-23-baseball-world-cup/teams ）は、この環境からは開けなかった。ブラウザ（Chrome）で開けば、公式ロースターが載ったかどうかを直接確かめられる。
+
+---
+
+
+# 2回目の調査（同日、穴の大きい国だけ）
+
+## U-23ワールドカップ2026 追加調査：キューバ詳細とパナマの10月削減
+
+調査日：2026-10-12。WebSearch 40回（上限45回）。WebFetchは使っていない。すべて検索結果の要約から拾った情報で、記事本文は開けていない。既存の [roster_cuba_nicaragua.md](roster_cuba_nicaragua.md) と [roster_ven_pan_pur.md](roster_ven_pan_pur.md) に載っていない事実だけを書く。
+
+---
+
+### 1. キューバ：10月以降の動き
+
+- **最終24人はまだ発表されていない。** 10月に入ってから、削減や最終名簿の記事は見つからなかった。
+- **合宿は終わった。** ハバナでの第2次合宿が「2回目で最後の合宿」とされ、選手は各州の第65回セリエ・ナシオナルに戻った。選ばれた24人だけが10月末にハバナに再集合する（Carmona監督の発言、9月下旬の記事の要約。出典は Tiempo21 または 5 de Septiembre とみられる）。
+- **第65回セリエ・ナシオナルは10月初めに開幕。** Industriales は10月4日開幕と報じられた（Cubadebate 2026-09-22 http://www.cubadebate.cu/noticias/2026/09/22/industriales-anuncia-nomina-para-la-65-a-serie-nacional-de-beisbol/ ）。Industriales のロースターには予備登録者が8人入っている。シエゴ・デ・アビラにはU-23の選手が9人いる（Granma 2026-09-17）。
+- **練習試合（tope）の計画。** キューバ連盟はメキシコでの親善シリーズを調整していたが、まだ決まっていない。連盟の担当者は「大会の数日前にニカラグアに入り、現地で練習試合をする案を検討している」と話している（9月下旬の記事の要約。出典は上と同じ）。10月に練習試合をしたという記事は見つからなかった。
+- **Baldoquín は開幕から好調。** 第65回シリーズで22打数11安打、打率.500（Tiempo21 2026-10-11 https://www.tiempo21.cu/2026/10/11/la-ofensiva-de-las-tunas-en-la-serie-65-tiene-cuatro-nombres/ ）。第64回シリーズとリーグ・エリートはけがに苦しんだ。合宿の練習試合では4打点、4得点だった。
+- **捕手 Yadimir Fuentes（ハバナ）は MLB の球団と契約している**ため、Industriales には入れなかった。ただし第65回シリーズには別の州（シエンフエゴスとみられる）で出場する（Cubalite https://cubalite.com/bateador-que-firmo-en-mlb-y-quedo-fuera-de-industriales-jugara-por-otro-equipo-en-la-serie-65/ ）。予備登録では Figueroa と並んで「米国の野球経験がある新戦力」とされている。契約した球団の名前は確認できなかった。
+- **Fher Cejas（右腕、予備登録）は2026年8月から中国のプロリーグ（Chinese Professional Baseball、Beijing CP Loongs）にいる。** キューバ人選手が中国本土のプロリーグに入るのは初めて（CubaHeadlines 2026-08-07 https://www.cubaheadlines.com/articles/337244 、World Baseball https://worldbaseball.com/news/cuban-players-to-play-in-chinese-professional-baseball ）。11月にキューバ代表に加われるかは**未確認**。中国のシーズン日程によっては参加できない可能性がある（推測）。2026年の中米カリブ競技大会ではキューバ代表に入っていた（Baseball-Reference https://www.baseball-reference.com/bullpen/Fher_Cejas ）。
+
+### 2. キューバ：主力選手の詳細
+
+B/T は打席／投球。「—」は確認できなかった項目。SN64＝第64回セリエ・ナシオナル（2025-26）、SN65＝第65回（2026-27、10月開幕）。
+
+| 名前 | 守備 | B/T | 生年月日 | 所属 | 成績 | 球速・役割 | 出典 |
+|---|---|---|---|---|---|---|---|
+| Darío Sarduy（Darío Sarduy Medina） | P | **L/L（NPB）**。Baseball-Reference は R/R としており食い違う | 2005-11-12（20歳） | ソフトバンク育成 #176／ビジャ・クララ | 2023年 SN で1勝3敗・防御率4.88。NPB一軍の登板なし（2026年7月時点）。2026年のファーム成績は取れなかった | 186cm/81kg。直球とカーブが武器。チェンジアップを練習中（モイネロの助言）。直球は入団前87〜89mph、入団後は90mph超の報道。2025年予選では4回を投げた試合あり | NPB https://npb.jp/bis/players/03705159.html 、BBM https://aws.baseball-reference.com/bullpen/Dario_Sarduy 、東スポ https://www.tokyo-sports.co.jp/articles/-/288956 、Pelota Cubana USA https://pelotacubanausa.com/dario-sarduy-lanzar-con-cuba-en-el-premier-12 |
+| Randy Román Martínez（NPB登録名 R.マルティネス） | P | L/L | **2003-09-28（23歳）** | 中日育成 #219／ピナール・デル・リオ | NPB一軍の登板なし（2026年8月4日時点）。来日1年目の2025年はファームで5試合に登板（先発と救援） | 177cm/72kg。先発候補。球速は未確認 | Yahoo!プロ野球 https://baseball.yahoo.co.jp/npb/player/2118421/top 、NPB https://npb.jp/bis/players/33935150.html |
+| Jonathan Moreno | SS | R/R（既報） | 2007-09-26（既報） | ソフトバンク育成 #174 | 二軍で7打数2安打。三軍・四軍などの非公式戦で62打数26安打、打率.419、13打点（記事の日付は未確認、2026年夏ごろとみられる）。6月9日の高知戦で「1番・遊撃」に入り、守備で好プレー、2安打1打点 | 年俸は推定1500万円。守備型の遊撃手 | Baseball Channel https://www.baseballchannel.jp/npb/268680/ 、hb-nippon https://www.hb-nippon.com/articles/13796 |
+| Jean Lucas Baldoquín | IF | — | — | ラス・トゥナス | SN63 .310（239打数、3本塁打、35打点）。SN64 は途中時点で42打数14安打 .333/.391/.571（けがで出場が少ない）。SN65 は22打数11安打 .500（10月11日時点） | 中軸を打つ内野手 | Tiempo21 2026-10-11、beisbolencuba https://www.beisbolencuba.com/series/serie-nacional-beisbol-2025-2026/estadisticas/hits/las-tunas.html 、Periódico Cubano |
+| Yassel Conrado Izaguirre | OF | — | — | ラス・トゥナス | SN64 で207打数73安打、打率.353、7本塁打（別の時点の表では189打数 .360、6本塁打） | 予備登録の外野手で SN の打撃成績が最も良い一人 | beisbolencuba https://www.beisbolencuba.com/series/serie-nacional-beisbol-2025-2026/estadisticas/dobles/las-tunas.html |
+| Osman Caruncho | OF | — | — | ビジャ・クララ | SN64 の最終成績は取れなかった（2025年11月時点で打率4割超、既報）。ビジャ・クララは40勝35敗 | — | Prensa Latina（既報） |
+| Carlos Alberto Nieto | 2B | — | — | Industriales | SN64 は88打席で23安打、打率.261/.350/.386、二塁打11、本塁打0、11打点 | 二塁打の多い中距離型 | beisbolencuba https://www.beisbolencuba.com/series/serie-nacional-beisbol-2025-2026/estadisticas/promedio-de-bateo/industriales.html |
+| Danell Figueroa | C | — | **2004-03-08（22歳）**（MiLB） | 米国在住（マタンサス州カルデナス出身） | 2022年にマタンサスで SN デビュー（Danell Figueroa Molina の名で登録）、本塁打を記録 | 2022年当時「同世代で最も完成度の高い捕手」とされた | MiLB https://www.milb.com/player/danell-figueroa-807821 、Diario de Cuba https://diariodecuba.com/deportes/1648728408_38490.html |
+| José Ignacio Bermúdez | P | — | — | マヤベケ（リーグ・エリートではアルテミサの補強） | SN61〜63 とリーグ・エリート2回の通算で83試合（先発50）、19勝19敗3セーブ、防御率4.24、WHIP 1.51。2025年予選ではアルバ戦に先発し6回4安打5奪三振で勝利、メキシコ戦にも先発 | 先発 | Pelota Cubana USA https://pelotacubanausa.com/jose-ignacio-bermudez-listo-para-debut-serie-a 、Prensa Latina https://www.prensa-latina.cu/?p=1639429 |
+| Rafael Orlando Perdomo（Perdomo Eizmendiz） | P | 右投 | — | Industriales | SN の新人王を取った年がある（どのシーズンかは未確認）。SN64 では Industriales の勝利投手になった試合あり（2025年11月）。8回5安打6奪三振、3勝0敗の時期もあった | 先発 | Prensa Latina https://www.prensa-latina.cu/2025/11/12/industriales-amenaza-la-cima-del-beisbol-cubano/ 、Periódico Cubano |
+| Yosney García | P | — | — | マタンサス | SN64 の新人救援投手。2025年11月時点で9セーブはリーグ1位 | **抑え候補** | Prensa Latina https://www.prensa-latina.cu/2025/11/27/confianza-parametro-vital-en-resultados-de-pelotero-cubano/ |
+| Silvio Iturralde | P | — | — | マタンサス | SN64 の12月のシエンフエゴス戦で4回を抑えた | 中継ぎ・ロングリリーフとみられる | Prensa Latina https://www.prensa-latina.cu/2025/12/27/cocodrilos-a-un-paso-de-lograr-boleto-directo-a-la-liga-elite/ |
+| Riquelme Odelín | P | — | — | カマグエイ | SN64 で完投負けした試合あり（2025年10月、ホルギンに2-3）。カマグエイ監督 Vicyoandri Odelín の息子 | 先発 | Prensa Latina https://www.prensa-latina.cu/2025/10/16/cachorros-se-acercan-al-trono-de-la-serie-beisbolera-cubana/ |
+| Fher Cejas | P | 右投 | — | Industriales → Beijing CP Loongs（中国） | SN 2021-22 は13試合で防御率6.91、2024年は防御率2.08・4セーブ、リーグ・エリートは防御率3.08 | 救援。11月に参加できるかは未確認 | Baseball-Reference、CubaHeadlines |
+
+取れなかった選手：Lee Andy Plumas、Kevin Manuel Hernández、Alexander Vargas は検索で何も出なかった。
+
+#### 先発と救援の見立て（推測）
+
+- 先発候補：Randy Martínez（左）、Sarduy（左。B/T は要確認）、Bermúdez、Perdomo、Odelín。
+- 抑え候補：Yosney García（SN64 のセーブ数1位）。
+- 野手の中心：Baldoquín、Izaguirre、Caruncho。守備の要は Moreno（遊撃）。
+- この見立ては SN の成績と2025年予選の起用から組んだもので、首脳陣の発言による裏付けはない。
+
+### 3. パナマ：10月の削減
+
+- **削減の発表日は2026年10月7日。** Metro Libre が10月8日に「連盟が昨日、予備登録の削減を発表した」と書いている（https://www.metrolibre.com/ajuste-de-cuenta/recorte-en-la-preseleccion-u23-de-beis-PH26305820 ）。
+- **何人残ったか、誰が外れたかは今回も確認できなかった。** 検索要約には名前も人数も出てこない。チームはラ・チョレラの Academia Mariano Rivera で練習を続けている。
+- **補強投手と MLB 傘下の選手の追加も確認できなかった。** 2025年予選にいた Adrián Sugastey（ジャイアンツ傘下、2025年はAAでプレー、予選の主将）と Eduardo Castillo（カブス傘下の右腕、コクレ州出身）の合流の報道は見つからない。
+- 見出しだけ確認できた記事（本文は読めていない）：
+  - TVN「Temblor en Panamá: Fedebeis expone estado de preselecciones nacionales concentradas en la Academia Mariano Rivera」https://www.tvn-2.com/tvmax/beisbol-nacional/temblor-en-panama-fedebeis-estado-preselecciones-u12-u18-u23-academia-mariano-rivera_1_2265350.html 。パナマで地震があり、アカデミーにいるU12、U18、U23の予備登録者の状況を連盟が説明した記事とみられる（推測）。記事番号が既知の記事より新しいので、10月の記事の可能性がある。
+  - El Siglo「Mundial U23: Panamá sube la intensidad en su preparación」https://elsiglo.com.pa/deportes/beisbol/mundial-u23-panama-sube-la-intensidad-en-su-preparacion-BH25779109 。Tait の記事（BG25762065）より新しい記事番号なので、削減の前後の記事の可能性がある。
+- **初戦の時刻の食い違い。** TVN の日程記事は11月6日のプエルトリコ戦を「14:00」としている（https://www.tvn-2.com/tvmax/beisbol-nacional/beisbol-u23-panama-calendario-campeonato-mundial-managua-nicaragua-2026_1_2244364.html ）。既存資料の11:30と合わない。WBSC の公式日程で確認すること。A組の日程は 11/7 チェコ、11/8 チャイニーズ・タイペイ、11/9 ニカラグア、11/10 オーストラリア。
+- 2025年予選の決勝では Adriel González（投手）が最優秀選手に選ばれた（Prensa Latina https://www.prensa-latina.cu/2025/10/05/panama-celebra-oro-en-panamericano-de-beisbol-sub-23/ ）。Adriel González は2026年の予備登録42人に名前がない。
+
+#### パナマの現状
+
+| 項目 | 状態 |
+|---|---|
+| 予備登録 | 42人＋Tait（既報） |
+| 削減 | 2026-10-07 に発表。残った人数と名前は不明 |
+| 補強投手 | 監督は予告していたが、名前は不明 |
+| MLB 傘下 | Tait（ツインズ）だけ確定。Sugastey、Castillo、Rosas（ブルージェイズ）の状況は不明 |
+| 最終24人 | 未発表 |
+
+### 4. 何も返ってこなかった検索
+
+- 「Cuba sub 23 Mundial Nicaragua equipo definitivo」に類する検索（10月の最終名簿、10月の削減）：該当なし。
+- Swing Completo、JIT、Radio Rebelde の10月の U-23 記事：該当なし。
+- Carmona 監督の10月のインタビュー：該当なし。
+- 日本育成組の3人（Sarduy、Moreno、Randy Martínez）の帰国やキューバ代表合流の記事：該当なし。
+- Sarduy、Randy Martínez の2026年ファーム成績と最速球速：該当なし。
+- Caruncho の SN64 の最終成績：該当なし。
+- Lee Andy Plumas、Kevin Manuel Hernández、Alexander Vargas の情報：該当なし。
+- Yadimir Fuentes が契約した MLB 球団名：該当なし。
+- パナマの削減後の名簿、外れた選手、補強投手、MLB 傘下の追加：該当なし（La Prensa、El Siglo、Mi Diario、Telemetro、Crítica、Fedebeis に絞った検索も含む）。
+
+### 5. 不確かな点
+
+- **Sarduy の投打。** NPB 公式と日本の報道は左投左打（「大型左腕」）、Baseball-Reference は右投右打。2025年予選を伝えるブログも「zurdo（左腕）」と書いているので、**左投が正しい可能性が高い**。
+- Moreno の非公式戦 .419 は記事の日付が分からない。
+- Perdomo の新人王のシーズンと SN64 の通算成績は不明。
+- beisbolencuba の数字は取得した時点によって違う。SN64 の最終成績ではない可能性がある。
+- 日本育成の3人がいつ合流するかは不明。NPB のフェニックス・リーグ（10月）とのかぶりがある（推測）。
+
+---
+
+## 韓国 U-23代表（第6回 WBSC U-23 野球ワールドカップ 2026）調査メモ（第2パス）
+
+調査日: 2026-10-12（JST）。WebSearch 38回使用。本文の記述はすべて検索結果のスニペットにもとづく。確証がないものには【未確認】を付けた。
+
+### 1. 結論: 選手名簿は見つからなかった
+
+- 2026年大会の韓国代表の選手名簿（24人の最終エントリー、予備登録、招集名簿）は、韓国語・英語・日本語・中国語のどの検索でも1件も出てこなかった。
+- 出てくる名簿記事は、すべて過去大会のもの。2018年（張彩根監督）、2022年（李然洙監督、台北）、2024年（崔泰源監督、紹興）。2024年大会の名簿記事は「NC 손주환」「LG 김현종」「광주일고 김태현」「임상우」などを含むが、2026年大会とは無関係なので転記しない。
+- 「未発表」なのか「発表済みだが検索に出てこない」のかは判別できなかった。参考までに過去の発表時期は次のとおり。
+  - 2022年（10月14日開幕）: 8月22日の경기력향상위원회で24人とコーチを確定。開幕の約7週間前。
+  - 2024年（9月6日開幕）: 7月16日の경기력향상위원회で確定し、7月18日に発表。開幕の約7週間前。
+  - 同じペースなら、2026年大会（11月6日開幕）の発表は9月中旬ごろになる。ただし2026年はアジア大会（9月）とAPBC（11月）が重なり、日程がずれている可能性がある【推測】。
+
+### 2. 大会の基本情報（確認できたもの）
+
+- 日程・会場: 2026年11月6日〜15日、ニカラグア開催（WBSC）。日本野球協会のサイトでは「11月7日〜16日」という表記がスニペットに出ており、日付にずれがある【要確認】。
+- グループB: 韓国、日本、キューバ、ベネズエラ、イギリス、南アフリカ（WBSC「Groups confirmed for WBSC U-23 Baseball World Cup 2026」）。
+- グループA: チャイニーズタイペイ、プエルトリコ、パナマ、オーストラリア、チェコ、ニカラグア。
+- 韓国の初戦: betexplorer の日程表では韓国の初戦がキューバ戦で、グループリーグは11月7日〜11日【非公式サイトのため要確認】。
+- 出場権: 2025年の第31回 BFAアジア選手権の結果で獲得（台湾メディアの報道）。
+
+### 3. 首脳陣
+
+- 監督: 이연수（イ・ヨンス / Lee Yeon-su）、成均館大学の監督。
+  - WBSCの記事（2026年5月4日付）によると、KBSAが4月10日と4月27日の경기력향상위원회を経て、대학（Collegiate）・U-23・U-18・U-12の各代表監督を発表した。
+  - 選ばれた理由は、2022年大会で準優勝した実績。
+  - 韓国側の記事: MKスポーツ、edaily、v.daum.net（「이연수 성균관대 감독, 23세 이하 세계야구선수권 사령탑 선임」）、starnewskorea（2026年5月5日。U-18の정윤진監督と同時に報じた記事）。
+  - edaily系の記事によると、年代別代表は「7月 大学大会 → 8月 U-12 → 9月 U-18 → 11月 U-23」の順で、招集・合宿・練習試合を組んで準備する。具体的な招集日はスニペットでは切れていた。
+- コーチ3人: KBSAが2026年4月14日〜5月14日に公募した（アジア大会用2人と合わせて計5人）。選考は書類で最大3倍まで絞り、경기력향상위원회の評価で最終決定する流れ。合格者の名前は見つからなかった【未確認】。
+  - ちなみにアジア大会のコーチ陣（박경수・최태원・최기문）は、8月25日に確定したと報じられている（isplus）。U-23のコーチ陣が確定したという記事は出てこなかった。
+
+### 4. 見つかった選手名
+
+- 2026年 U-23代表としての選手名は0件。
+- 参考（U-23代表とは別物）: WBSCの World Collegiate Baseball Championship（2026年7月、台中）の韓国大学代表のプレビュー記事で、次の3人が注目選手に挙がっている。大学選手中心の編成になれば候補になりうるが、U-23代表に選ばれたという根拠はない【未確認・参考扱い】。
+  - 곽병짐?（Byung-jim Kwak、釜山科学技術大、投手）。英語表記からハングルを推測したもので、綴りは要確認。
+  - 정원진（Won-jin Jeong、高麗大、左腕先発）
+  - 권희재（Hee-jae Kwon、釜山科学技術大、捕手）
+  - 大学代表の監督は 고천주（Ko/Go Cheon-ju、松源大）。
+
+### 5. 編成の見通し（プロ中心か大学中心か）
+
+- 過去の傾向: 2022年と2024年はどちらもKBO所属選手が主力だった。2022年はニュース1が「프로 주축」と報じ、2024年はWBSCが「roster loaded with professionals」と書いている。2024年は24人中、高校生が1人だけ。
+- ナムウィキ（利用者編集なので信頼度は低い）によると、U-23代表はKBO入団済みの選手が中心で、球団が有望株を出したがらない問題がある。大学選手の質が下がり、大学選手の比率が減ってきたとも書かれている。
+- 2026年に特有の事情:
+  - APBC 2026（第3回アジアプロ野球チャンピオンシップ）は、11月12日〜15日に東京ドームで開催。韓国・日本・台湾・オーストラリアが出場し、各国28人。9月4日時点で年齢制限は「追って発表」だった。日本は10月7日に28人を発表したが、韓国は「추후 구성」（newsis、2026年10月7日）。
+  - APBCはU-23ワールドカップと日程が完全に重なる。KBOの若手有望株がAPBCに優先して回る可能性が高く、U-23代表は大学選手や二軍・兵役中（상무など）の選手の比率が上がる可能性がある【推測。直接報じた韓国記事は見つからなかった】。
+  - 台湾の対応（nownews）: 湯登凱がU-23、高志綱がAPBCの監督。協会と中職の会長が合意し、6球団のU-23資格選手を洗い出したうえでU-23のコーチ陣が選考した。10月5日に培訓名簿（中職10人、在日の黄錦豪、大学・アマ13人）を承認し、台南で合宿を始めた。韓国も同じように調整している可能性があるが、韓国側の報道は見つからなかった。
+  - WBSCの記事では、KBSAが監督人事に関して「Korean university baseball の底力を国際舞台で見せる」という趣旨のコメントを出している（スニペットの要約）。大学選手中心になることを示唆しているとも読めるが、確証はない。
+
+### 6. 主な出典URL
+
+- https://www.wbsc.org/en/news/korea-announces-collegiate-u-23-u-18-and-u-12-national-team-managers
+- https://www.wbsc.org/en/news/groups-confirmed-for-wbsc-u-23-baseball-world-cup-2026
+- https://v.daum.net/v/tDpBzwHRRd （이연수 감독 선임）
+- https://www.mksports.co.kr/news/sports/10421305
+- https://edaily.co.kr/News/Read?mediaCodeNo=258&newsId=01603926632426664
+- https://www.starnewskorea.com/sports/2026/04/15/2026041515310418588 （コーチ公募）
+- https://www.spotvnews.co.kr/news/articleView.html?idxno=810517 （コーチ公募）
+- https://www.news1.kr/sports/baseball/6137370
+- https://www.newsis.com/view/NISX20261007_0003818113 （日本APBC 28人発表、韓国は추후 구성）
+- https://www.starnewskorea.com/sports/2026/09/04/2026090418451495362 （APBC 2026 日程確定）
+- https://www.starnewskorea.com/sports/2026/09/11/2026091112132394852 （APBC 11月12〜15日 東京ドーム）
+- https://www.nownews.com/news/6881411 （台湾U-23培訓名簿、APBCとの日程重複）
+- https://www.betexplorer.com/baseball/team/south-korea/z3P4IOo5/fixtures/ （韓国の日程、非公式）
+- https://www.japan-baseball.jp/en/ （11月7〜16日の表記）
+- https://namu.wiki/w/대한민국%20U-23%20야구%20국가대표팀 （直接は開けていない）
+
+### 7. 試して何も出なかった検索（次のパスで繰り返さないこと）
+
+韓国語（ドメイン指定なし）:
+- U-23 야구 월드컵 대표팀 최종 엔트리 2026（サッカーの記事ばかり）
+- 이연수 감독 U-23 대표팀 명단（サッカーの記事ばかり）
+- U-23 야구 대표팀 니카라과 월드컵 명단 발표
+- 23세 이하 야구 대표팀 명단 발표 대한야구소프트볼협회（アジア大会の名簿だけ）
+- "U-23" 야구 월드컵 이연수
+- U-23 야구대표팀 소집 훈련 11월 월드컵
+- U-23 야구 월드컵 아시아프로야구챔피언십 겹쳐 대표 선발
+- U-23 야구월드컵 대학 선수 대표 발탁 2026
+- 아시아프로야구챔피언십 2026 도쿄 대표팀 U-23 월드컵
+- 성균관대 이연수 감독 국가대표
+- "이연수호" 야구
+- 제6회 세계야구선수권대회 23세 이하 대표팀
+- 덕수고 정윤진 U-18 성균관대 이연수 U-23 선임
+- U-23 야구 대표팀 대학 선수 중심 2026 세계선수권 프로 차출 어려움
+- "U-23" 대표팀 승선 2026 세계야구선수권 니카라과 대학
+- U-23 야구 대표팀 예비 명단 소집 이연수 성균관대 감독 11월
+- 나무위키 대한민국 U-23 야구 국가대표팀 2026 니카라과 명단
+
+韓国語（スポーツ紙のドメインを指定。newsis, osen, xportsnews, news1, spotvnews, isplus, mydaily, starnewskorea, sports.khan, sportsseoul, mt.co.kr, v.daum.net）:
+- U-23 야구 대표팀 명단 이연수
+- 대한야구소프트볼협회 U-23 세계야구선수권 8월 말 선수 선발 코칭스태프 2026
+- 세계야구선수권 23세 이하 니카라과 대표팀 명단 확정 공식발표
+- U-23 대표팀 발탁 세계야구선수권 니카라과 신인
+- 이연수 감독 U-23 사령탑 2026 세계야구선수권 니카라과 선임
+- 11월 니카라과 세계야구선수권 대표팀 승선
+- 세계야구선수권 U-23 코치 선임 2026 이연수 감독 코치진
+- 경기력향상위원회 23세 이하 대표팀 선수 선발 10월 세계야구선수권
+- U-23 세계야구선수권 대표팀 24명 확정 이연수 감독 니카라과
+- 세계야구선수권 23세 이하 대표팀 명단 2026년 10월
+- APBC 2026 한국 대표팀 연령 제한 … U-23 세계선수권 일정 겹침 KBO
+
+英語・日本語・中国語:
+- Korea U-23 baseball world cup 2026 roster
+- WBSC U-23 Baseball World Cup 2026 Nicaragua Korea roster announced（wbsc.org を指定）
+- Korea U-23 baseball team Lee Yeon-soo 2026 Nicaragua players
+- Korea under-23 baseball squad November Nicaragua world cup KBO prospects named（英字紙を指定）
+- U-23 韓国代表 メンバー 2026 U-23ワールドカップ ニカラグア（サッカーの記事ばかり）
+- nownews U-23世界盃棒球賽 中華隊培訓名單 亞洲職棒冠軍賽 撞期 韓國（台湾の情報だけ）
+
+注意:
+- yna.co.kr、mk.co.kr、sportschosun.com は allowed_domains に入れるとエラーになる。
+- 汎用のKorean検索は「U-23」がサッカーの記事に吸われやすい。
+
+### 8. 次のパスへの提案
+
+- 試していない検索語: 「세계야구선수권 대표팀 상무」「U-23 대표 KBO 2군 퓨처스 발탁」「APBC 대표팀 명단 발표 KBO 2026 10월」（韓国のAPBC名簿が出れば、U-23との振り分けが分かる）、「KBSA 보도자료 U-23 10월」「osen U-23 니카라과 출국」。
+- 出国は11月初めのはずなので、10月下旬に「출국」「결단식」で検索すると名簿が出てくる可能性がある。
+
+---
+
+## U-23 W杯2026（ニカラグア、11/6〜15）ベネズエラ・プエルトリコ調査（2026-10-12時点）
+
+調べ方: WebSearchを30回使った。結果は検索スニペットと検索エンジンの要約だけで、本文は開いていない。人名の綴りは要約のとおりで、原文では確かめていない。
+
+### 結論
+- **ベネズエラ、プエルトリコとも、2026年大会の選手名は公表された形で見つからなかった。** 最終24人も予備登録も、検索では出てこない。
+- 参考として、2025年の予選で出場した選手の名前は拾えた。今回の候補と重なる可能性はあるが、2026年の招集を裏づける情報はない。
+
+### ベネズエラ（B組、日本と同組）
+
+#### 現状
+- 2026-09-01ごろ、ベネズエラ野球連盟（Fevebeisbol）がスタッフを発表した。そのときの状況は次のとおり。
+  - 3月に約300人から選考を始め、現在は55〜60人の拡大リストまで絞っている。ここから24人を選ぶ。
+  - 「連盟は24人を固めている最中」とされ、氏名は出ていない。
+  - MLB球団に所属する選手は、球団と保険会社の許可が必要なので別の手続きになる（コレドール監督の発言）。
+  - 選考対象は、MLB傘下でプレーする23歳未満の選手と、大会期間中にLVBP（ベネズエラのウィンターリーグ）に出ている選手。
+  - Prensa Latina（2026-09-02）によると、選手が全員LVBPのロースターに入っていれば合流は大会の4日前ほど。LVBPに出ない選手ばかりなら最大12日間練習できる。合宿の開始日は確定していない。
+- 2026-10-09のPrensa Latinaの記事は会場の準備ができたという内容で、ロースターには触れていない。
+- 初戦は11月6日の南アフリカ戦（Fevebeisbolの記事）。
+- 出典
+  - https://www.ntn24.com/noticias-deportes/cuerpo-tecnico-de-venezuela-contara-con-reconocidas-figuras-de-la-pelota-criolla-en-el-mundial-sub-23-de-beisbol-646720
+  - https://www.wbsc.org/en/news/nestor-corredor-to-manage-venezuela-at-wbsc-u-23-baseball-world-cup-2026
+  - https://www.liderendeportes.com/baseball/seleccionnacional/venezuela-definio-el-staff-para-el-mundial-sub23/
+  - https://elemergente.com/2026/08/venezuela-se-arma-con-un-staff-de-grandes-ligas-para-el-mundial-sub-23.html
+  - https://www.prensa-latina.cu/2026/09/02/venezuela-afila-sus-armas-para-el-mundial-de-beisbol-sub-23/
+  - https://confirmado.com.ve/venezuela-confirmo-cuerpo-tecnico-para-mundial-sub-23-de-beisbol/
+  - https://www.diariorepublica.com/deportes/venezuela-confirma-su-cuerpo-tecnico-para-mundial-de-beisbol-sub-23
+  - https://fevebeisbol.org/team-beisbol-venezuela-u23-en-el-grupo-b-para-el-mundial/
+  - https://www.prensa-latina.cu/2026/10/09/estadios-nicaraguenses-listos-para-el-mundial-de-beisbol-sub-23/
+
+#### スタッフ（既知の分に加え、今回新しく分かった人）
+- 既知: 監督ネストル・コレドール（ブルワーズのフィールドコーディネーター）、助監督ロビンソン・チリノス、相談役兼ベンチコーチのビクトル・マルティネス、打撃コーチのカルロス「ベト」メンデスとミゲル・カブレラ（カブレラは「打撃コーチ補佐」と書いた記事もある）、投手コーチのルイス・メサ、ブルペン担当のフアン・グラテロル。
+- 新しく分かった人
+  - **オマール・ロペス**: GM（El Emergente、2026年8月）
+  - **フランシスコ・カルタヤ**: スポーツマネージャー（検索の要約による）
+  - **デニス・マラベ、フアン・フランシア、ハビエル・ブラカモンテ**: スタッフとして名前が挙がっている。役職はスニペットから読み取れなかった。
+  - ロペスとカルタヤの役職は記事によって書き方が違う可能性がある。原文での確認が要る。
+
+#### 2026年大会の選手名
+- **見つからなかった。**
+
+#### 参考: 2025年南米地区予選（リマ、2025年10月、6勝0敗で優勝）の出場選手
+2026年に招集されたかどうかは不明。所属球団と年齢もスニペットには出ていない。
+- ミケル・マンサーノ（先発投手、大会ベストナイン）
+- ジョバンニ（ジョバニー）・リベロ（捕手、大会ベストナイン）
+- ガブリエル・ロドリゲス（遊撃手、大会ベストナイン）
+- ウィルケルマン・ガルシア（中堅手、大会ベストナイン）
+- セバスティアン・アラケ（決勝の勝利投手）
+- ジョム・バルデラマ（決勝で本塁打、4打点）
+- ダニエル・サナブリア（決勝で好打）
+- カルロス・アウラル（救援投手）
+- オスワルド・モリ、ヘスス・ケラレス（投手）、ルイス・カスティージョ（野手）: El Emergente（2025年10月）の要約に出てくる名前。別の検索ではこの名前を確かめられなかった。
+- 予選の監督はオスワルド・ナバロ。
+- 出典
+  - https://elemergente.com/2025/10/venezuela-vence-a-argentina-y-clasifica-al-mundial-sub-23-de-nicaragua-2026.html
+  - https://contrapunto.com/deportes/beisbol/seleccion-sub-23-conquisto-el-panamericano-de-beisbol-invicto-y-se-clasifico-al-mundial-2026/
+  - https://mindeporte.gob.ve/beisbol-sub-23-campeon-invicto-y-cupo-mundial/
+  - https://www.wbsc.org/en/news/venezuela-qualify-for-wbsc-u-23-baseball-world-cup-2026
+
+### プエルトリコ（A組）
+
+#### 現状
+- 2026年大会のロースター、予備登録、監督の発表は**どれも見つからなかった。**
+- Metro PR（2026-01-14）: プエルトリコ野球連盟（FBPR）の2026年の国際日程に「11月、ニカラグアでのU-23 W杯」が入っている。
+- NotiCel（2026-09-01）: 2026年に残っている国際大会7つの1つ。3大会連続の出場で、前回2024年は銀メダル。この記事は日程を「12月6〜15日」と書いているが、WBSCの公式日程（11月6〜15日）とは合わない。NotiCelの誤記とみられる。
+- 初戦は11月6日のパナマ戦（パナマのTVN）。
+- 出場権: 2025年のパンアメリカン選手権（パナマ、9月28日〜10月4日）の準決勝でメキシコに2-0で勝って出場を決めた。決勝はパナマに1-4で敗れて準優勝。
+- 出典
+  - https://www.metro.pr/deportes/2026/01/14/federacion-de-beisbol-de-puerto-rico-tendra-un-2026-de-intensa-actividad-local-e-internacional/
+  - https://noticel.com/deportes/20260901/al-beisbol-boricua-le-quedan-siete-compromisos-internacionales-en-este-2026/
+  - https://www.tvn-2.com/tvmax/beisbol-nacional/beisbol-u23-panama-calendario-campeonato-mundial-managua-nicaragua-2026_1_2244364.html
+  - https://www.wbsc.org/en/events/2026-vi-wbsc-u-23-baseball-world-cup/news/panama-win-wbsc-americas-qualifier-qualify-for-wbsc-u-23-baseball-world-cup-2026-with-puerto-rico-and-cuba
+  - https://www.metro.pr/deportes/2025/10/04/puerto-rico-clasifica-al-mundial-sub-23-y-avanza-a-la-final-del-premundial/
+
+#### 監督とスタッフ
+- 2026年U-23の監督は**発表を確認できなかった。**
+- フアン「イゴール」ゴンサレスは2022年大会、2023年予選、2024年大会（銀）、2025年予選でU-23を率いた。2026年7〜8月の中米カリブ大会（サントドミンゴ、大人の代表で銅メダル）でも監督だった。続投の可能性は高いが、推測にとどまる。
+- 2025年予選の投手コーチはラメシス・ロサ。
+
+#### 2026年大会の選手名
+- **見つからなかった。**
+
+#### 参考: 2025年パンアメリカン予選（パナマ）の24人のうち拾えた名前
+2026年に招集されたかどうかは不明。出典は https://beisboldobleapr.com/2025/09/fbpr-presenta-equipo-rumbo-al-premundial-sub-23/ と https://eyboricua.com/puerto-rico-presenta-su-equipo-para-el-premundial-sub-23-de-beisbol-en-panama/ 。
+- 投手12人: ジョルハン・ラボイ、ジャヒル・ペレス、ホスエ・セラーノ、オマール・メレンデス、ラモン・ロドリゲス、アグネル・ミランダ、バイロン・マデロ、イブラヒム・ゴンサレス、ルーカス・ベガ、アレハンドロ・ゴンサレス、ヤリエル・クアドラド、ラウル・モラレス
+- 捕手: ルイス・エルナンデス（2025年にミネソタ・ツインズと契約）
+- 野手の残り11人は、スニペットに名前が出なかった。
+- ラボイは2026年の中米カリブ大会の代表（大人の代表）にも入っている。
+
+### 何も出なかった、または関係のない結果しか出なかった検索
+- 「Venezuela sub 23 Mundial Nicaragua 2026 roster convocados」: サッカーの結果が中心だった。
+- 「Corredor "sub 23" Venezuela lista ampliada …」と「Venezuela U-23 World Cup … players named」: サッカーの結果しか出なかった。
+- 「Venezuela clasificatorio sudamericano sub 23 Lima 2025 roster Oswaldo Navarro」: サッカーの結果しか出なかった。
+- 「prospect "U-23 Baseball World Cup" Venezuela 2026 selected Nicaragua MiLB」: MLB.com、MiLB、Baseball Americaのどれにも、U-23招集の告知は見当たらなかった。
+- 「"Mundial Sub-23" Venezuela roster 24 peloteros Corredor anuncia」「selección venezolana sub-23 … octubre 2026」: スタッフと選考の進み具合しか出なかった。
+- ベネズエラの国内メディア（Líder、Meridiano、El Emergente、Fevebeisbolなど）に絞った検索: 2026年の選手名は出なかった。
+- 「FBPR Sub 23 octubre 2026 prácticas convocatoria」「Equipo Nacional Sub 23 … preselección」: ニカラグアとパナマの情報だけが出た。
+- 「Puerto Rico U-23 … November 2026 manager roster federation」「WBSC … 2026 Puerto Rico roster announced」: 過去の大会の結果しか出なかった。
+- プエルトリコの国内メディア（Primera Hora、El Nuevo Día、NotiCel、Metro、BeisbolDobleAPR）に絞った検索: 2026年の選手名は出なかった。
+
+### 補足
+- 同じ大会のほかの国は、すでに予備登録を出している。ニカラグアは36人（監督アニバル・ベガ、2026-09-17）で、パナマも予備登録を発表した。ベネズエラとプエルトリコが公表していないことは、ほかの国と比べると目立つ。
+- WebFetchが使えないので、WBSCの大会ページ（wbsc.org/en/events/2026-vi-wbsc-u-23-baseball-world-cup）にあるチーム別ロースターは確かめられなかった。大会直前（10月下旬〜11月上旬）にWBSCがロースターを公開する可能性が高い。
+
+---
+
+## U-23W杯2026 追加調査（英国・南アフリカ・豪州）
+
+調査日: 2026-10-12。WebSearchを39回実行した（上限45回）。各ページを直接開くことはできず、根拠は検索結果の抜粋だけになる。
+
+### 南アフリカ（B組）
+
+#### 新しくわかったこと
+- **SA野球連盟（SABU）が2026年U-23W杯に向けた30人のU-23代表スコッドを発表していた。** 発表は2026年の全国選手権（ボクスバーグ）の後。記事では「Under 23 Men's Elite Training Squad (ETS)」とも呼ばれており、30人は最終の遠征メンバー（例年は24人前後）より多い。**最終ロースターではなく、強化候補の段階である可能性が高い（未確定）。**
+  - https://sabaseball.co.za/category/south-africa-baseball-u23/
+  - https://sabaseball.co.za/internationals-2026/
+  - https://sabaseball.co.za/category/south-african-baseball/
+- 抜粋で読めた名前（アルファベット順のリストで、9人目の途中で抜粋が切れていた）
+  1. Taariq Adams（2024年W杯では遠征しない補欠。ケープタウン連盟のETSにも入っていた）
+  2. Rowan Banfield
+  3. Junaid Bedford（U-18代表の経験あり。日本開催のU-18W杯に出場）
+  4. Joshua Botha
+  5. Tyron Brickhill
+  6. Jamie Brookes（2024年U-23W杯の外野手。WBSCの登録名は「BROOKES Jamie Liam」、2005年生まれ）
+  7. Creedon Cockrell（2024年U-23W杯の捕手。U-18代表の経験あり。ケープタウン連盟所属）
+  8. Ethan Grobler（2024年U-23W杯の内野手。U-18代表の経験あり。ハウテン州所属）
+  9. 「Stiaan …」（姓は抜粋で切れていて不明）
+  - Cockrell・Grobler・Brookesの2024年の守備位置: https://www.baseball-reference.com/bullpen/2024_U-23_Baseball_World_Cup 、 https://www.wbsc.org/en/events/2024-v-u-23-baseball-world-cup/teams/30921
+- コーチ陣は既知の情報と同じだった。監督はClive Pretorius。コーチはTheodore (Theo) Speelman、Daniel Mokgehle、Jonathan (Jono) Viljoen、Tyrone Baglione。
+- **補足:** 2025年10月のアフリカ予選（ボクスバーグ）での監督はLiall Mauritzだった。Mauritzは2000年シドニー五輪に出た元代表右腕。予選ではNeil Adonisがメンター、Lindi Leigh Erasmusが団長を務め、Pretoriusはコーチ陣の一人だった。2026年本大会はPretoriusが監督に昇格した形になる。出典: https://www.theherald.co.za/sport/2025-10-28-proud-baseball-representatives-fly-bay-flag-high-at-national-event 、 https://aws.baseball-reference.com/bullpen/Liall_Mauritz
+- 予選に出た選手としてConnor Stopforth（Gqeberha、Tigers BC）の名前がある。2026年スコッドに入っているかは**未確認**。リストがアルファベット順なら、Sで始まるため切れた後半に含まれる可能性がある。
+- 予選決勝のスコアは資料によって違う。WBSCは21-1、SA野球連盟は21-2としている。
+
+#### citizen.co.za（Benoni City Times、2026-08-01）の手がかりの結論
+- **U-23とは関係がなかった。** 「Cardinals trio ready for World Cup challenge」の3人はDaniel Moolman、Rylee Greyvenstein、Jordan Visser（遠征しない補欠）で、出場するのは**U-15W杯（メキシコ・メリダ、9/25〜10/4）**。南アは同大会でA組に入り、日本とも同じ組だった。
+  - https://www.citizen.co.za/benoni-city-times/news-headlines/2026/08/01/cardinals-trio-ready-for-world-cup-challenge/
+
+#### 参考（2026年のスコッドに入っているかは未確認）
+2024年U-23W杯の南ア代表選手: Corbin Greenslade、Ruan Maritz（捕手）、Luke/Josh November、Kyle Schwartz、Cullen Pieterse、Robert White、Keenan Campbell、Jaryd White（右投手、2002/4/8生まれ）、Joshua Tribe（右投手、2003/8/20生まれ）、Darian Pretorius（内野手）。年齢制限をまだ満たしている選手は、切れた後半のリストに入っている可能性がある。
+
+### 英国（B組）
+
+#### 新しくわかったこと
+- 2026年の監督と最終ロースターは今回も見つからなかった。BBFの2026年WBC用メディアガイド（2026年初め）では、Crammanはまだ「U23監督」と書かれている。Crammanがメッツ傘下のコーチと兼任するのかどうかは**不明**。 https://britishbaseball.org.uk/gb-wbc-media-guide-2026.pdf
+- 2025年欧州選手権のコーチ陣（2026年も続くかは未確認）
+  - ベンチコーチ: Conor Brooks
+  - 投手コーチ: Vance Worley（元MLB投手）
+  - 打撃コーチ: Todd Stevenson
+  - 一塁コーチ: Matt Magallon
+  - 三塁コーチ: Jeremy Sheetinger
+  - ブルペンコーチ: Anthony Deleo
+  - QCコーチ: Erick Henson
+  - 出典: https://britishbaseball.org.uk/great-britain-baseball-announces-roster-for-2025-wbsc-u23-european-baseball-championship-in-czechia/
+- globalsportsarchiveの英国U-23ページは、初戦を11/7の日本戦としている。同じページに投手としてAidan Bray、Charlie Collins、Oliver Duthie、Colin Lebel、Cameron Wrightの名前がある。**非公式で、2024年か2025年の名簿の可能性がある。** https://globalsportsarchive.com/team/baseball/great-britain-u23/67972/
+- 2025年欧州選手権の試合記事に出てくる選手（名簿の候補）
+  - Cole Leclair、Quinn Allen、Jackson Kraemer
+  - Jay D. Smith（英領ヴァージン諸島出身）
+  - 出典: https://britishbaseball.org.uk/great-britain-baseball-u23s-advance-to-european-championship-semifinal-with-4-3-win-over-france/ 、 https://www.virginislandsnewsonline.com/en/news/vis-jay-d-smith-gbr-into-u23-european-championship-semifinal
+
+#### 主力選手の補足
+- **Andrew Campbell**: 右投手。Cal Poly Pomonaで2026年は4年生。2026年に全CCAA1stチーム、全West Region 2ndチームに選ばれた。父がスコットランド出身のため英国代表の資格がある。2025年欧州選手権では準決勝のオランダ戦で救援勝利を挙げ、5回1失点だった。大会通算は7回で防御率1.00、WHIP 1.14。生年と打席の左右は抜粋になかった。
+  - https://broncoathletics.com/news/2025/8/11/baseball-campbell-leads-great-britain-to-european-championship-named-tournaments-best-pitcher.aspx
+  - https://thepolypost.com/sports/2025/09/08/cpps-andrew-campbell-named-tournaments-best-pitcher-leading-great-britain-at-european-championship/
+  - https://broncoathletics.com/news/2026/5/27/baseball-places-three-on-multiple-all-west-region-teams.aspx
+- **Jack Wallis**: 試合記録では「Jackson Wallis」と表記されている。BBFの名簿ではサウスロンドン出身。初戦のイスラエル戦で三塁打と1打点、決勝のチェコ戦で2ランを打った。MVPかどうかは抜粋では確認できなかった。Haverford大学の捕手Jack Wallisは別人なので混同しないこと。
+- **Zac Sohosky**: 2024年U-23W杯のオランダ戦で9奪三振の完投勝利を挙げた。これが英国のW杯初勝利。2025年準決勝のフランス戦にも先発した。
+- **Tucker Stockman**: 2025年のフランス戦で安打と得点を記録した。
+- 4人とも、生年と投打は抜粋に出てこなかった。
+
+### 豪州（A組）
+
+#### 新しくわかったこと
+- 2026年の本大会ロースターは発表を確認できなかった。Baseball Australiaの大会ページはあるが、名簿は載っていなかった。 https://baseball.com.au/events/2026u23worldcup/
+- オセアニア予選（2025年11月6〜9日、ブラックタウン、グアムに5-0で勝利）の追加情報（WBSC記事より）
+  - プロ選手: Bailey-Jay Cooke（右投手、アスレチックス1A）、Max Durrington（内野手、アスレチックス1A）、Drew Davies（外野手、レッズのルーキー級と1A）
+  - マイナー経験者: Jake Burns（捕手、カージナルス）、Jackson Grounds（右投手、パイレーツ）、Solomon Maguire（外野手、パイレーツ）、Ben Walmsley（左投手、レッズ）
+  - 2024年W杯の経験者: Maguire、Cooke、Lachlan Brook（左投手）
+  - 出典: https://www.wbsc.org/en/news/australia-to-host-guam-for-wbsc-oceania-u-23-baseball-world-cup-2026-qualifier
+- 予選に出たNSW州の11人: Solomon Maguire、Jake Burns、Brad Griffin、Damien Wilson、Josh Nati、Lachlan Bojarski、Lachlan Brook、Lachlan Vella、Matthew Trainor、Tom Stancic、Tyrone Fergie。 https://www.baseballnsw.com.au/news/team-australia-announces-u23-world-cup-qualifier-squad/
+- ABLの記事「Seventeen ABL players named to Australia's Under 23 World Cup Squad」（ https://theabl.com.au/news/u23abl/ ）は、どの年のものか特定できなかった。2024年大会の記事である可能性が高い。
+
+### 何も出なかった検索
+- 「Great Britain U-23 Baseball World Cup 2026 Nicaragua squad manager」「GB U23 head coach 2026 appointed」「britishbaseball.org.uk U23 2026 World Cup squad named」「Great Britain Baseball U23 World Cup Nicaragua roster announced 2026」「"Great Britain" U-23 … "will represent" pitcher college」: 英国の2026年監督とロースターはどれでも出なかった。
+- 「Australia U23 … squad 2026 Nicaragua announced」「Baseball Australia U23 team announced … Shayne Watson」「baseball.com.au U23 World Cup 2026 squad」: 豪州の本大会ロースターは出なかった。
+- 「"Stiaan" baseball South Africa U23 2026」: 姓は特定できなかった。
+- 「South Africa National U23 team … full squad list」「"Taariq Adams" "Rowan Banfield" …」「Greenslade Maritz November …（sabaseball.co.za限定）」: 9人目より後の名前はどれも抜粋で切れていた。
+- 「mister-baseball South Africa U23 squad …」: 転載記事は見つからなかった。
+- 「citizen.co.za baseball U23 World Cup Nicaragua selected 2026」「baseball player named U23 national squad … Boksburg Advertiser …」: 地方紙のU-23関連の記事は見つからなかった。
+
+### 次の手順
+SA野球連盟の「South Africa Announces U23 National Team for 2026 World Cup」の記事（sabaseball.co.za のU23カテゴリ）をブラウザで直接開けば、30人全員の名前が読めるはずだ。
 
 ---
 
