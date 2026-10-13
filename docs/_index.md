@@ -13,6 +13,7 @@
 | When you're working on... | Doc | What it covers |
 |---|---|---|
 | Petacotの会社資料・共有Brain・3人の作業記録 | [petacot-brain.md](petacot-brain.md) | Gitの会社資料、Tursoの長期記憶、PetacotとAI-OSのledgerの使い分け |
+| ダウンロードとデスクトップを片付けるとき | [tidy-inbox.md](tidy-inbox.md) | ゴミ箱に入れる基準（中身の照合）、scan・trash・moveの使い方、毎週日曜21時の自動実行 |
 
 ## Integrations
 

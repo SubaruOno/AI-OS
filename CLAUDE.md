@@ -138,6 +138,7 @@ shared, not by which folder the session happens to be in.
 | Work being planned | `plans/` |
 | よく行く場所、住所、移動時間の目安 | `private/places.md` |
 | 予定とToDo（カレンダーで追えないやること、未定事項、週の組み方） | `private/schedule.md`; the calendar itself is the source of truth for times |
+| 本人確認書類、口座の書類、復旧コードやAPIキーのファイル | `~/Documents/重要書類/`（`本人確認`・`お金`・`アカウント・鍵`）。iCloudと同期せず本人だけが開ける。中身は頼まれたときだけ開き、AI-OSの中には置かない |
 | Feedback on how the assistant should work | Claude auto-memory; promote a lasting rule into this file and delete the memory |
 
 Do not write work logs or progress status into auto-memory; the ledger already
@@ -173,6 +174,27 @@ real start and end times (from `date`) to `private/osakagas-worklog.md` without
 being asked. Never invent or round times toward a target; the sheet's display
 rules apply only when transcribing. The monthly report procedure lives in
 `private/osakagas-work-report.md`.
+
+## Downloads and Desktop stay empty
+
+`~/Downloads` and `~/Desktop` are temporary landing spots, not homes. すばるは
+この2つを常に空に近い状態にしておきたい。
+
+- A file the assistant downloads or saves goes straight to its home (the table
+  above, or the topic folder in the home directory such as `~/野球`, `~/大阪ガス`,
+  `~/大学`, `~/就活`, `~/河本ゼミ`), never left in either folder.
+- When a session uses a file from either folder, move it to its home before the
+  session ends. If an identical file already exists in the home, send the copy
+  to the Trash with `/usr/bin/trash`; never `rm`.
+- Screenshots belong in `~/Pictures/スクリーンショット/`, which is also the
+  macOS screenshot save location.
+- Every Sunday at 21:00 a scheduled task tidies both folders with
+  [tidy-inbox](docs/tidy-inbox.md): safe items go to the Trash, items with a
+  clear home are moved, and the rest is reported.
+- Each topic folder's `_ダウンロードから/` holds files moved out of Downloads on
+  2026-10-13 that still need sorting into subfolders. Do not add new files there.
+- The record of that cleanup, for undoing a move, is
+  [downloads-cleanup-20261013-log.tsv](private/downloads-cleanup-20261013-log.tsv).
 
 ## Images for review
 
