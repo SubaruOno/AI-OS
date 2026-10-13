@@ -572,3 +572,4 @@
 - 2026-10-12 22:54 · すばる · seminar/build · JX金属C班の10/12共有（小田さんの前処理preprocess2と議事録）を、前回の解説動画と同じ形式の進捗まとめ動画（約3分50秒）にして秋_JX金属フォルダに保存
 - 2026-10-12 23:04 · subaru · seminar/build · 河本ゼミのサーバーに学外から入れるようにした。iPhone・iPad版Cisco Secure ClientでVPN接続、Windows Appのユーザー名を手順書どおりの形に直して接続。手順を[河本ゼミ](../private/seminar/河本ゼミ.md)に更新
 - 2026-10-13 11:34 · subaru · u23/research · 南アフリカU23の30人の取得を試みたが、クラウド環境からChromeも協会サイトも使えず未取得。検索で増えたのは2点（Adamsの所属、BedfordとBothaの2025年U-18出場）で、[相手国メンバー調査](../outputs/u23/2026-10-12-opponent-rosters.md)に追記
+- 2026-10-13 11:39 · subaru · job-hunt/build · KDDI最終面接の想定問答を14問分作成（10/9練習の質問リスト。ファクトチェックとハルシネーション対策は伊勢大会の数字照合の実例で、短所は夏の評価から。きっかけ・ビジコンの対立・院に進まない理由などは要確認）。private/job-hunt/kddi-final-qa.md
