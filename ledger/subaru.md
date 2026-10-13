@@ -573,3 +573,4 @@
 - 2026-10-12 23:04 · subaru · seminar/build · 河本ゼミのサーバーに学外から入れるようにした。iPhone・iPad版Cisco Secure ClientでVPN接続、Windows Appのユーザー名を手順書どおりの形に直して接続。手順を[河本ゼミ](../private/seminar/河本ゼミ.md)に更新
 - 2026-10-13 11:34 · subaru · u23/research · 南アフリカU23の30人の取得を試みたが、クラウド環境からChromeも協会サイトも使えず未取得。検索で増えたのは2点（Adamsの所属、BedfordとBothaの2025年U-18出場）で、[相手国メンバー調査](../outputs/u23/2026-10-12-opponent-rosters.md)に追記
 - 2026-10-13 11:39 · subaru · job-hunt/build · KDDI最終面接の想定問答を14問分作成（10/9練習の質問リスト。ファクトチェックとハルシネーション対策は伊勢大会の数字照合の実例で、短所は夏の評価から。きっかけ・ビジコンの対立・院に進まない理由などは要確認）。private/job-hunt/kddi-final-qa.md
+- 2026-10-13 11:45 · subaru · 予定/build · メール3箱を10/7以降で確認。KDDI 3回目面談（10/20 11:00 Teams）とESTA締切（10/29仮）を登録、U-23直前合宿の予定を船橋の内容に更新。月曜の授業3コマの繰り返しが終了日2026/1/26の誤りで10/5しか出ていなかったので10/19から作り直した。[予定とToDo](../private/schedule.md)、[KDDI](../private/job-hunt/kddi.md)、[U-23](../private/u23-wbsc-2026.md)を更新
