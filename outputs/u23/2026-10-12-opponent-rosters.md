@@ -1523,3 +1523,12 @@ SA野球連盟の「South Africa Announces U23 National Team for 2026 World Cup�
 
 ---
 
+
+## 南アフリカ 追記（2026-10-13）
+
+30人の名簿の全文は、今回も取れていない。この環境からはChromeも使えず、協会のサイトにも直接届かない。検索結果に出る名簿は、毎回8人目のEthan Groblerで切れる。今回の検索で増えたのは次の2点だけ。
+
+- Taariq Adamsは、それより前の段階で発表された国内のU23強化メンバーにも名前がある。所属はCape Town Baseball Federation
+- Junaid BedfordとJoshua Bothaは、2025年U-18W杯の名簿にも名前がある
+
+30人の発表記事は、協会の[U23のページ](https://sabaseball.co.za/category/south-africa-baseball-u23/)に「South Africa Announces U23 National Team for 2026 World Cup」の題で載っているとみられる。全員分は、手元のChromeで開くまで分からない。
