@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>夕方のブルペン</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #0b0908; color: #efe6da;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  body { display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .stage { position: relative; width: 100%; max-width: 1280px; aspect-ratio: 16 / 9;
+    background: #000; overflow: hidden; border-radius: 4px; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .overlay { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 8px;
+    align-items: center; justify-content: center; background: rgba(0, 0, 0, .32);
+    cursor: pointer; transition: opacity .5s; }
+  .overlay.hidden { opacity: 0; pointer-events: none; }
+  .overlay.end { background: transparent; align-items: flex-end; justify-content: flex-end; padding: 16px; }
+  .overlay button { font: inherit; font-size: 15px; color: #efe6da; background: rgba(18, 14, 12, .72);
+    border: 1px solid rgba(239, 230, 218, .35); border-radius: 999px; padding: 10px 22px; cursor: pointer; }
+  .overlay small { font-size: 12px; color: #b5a898; }
+  .overlay.end small { display: none; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <canvas id="c"></canvas>
+  <div class="overlay" id="ov">
+    <button id="play" type="button">▶ 再生</button>
+    <small>8秒・音が出ます</small>
+  </div>
+</div>
+<script>
+(() => {
+'use strict';
+const W = 1280, H = 720, DUR = 8;
+const SC = (window.devicePixelRatio || 1) > 1 ? 1.5 : 1;
+const cv = document.getElementById('c');
+cv.width = W * SC; cv.height = H * SC;
+const g = cv.getContext('2d');
+const ov = document.getElementById('ov'), btn = document.getElementById('play');
+
+const TAU = Math.PI * 2;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const ease = t => t * t * (3 - 2 * t);
+let seed = 11;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const R = (a, b) => a + (b - a) * rnd();
+function mk(w, h) { const c = document.createElement('canvas'); c.width = Math.round(w); c.height = Math.round(h); return [c, c.getContext('2d')]; }
+function oval(c, x, y, rx, ry, rot = 0) { c.beginPath(); c.ellipse(x, y, rx, ry, rot, 0, TAU); c.fill(); }
+
+// ---- 配置（1280×720 基準の画面座標）
+const HORIZON = 470;
+const SUN = { x: 290, y: 426 };
+const BASE = { x: 360, y: 560 };            // 投手の立ち位置（両足の間）
+const NQ = { tl: [1000, 372], tr: [1100, 384], bl: [1000, 540], br: [1100, 527] };  // ネットの四隅
+const HIT = { u: 0.5, v: 0.5 };
+const T_PLANT = 1.86, T_REL = 1.96, T_HIT = 2.30;
+
+function netPt(u, v) {
+  const tx = lerp(NQ.tl[0], NQ.tr[0], u), ty = lerp(NQ.tl[1], NQ.tr[1], u);
+  const bx = lerp(NQ.bl[0], NQ.br[0], u), by = lerp(NQ.bl[1], NQ.br[1], u);
+  return [lerp(tx, bx, v), lerp(ty, by, v)];
+}
+
+// ---- 遠景：低い解像度で描いて引き伸ばし、ピントの外れた背景にする
+const FS = 0.25;
+const [far, fc] = mk(W * FS, H * FS);
+{
+  const c = fc; c.scale(FS, FS);
+  let gr = c.createLinearGradient(0, 0, 0, HORIZON + 20);
+  gr.addColorStop(0, '#1f2236'); gr.addColorStop(0.38, '#4d3c59'); gr.addColorStop(0.66, '#b0645c');
+  gr.addColorStop(0.86, '#e99d5d'); gr.addColorStop(1, '#ffd492');
+  c.fillStyle = gr; c.fillRect(0, 0, W, H);
+  let rg = c.createRadialGradient(SUN.x, SUN.y, 0, SUN.x, SUN.y, 640);
+  rg.addColorStop(0, 'rgba(255,214,150,.75)'); rg.addColorStop(0.3, 'rgba(255,170,110,.26)'); rg.addColorStop(1, 'rgba(255,150,100,0)');
+  c.fillStyle = rg; c.fillRect(0, 0, W, H);
+  for (const [x, y, w, h] of [[520, 170, 260, 9], [790, 126, 340, 7], [300, 250, 220, 6], [1000, 214, 280, 8], [130, 118, 200, 6]]) {
+    c.fillStyle = 'rgba(255,178,138,.30)'; oval(c, x, y, w, h);
+    c.fillStyle = 'rgba(72,44,70,.26)'; oval(c, x + 12, y + h * 0.9, w * 0.9, h * 0.6);
+  }
+  c.fillStyle = '#3c2b35';
+  for (const px of [140, 915]) { c.fillRect(px - 3, 150, 6, HORIZON - 150); c.fillRect(px - 34, 126, 68, 34); }
+  c.fillStyle = '#4a3340';
+  c.beginPath(); c.moveTo(0, HORIZON + 6);
+  for (let x = 0; x <= W + 16; x += 16) {
+    const near = Math.exp(-((x - SUN.x) ** 2) / (2 * 140 * 140));
+    c.lineTo(x, 436 + 12 * Math.sin(x * 0.013) + 8 * Math.sin(x * 0.047 + 1) + 26 * near + R(-4, 4));
+  }
+  c.lineTo(W + 16, HORIZON + 6); c.closePath(); c.fill();
+  rg = c.createRadialGradient(SUN.x, SUN.y + 14, 0, SUN.x, SUN.y + 14, 440);
+  rg.addColorStop(0, 'rgba(255,205,145,.7)'); rg.addColorStop(1, 'rgba(255,180,120,0)');
+  c.fillStyle = rg; c.fillRect(0, 0, W, H);
+  gr = c.createLinearGradient(0, 400, 0, 500);
+  gr.addColorStop(0, 'rgba(255,190,130,0)'); gr.addColorStop(0.6, 'rgba(255,190,130,.24)'); gr.addColorStop(1, 'rgba(255,190,130,0)');
+  c.fillStyle = gr; c.fillRect(0, 400, W, 100);
+  c.fillStyle = 'rgba(34,24,28,.32)'; c.fillRect(0, 452, W, 34);
+  c.fillStyle = 'rgba(32,22,26,.75)'; c.fillRect(0, 448, W, 3);
+  for (let x = 30; x < W; x += 96) c.fillRect(x, 448, 4, 40);
+  gr = c.createLinearGradient(0, 480, 0, 506);
+  gr.addColorStop(0, '#5b5331'); gr.addColorStop(1, '#3e3922');
+  c.fillStyle = gr; c.fillRect(0, 480, W, H - 480);
+}
+
+// ---- 地面とブルペンの小物（ピントが合う距離）
+const [mid, mc] = mk(W * SC, H * SC);
+{
+  const c = mc; c.scale(SC, SC);
+  let gr = c.createLinearGradient(0, 498, 0, H);
+  gr.addColorStop(0, '#93603b'); gr.addColorStop(0.25, '#78492c'); gr.addColorStop(1, '#3a2217');
+  c.fillStyle = gr;
+  c.beginPath(); c.moveTo(0, H);
+  for (let x = 0; x <= W + 40; x += 40) c.lineTo(x, 501 + 3 * Math.sin(x * 0.02) + R(-1.5, 1.5));
+  c.lineTo(W + 40, H); c.closePath(); c.fill();
+  // 逆光で土が光る
+  c.globalCompositeOperation = 'screen';
+  let rg = c.createRadialGradient(SUN.x + 60, 506, 0, SUN.x + 60, 506, 540);
+  rg.addColorStop(0, 'rgba(255,190,120,.5)'); rg.addColorStop(0.4, 'rgba(255,160,100,.14)'); rg.addColorStop(1, 'rgba(0,0,0,0)');
+  c.fillStyle = rg; c.fillRect(0, 498, W, H - 498);
+  c.globalCompositeOperation = 'source-over';
+  // マウンドのふくらみ
+  c.save(); c.translate(BASE.x + 50, BASE.y); c.scale(1, 0.13);
+  rg = c.createRadialGradient(0, 0, 0, 0, 0, 300);
+  rg.addColorStop(0, 'rgba(170,110,65,.30)'); rg.addColorStop(1, 'rgba(170,110,65,0)');
+  c.fillStyle = rg; c.fillRect(-300, -300, 600, 600); c.restore();
+  // 土の粒とトンボの跡
+  for (let i = 0; i < 9000; i++) {
+    const y = R(503, H), p = (y - 500) / (H - 500), x = R(0, W), s = 0.5 + p * 1.8;
+    c.fillStyle = rnd() < 0.35 ? `rgba(255,210,160,${(0.05 + 0.12 * (1 - p)).toFixed(3)})` : `rgba(28,14,8,${(0.1 + 0.18 * p).toFixed(3)})`;
+    c.fillRect(x, y, s * R(1, 2.2), s * R(0.5, 1));
+  }
+  c.strokeStyle = 'rgba(40,20,10,.10)';
+  for (let i = 0; i < 40; i++) {
+    const y = R(515, H), x = R(-200, W), p = (y - 500) / (H - 500);
+    c.lineWidth = 0.6 + p * 1.6; c.beginPath(); c.moveTo(x, y);
+    c.quadraticCurveTo(x + 160, y + R(-3, 3), x + 340, y + R(-2, 2)); c.stroke();
+  }
+  // 掘れた足場とプレート
+  c.fillStyle = 'rgba(35,18,10,.45)'; oval(c, BASE.x - 4, BASE.y + 3, 16, 4); oval(c, BASE.x + 124, BASE.y + 3, 24, 5);
+  c.fillStyle = '#c9bca8';
+  c.beginPath(); c.moveTo(BASE.x - 40, BASE.y - 1); c.lineTo(BASE.x - 16, BASE.y - 3); c.lineTo(BASE.x - 14, BASE.y + 2); c.lineTo(BASE.x - 38, BASE.y + 4); c.closePath(); c.fill();
+  c.fillStyle = 'rgba(90,55,30,.5)';
+  for (let i = 0; i < 14; i++) c.fillRect(BASE.x - 38 + R(0, 22), BASE.y - 2 + R(0, 5), R(1, 3), 1);
+  // ボールかご
+  const bx = 236, by = 596;
+  c.save(); c.translate(bx, by); c.transform(1, 0, -0.62, -0.36, 0, 0);
+  c.fillStyle = 'rgba(20,10,5,.35)'; c.fillRect(-18, -54, 36, 54); c.restore();
+  c.fillStyle = '#100b08'; oval(c, bx, by - 54, 21, 5);
+  for (const [dx, dy] of [[-12, -55], [-4, -58], [4, -56], [12, -55], [0, -54]]) {
+    c.fillStyle = '#bba98f'; oval(c, bx + dx, by + dy, 5, 5);
+    c.fillStyle = 'rgba(50,30,20,.5)'; c.beginPath(); c.arc(bx + dx, by + dy, 5, 0.2, Math.PI + 0.2); c.fill();
+  }
+  gr = c.createLinearGradient(bx - 21, 0, bx + 21, 0);
+  gr.addColorStop(0, '#6a4630'); gr.addColorStop(0.22, '#2e2018'); gr.addColorStop(1, '#1a120e');
+  c.fillStyle = gr;
+  c.beginPath(); c.ellipse(bx, by - 54, 21, 5, 0, Math.PI, 0, true);
+  c.lineTo(bx + 17, by); c.lineTo(bx - 17, by); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(255,188,128,.7)'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(bx - 21, by - 54); c.lineTo(bx - 17, by); c.stroke();
+  // ネットの下に転がっている球
+  for (const [u, dy] of [[0.12, 7], [0.3, 9], [0.62, 6], [0.82, 8]]) {
+    const p = netPt(u, 1), x = p[0], y = p[1] + dy;
+    c.fillStyle = 'rgba(20,10,5,.35)'; oval(c, x + 5, y + 4, 6, 1.8);
+    c.fillStyle = '#c9b89e'; oval(c, x, y, 4.3, 4.3);
+    c.fillStyle = 'rgba(50,30,20,.5)'; c.beginPath(); c.arc(x, y, 4.3, 0.2, Math.PI + 0.2); c.fill();
+  }
+}
+
+// ---- 手前のぼけ（柱と草）
+const FG = 0.125;
+const [fgc, fgx] = mk(W * FG, H * FG);
+{
+  const c = fgx; c.scale(FG, FG);
+  c.fillStyle = 'rgba(12,8,6,.92)'; c.fillRect(-30, 0, 66, H);
+  const gr = c.createLinearGradient(0, 660, 0, H);
+  gr.addColorStop(0, 'rgba(18,10,6,0)'); gr.addColorStop(1, 'rgba(18,10,6,.8)');
+  c.fillStyle = gr; c.fillRect(0, 660, W, 60);
+  c.strokeStyle = 'rgba(26,22,12,.9)'; c.lineCap = 'round';
+  for (let i = 0; i < 16; i++) {
+    const x = R(980, 1300); c.lineWidth = R(5, 9);
+    c.beginPath(); c.moveTo(x, H + 10); c.quadraticCurveTo(x + R(-10, 10), H - 40, x + R(-40, 40), H - R(50, 110)); c.stroke();
+  }
+}
+
+// ---- フィルムの粒子
+const grains = [0, 1, 2, 3].map(() => {
+  const [c, x] = mk(480, 270); const im = x.createImageData(480, 270);
+  for (let i = 0; i < im.data.length; i += 4) {
+    const v = 128 + (Math.random() - 0.5) * 230;
+    im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = 255;
+  }
+  x.putImageData(im, 0, 0); return c;
+});
+
+// ---- 空気中のほこり
+const motes = Array.from({ length: 160 }, () => ({ x: R(0, W), y: R(250, 660), z: R(0.4, 1.4), vx: R(3, 11), vy: R(-5, -1), ph: R(0, TAU), s: R(0.5, 1.8) }));
+const puff = Array.from({ length: 40 }, () => ({ vx: R(-60, 120), vy: R(-80, -15), r: R(2, 5), a: R(0.12, 0.32) }));
+
+// ---- カメラ：呼吸程度の手持ちの揺れと、6秒かけて50cmほど寄る動き
+function cam(t) {
+  const push = ease(clamp(t / 6.2, 0, 1));
+  const hold = 1 - ease(clamp((t - 5.4) / 1.0, 0, 1));
+  return {
+    z: 1.025 + 0.05 * push,
+    x: (2.2 * Math.sin(t * 1.31) + 1.1 * Math.sin(t * 2.73 + 1.1) + 0.4 * Math.sin(t * 5.9 + 0.3)) * hold,
+    y: (1.7 * Math.sin(t * 1.07 + 0.6) + 0.8 * Math.sin(t * 3.31 + 2)) * hold,
+    r: 0.0016 * Math.sin(t * 0.93 + 0.4) * hold,
+  };
+}
+const FX = 600, FY = 440;
+function setCam(c, k, depth, s) {
+  const z = 1 + (k.z - 1) * depth;
+  c.setTransform(s, 0, 0, s, 0, 0);
+  c.translate(FX + k.x, FY + k.y); c.rotate(k.r); c.scale(z, z); c.translate(-FX, -FY);
+}
+
+// ---- 投手の動き
+// 列：時刻, 腰x, 腰y, 胴の傾き, 首の傾き, 踏み出す足x, y, 軸足x, y, 投げる腕(上腕の角度, ひじの曲げ, 上腕の見かけの長さ), グラブの腕(上腕, ひじ)
+const KF = [
+  [0.00,   8, -122,  0.04,  0.06,  30,   0,  -12,   0, 1.75, -2.20, 1.0, 1.70, -2.10],
+  [0.70,   8, -121,  0.07,  0.08,  30,   0,  -12,   0, 1.75, -2.20, 1.0, 1.70, -2.10],
+  [1.25,   2, -125, -0.07,  0.00,  36, -60,  -10,   0, 1.90, -2.75, 1.0, 1.85, -2.65],
+  [1.62,  34, -114, -0.04,  0.00,  92, -14,  -10,   0, 2.75, -0.25, 1.0, 0.00, -0.10],
+  [1.86,  62, -104,  0.10,  0.00, 118,   0,   -6,   0, 3.25,  1.20, 1.0, 0.15,  0.20],
+  [1.92,  71, -102,  0.28, -0.10, 118,   0,   -2,  -2, 4.60, -0.30, 0.3, 0.50, -0.40],
+  [1.98,  80, -100,  0.48, -0.30, 118,   0,    2,  -6, 5.95, -0.20, 1.0, 1.45, -2.65],
+  [2.22,  94,  -95,  0.88, -0.55, 118,   0,   30, -42, 7.50,  0.40, 1.0, 1.90, -1.30],
+  [2.75, 110, -117,  0.34, -0.12, 118,   0,   96, -12, 7.75,  0.10, 1.0, 1.60, -0.20],
+  [3.15, 108, -122,  0.03,  0.02, 118,   0,   98,   0, 7.80, -0.05, 1.0, 1.62, -0.12],
+  [3.75, 108, -122,  0.04,  0.10, 118,   0,   98,   0, 6.90, -0.70, 1.0, 1.62, -0.12],
+  [4.10, 108, -122,  0.05,  0.18, 118,   0,   98,   0, 6.20, -2.25, 1.0, 1.62, -0.12],
+  [4.55, 109, -122,  0.04,  0.08, 118,   0,   98,   0, 5.90, -2.30, 1.0, 1.62, -0.12],
+  [5.15, 109, -122,  0.03,  0.00, 118,   0,   98,   0, 7.80, -0.05, 1.0, 1.62, -0.12],
+  [6.00, 108, -122,  0.02,  0.00, 118,   0,   98,   0, 7.82, -0.05, 1.0, 1.62, -0.12],
+  [8.00, 108, -122,  0.02,  0.00, 118,   0,   98,   0, 7.82, -0.05, 1.0, 1.62, -0.12],
+];
+const L = { thigh: 64, shin: 62, upper: 44, fore: 42 };
+
+function poseAt(t) {
+  t = clamp(t, KF[0][0], KF[KF.length - 1][0]);
+  let i = 0; while (i < KF.length - 2 && t > KF[i + 1][0]) i++;
+  const A = KF[i], B = KF[i + 1], P = KF[Math.max(0, i - 1)], N = KF[Math.min(KF.length - 1, i + 2)];
+  const h = B[0] - A[0], s = (t - A[0]) / h, s2 = s * s, s3 = s2 * s;
+  const h00 = 2 * s3 - 3 * s2 + 1, h10 = s3 - 2 * s2 + s, h01 = -2 * s3 + 3 * s2, h11 = s3 - s2;
+  const out = [];
+  for (let k = 1; k < A.length; k++) {
+    const mA = (B[k] - P[k]) / (B[0] - P[0]);
+    const mB = (N[k] - A[k]) / (N[0] - A[0]);
+    out.push(h00 * A[k] + h10 * h * mA + h01 * B[k] + h11 * h * mB);
+  }
+  return out;
+}
+
+function bodyAt(t) {
+  const v = poseAt(t);
+  let br = 0;
+  if (t < 1.1) br = Math.sin(t / 2.4 * TAU) * (1 - ease(clamp((t - 0.8) / 0.3, 0, 1)));
+  else if (t > 5.3) br = Math.sin((t - 5.3) / 2.9 * TAU) * ease(clamp((t - 5.3) / 0.7, 0, 1));
+  if (t > 3.2) v[0] += 0.7 * Math.sin(t * 0.9) * ease(clamp((t - 3.2) / 0.6, 0, 1));
+  v.push(72 + 2 * br);
+  return v;
+}
+
+function ik(a, b, l1, l2, pick) {
+  const dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy) || 0.001;
+  if (d >= l1 + l2 - 0.01) {
+    const ux = dx / d, uy = dy / d;
+    return { j: [a[0] + ux * l1, a[1] + uy * l1], e: [a[0] + ux * (l1 + l2), a[1] + uy * (l1 + l2)] };
+  }
+  const ang = Math.atan2(dy, dx), A = Math.acos(clamp((l1 * l1 + d * d - l2 * l2) / (2 * l1 * d), -1, 1));
+  const j1 = [a[0] + Math.cos(ang + A) * l1, a[1] + Math.sin(ang + A) * l1];
+  const j2 = [a[0] + Math.cos(ang - A) * l1, a[1] + Math.sin(ang - A) * l1];
+  return { j: pick(j1) >= pick(j2) ? j1 : j2, e: [b[0], b[1]] };
+}
+
+function solve(v) {
+  const [hx, hy, ta, ha, fx, fy, bx, by, Tu, Te, Tl, Gu, Ge, tl] = v;
+  const hip = [hx, hy], up = [Math.sin(ta), -Math.cos(ta)], fw = [Math.cos(ta), Math.sin(ta)];
+  const at = (d, o = 0) => [hx + up[0] * d + fw[0] * o, hy + up[1] * d + fw[1] * o];
+  const sh = at(tl - 10, 1), neck = at(tl), hA = ta + ha;
+  const head = [neck[0] + Math.sin(hA) * 15, neck[1] - Math.cos(hA) * 15];
+  const leg = (x, y) => ik(hip, [x, Math.min(y, 0)], L.thigh, L.shin, q => q[0] + q[1]);
+  const arm = (u, el, len) => {
+    const j = [sh[0] + Math.cos(u) * L.upper * len, sh[1] + Math.sin(u) * L.upper * len];
+    return { j, e: [j[0] + Math.cos(u + el) * L.fore, j[1] + Math.sin(u + el) * L.fore] };
+  };
+  return { hip, at, sh, neck, head, hA, F: leg(fx, fy), B: leg(bx, by), T: arm(Tu, Te, Tl), G: arm(Gu, Ge, 1) };
+}
+
+// 逆光のシルエットとして描く。col は [奥, 胴, 手前] の色
+function figure(c, P, grow, col) {
+  const [cf, cb, cn] = col;
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  const seg = (a, b, w, s) => { c.strokeStyle = s; c.lineWidth = w + grow; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); };
+  const dot = (p, r, s) => { c.fillStyle = s; c.beginPath(); c.arc(p[0], p[1], r + grow / 2, 0, TAU); c.fill(); };
+  const foot = (lg, s) => {
+    const a = lg.e, k = lg.j, sx = a[0] - k[0], sy = a[1] - k[1], sl = Math.hypot(sx, sy) || 1;
+    const air = clamp(-a[1] / 18, 0, 1);
+    const dx = lerp(1, sy / sl, air), dy = lerp(0, -sx / sl, air), dl = Math.hypot(dx, dy) || 1;
+    const lift = 3 * (1 - air);
+    seg([a[0] - dx / dl * 3, a[1] - dy / dl * 3 - lift], [a[0] + dx / dl * 16, a[1] + dy / dl * 16 - lift], 9, s);
+  };
+  // 奥：グラブの腕と踏み出す脚
+  seg(P.sh, P.G.j, 13, cf); seg(P.G.j, P.G.e, 11, cf);
+  c.fillStyle = cf; c.beginPath(); c.ellipse(P.G.e[0], P.G.e[1], 9 + grow / 2, 12 + grow / 2, 0.4, 0, TAU); c.fill();
+  seg(P.hip, P.F.j, 22, cf); seg(P.F.j, P.F.e, 16, cf); foot(P.F, cf);
+  // 胴と頭
+  const pts = [P.at(0, -15), P.at(26, -13), P.at(50, -13), P.at(64, -10), P.at(68, 7), P.at(52, 16), P.at(28, 11), P.at(0, 12)];
+  c.fillStyle = cb; c.strokeStyle = cb; c.lineWidth = 2 + grow;
+  c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.closePath(); c.fill(); c.stroke();
+  dot(P.at(3, -7), 13, cb);
+  seg(P.at(64, 2), P.head, 11, cb);
+  const hp = v => { const co = Math.cos(P.hA), si = Math.sin(P.hA); return [P.head[0] + v[0] * co - v[1] * si, P.head[1] + v[0] * si + v[1] * co]; };
+  dot(P.head, 12, cb); dot(hp([11, 3]), 3, cb); dot(hp([-1, -4]), 12.5, cb);
+  seg(hp([6, -8]), hp([22, -5]), 4.5, cb);
+  // 手前：軸足と投げる腕
+  seg(P.hip, P.B.j, 22, cn); seg(P.B.j, P.B.e, 16, cn); foot(P.B, cn);
+  seg(P.sh, P.T.j, 13, cn); seg(P.T.j, P.T.e, 11, cn); dot(P.T.e, 5.5, cn);
+}
+const RIM = ['#ffb878', '#ffb878', '#ffb878'];
+const DARK = ['#2c2019', '#1c1410', '#16100c'];
+
+// 腕を振る瞬間だけ、少し前の腕を薄く重ねてぶれを出す
+function ghostArm(t) {
+  if (t < 1.84 || t > 2.2) return;
+  g.lineCap = 'round'; g.strokeStyle = '#2a1e18';
+  for (let n = 1; n <= 6; n++) {
+    const P = solve(bodyAt(t - n * 0.005));
+    g.globalAlpha = 0.2 * (1 - n / 7);
+    g.lineWidth = 12; g.beginPath(); g.moveTo(P.sh[0], P.sh[1]); g.lineTo(P.T.j[0], P.T.j[1]); g.stroke();
+    g.lineWidth = 10; g.beginPath(); g.moveTo(P.T.j[0], P.T.j[1]); g.lineTo(P.T.e[0], P.T.e[1]); g.stroke();
+  }
+  g.globalAlpha = 1;
+}
+
+// 影は半分の解像度で描いて輪郭をやわらげる
+const [shc, shx] = mk(W * SC / 2, H * SC / 2);
+function shadow(k, P) {
+  shx.setTransform(1, 0, 0, 1, 0, 0); shx.clearRect(0, 0, shc.width, shc.height);
+  setCam(shx, k, 1, SC / 2);
+  shx.translate(BASE.x, BASE.y); shx.transform(1, 0, -0.62, -0.36, 0, 0);
+  figure(shx, P, 0, ['#000', '#000', '#000']);
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.globalAlpha = 0.38; g.drawImage(shc, 0, 0, cv.width, cv.height); g.globalAlpha = 1;
+}
+
+function drawNet(t) {
+  const dt = t - T_HIT;
+  const amp = dt > 0 ? 15 * (1 - Math.exp(-dt * 45)) * Math.exp(-dt * 4.5) * Math.cos(dt * 13) : 0;
+  const P = (u, v) => {
+    const p = netPt(u, v), k = amp * Math.exp(-(((u - HIT.u) / 0.28) ** 2 + ((v - HIT.v) / 0.3) ** 2));
+    return [p[0] + k * 0.9, p[1] - k * 0.2];
+  };
+  const line = (a, b) => { g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); };
+  g.lineCap = 'round'; g.lineJoin = 'round';
+  g.strokeStyle = '#2c2428'; g.lineWidth = 3.5;
+  line(NQ.tl, [1036, 534]); line(NQ.tr, [1130, 522]);
+  g.fillStyle = 'rgba(22,16,18,.16)';
+  g.beginPath(); g.moveTo(...NQ.tl); g.lineTo(...NQ.tr); g.lineTo(...NQ.br); g.lineTo(...NQ.bl); g.closePath(); g.fill();
+  g.strokeStyle = 'rgba(26,20,22,.38)'; g.lineWidth = 1;
+  for (let i = 1; i < 14; i++) { g.beginPath(); for (let j = 0; j <= 12; j++) { const p = P(i / 14, j / 12); j ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); } g.stroke(); }
+  for (let j = 1; j < 16; j++) { g.beginPath(); for (let i = 0; i <= 10; i++) { const p = P(i / 10, j / 16); i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); } g.stroke(); }
+  // ストライクゾーンの枠
+  const zone = [[0.3, 0.36], [0.7, 0.36], [0.7, 0.74], [0.3, 0.74], [0.3, 0.36]];
+  g.strokeStyle = 'rgba(226,212,192,.72)'; g.lineWidth = 1.8; g.beginPath();
+  for (let s = 0; s < 4; s++) for (let k = 0; k <= 6; k++) {
+    const p = P(lerp(zone[s][0], zone[s + 1][0], k / 6), lerp(zone[s][1], zone[s + 1][1], k / 6));
+    (s === 0 && k === 0) ? g.moveTo(p[0], p[1]) : g.lineTo(p[0], p[1]);
+  }
+  g.stroke();
+  // 枠のパイプ
+  g.strokeStyle = '#2a2226'; g.lineWidth = 4.5;
+  g.beginPath(); g.moveTo(...NQ.bl); g.lineTo(...NQ.tl); g.lineTo(...NQ.tr); g.lineTo(...NQ.br); g.stroke();
+  g.lineWidth = 3.5; line(NQ.bl, NQ.br);
+  g.strokeStyle = 'rgba(255,186,122,.55)'; g.lineWidth = 1.3;
+  g.beginPath(); g.moveTo(NQ.bl[0] - 2, NQ.bl[1]); g.lineTo(NQ.tl[0] - 2, NQ.tl[1] - 2); g.lineTo(NQ.tr[0], NQ.tr[1] - 2); g.stroke();
+}
+
+let REL = null;
+function ballAt(t) {
+  if (t < T_REL) return null;
+  if (!REL) { const P = solve(bodyAt(T_REL)); REL = [BASE.x + P.T.e[0], BASE.y + P.T.e[1]]; }
+  const hit = netPt(HIT.u, HIT.v);
+  if (t < T_HIT) {
+    const u = (t - T_REL) / (T_HIT - T_REL);
+    return { x: lerp(REL[0], hit[0], u), y: lerp(REL[1], hit[1], u) + 22 * u * u - 8 * u, r: lerp(4.6, 3.7, u), air: true };
+  }
+  const dt = t - T_HIT, floor = netPt(HIT.u, 1)[1] + 2, G0 = 1700, tf = Math.sqrt(2 * (floor - hit[1]) / G0);
+  let x = hit[0] - 5 * clamp(dt / tf, 0, 1), y = floor;
+  if (dt < tf) y = hit[1] + 0.5 * G0 * dt * dt;
+  else {
+    let d = dt - tf, v = G0 * tf * 0.3;
+    for (let n = 0; n < 2; n++) { const tb = 2 * v / G0; if (d < tb) { y = floor - (v * d - 0.5 * G0 * d * d); break; } d -= tb; v *= 0.3; }
+    x -= 12 * ease(clamp((dt - tf) / 1.4, 0, 1));
+  }
+  return { x, y, r: 3.7, air: false, floor };
+}
+function drawBall(t) {
+  const b = ballAt(t); if (!b) return;
+  if (b.air) {
+    const p = ballAt(Math.max(T_REL, t - 0.035));
+    const gr = g.createLinearGradient(p.x, p.y, b.x + 0.01, b.y);
+    gr.addColorStop(0, 'rgba(236,224,204,0)'); gr.addColorStop(1, 'rgba(236,224,204,.55)');
+    g.strokeStyle = gr; g.lineWidth = b.r * 1.8; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(b.x, b.y); g.stroke();
+  } else {
+    const hgt = b.floor - b.y;
+    g.fillStyle = `rgba(20,10,5,${(0.35 * (1 - clamp(hgt / 80, 0, 0.8))).toFixed(3)})`;
+    oval(g, b.x + 5 + hgt * 0.3, b.floor + 3.5, 5.5, 1.7);
+  }
+  g.fillStyle = '#ebdfcb'; oval(g, b.x, b.y, b.r, b.r);
+  g.fillStyle = 'rgba(60,38,26,.45)'; g.beginPath(); g.arc(b.x, b.y, b.r, -0.3, Math.PI - 0.3); g.fill();
+}
+
+function dust(t, t0, x, y, k) {
+  const dt = t - t0; if (dt < 0 || dt > 2.4) return;
+  const m = (1 - Math.exp(-dt * 3.2)) / 3.2, fade = 1 - dt / 2.4;
+  for (const p of puff) {
+    g.fillStyle = `rgba(222,168,112,${(p.a * fade * k).toFixed(3)})`;
+    g.beginPath(); g.arc(x + p.vx * m * k, y + p.vy * m * k + 5 * dt * dt, p.r * (1 + dt * 1.4) * (0.6 + 0.4 * k), 0, TAU); g.fill();
+  }
+}
+
+function drawMotes(t) {
+  g.globalCompositeOperation = 'lighter';
+  for (const d of motes) {
+    const x = ((d.x + d.vx * d.z * t) % W + W) % W, y = d.y + d.vy * t + Math.sin(t * 0.6 + d.ph) * 4;
+    const b = 0.06 + 0.9 * Math.exp(-Math.hypot(x - SUN.x, y - SUN.y) / 260);
+    g.fillStyle = `rgba(255,205,150,${(b * 0.5).toFixed(3)})`;
+    g.beginPath(); g.arc(x, y, d.s * d.z, 0, TAU); g.fill();
+  }
+  g.globalCompositeOperation = 'source-over';
+}
+
+let grainIdx = 0, grainT = -1;
+function render(t, fade) {
+  const k = cam(t);
+  g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+  g.fillStyle = '#000'; g.fillRect(0, 0, cv.width, cv.height);
+  g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+  // 遠景と太陽
+  setCam(g, k, 0.7, SC);
+  g.drawImage(far, 0, 0, W, H);
+  let rg = g.createRadialGradient(SUN.x, SUN.y, 0, SUN.x, SUN.y, 40);
+  rg.addColorStop(0, '#fffbf2'); rg.addColorStop(0.42, 'rgba(255,242,215,.95)'); rg.addColorStop(1, 'rgba(255,200,140,0)');
+  g.fillStyle = rg; g.fillRect(SUN.x - 40, SUN.y - 40, 80, 80);
+  // ピントが合う距離
+  setCam(g, k, 1, SC);
+  g.drawImage(mid, 0, 0, W, H);
+  drawNet(t);
+  const P = solve(bodyAt(t));
+  shadow(k, P);
+  setCam(g, k, 1, SC);
+  g.save(); g.translate(BASE.x, BASE.y);
+  g.save(); g.translate(-1.7, -1.3); figure(g, P, 2.4, RIM); g.restore();
+  ghostArm(t);
+  figure(g, P, 0, DARK);
+  g.restore();
+  dust(t, T_PLANT, BASE.x + 126, BASE.y - 2, 1);
+  dust(t, 2.05, BASE.x + 2, BASE.y - 2, 0.5);
+  drawBall(t);
+  drawMotes(t);
+  // 逆光のにじみ（人物の輪郭にもかぶせる）
+  setCam(g, k, 0.7, SC);
+  g.globalCompositeOperation = 'screen';
+  rg = g.createRadialGradient(SUN.x, SUN.y, 0, SUN.x, SUN.y, 320);
+  rg.addColorStop(0, 'rgba(255,205,145,.6)'); rg.addColorStop(0.4, 'rgba(255,170,110,.14)'); rg.addColorStop(1, 'rgba(255,160,100,0)');
+  g.fillStyle = rg; g.fillRect(SUN.x - 320, SUN.y - 320, 640, 640);
+  g.globalCompositeOperation = 'source-over';
+  // 手前のぼけ
+  setCam(g, k, 1.4, SC);
+  g.drawImage(fgc, 0, 0, W, H);
+  // 画面全体：にじみ、周辺減光、粒子
+  g.setTransform(SC, 0, 0, SC, 0, 0);
+  g.globalCompositeOperation = 'screen';
+  const gr = g.createLinearGradient(0, 0, W, 0);
+  gr.addColorStop(0, 'rgba(255,170,100,.08)'); gr.addColorStop(0.6, 'rgba(255,170,100,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  g.globalCompositeOperation = 'source-over';
+  rg = g.createRadialGradient(W / 2, H * 0.48, W * 0.3, W / 2, H * 0.48, W * 0.78);
+  rg.addColorStop(0, 'rgba(8,4,2,0)'); rg.addColorStop(1, 'rgba(8,4,2,.62)');
+  g.fillStyle = rg; g.fillRect(0, 0, W, H);
+  const gi = Math.floor(t * 24);
+  if (gi !== grainT) { grainT = gi; grainIdx = (grainIdx + 1 + Math.floor(Math.random() * 3)) % 4; }
+  g.globalCompositeOperation = 'overlay'; g.globalAlpha = 0.12;
+  g.drawImage(grains[grainIdx], 0, 0, W, H);
+  g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+  if (fade && t < 0.5) { g.fillStyle = `rgba(0,0,0,${(1 - ease(t / 0.5)).toFixed(3)})`; g.fillRect(0, 0, W, H); }
+}
+
+// ---- 音（Web Audio で合成。BGMなし）
+let AC = null, NOISE = null, BROWN = null;
+function initAudio() {
+  if (AC) return;
+  const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+  AC = new C();
+  const sr = AC.sampleRate;
+  NOISE = AC.createBuffer(1, sr * 2, sr);
+  const d = NOISE.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  BROWN = AC.createBuffer(1, sr * 4, sr);
+  const b = BROWN.getChannelData(0); let last = 0;
+  for (let i = 0; i < b.length; i++) { last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02; b[i] = last * 3.5; }
+}
+function scheduleAudio(t0) {
+  const T = x => t0 + x;
+  const out = AC.createDynamicsCompressor(); out.connect(AC.destination);
+  const master = AC.createGain(); master.gain.value = 0.9; master.connect(out);
+  const amb = AC.createGain(); amb.connect(master);
+  amb.gain.setValueAtTime(0.0001, t0); amb.gain.exponentialRampToValueAtTime(1, T(0.6));
+  amb.gain.setValueAtTime(1, T(7.2)); amb.gain.exponentialRampToValueAtTime(0.0001, T(9.2));
+  const pan = (p, dest) => { if (!AC.createStereoPanner) return dest; const s = AC.createStereoPanner(); s.pan.value = p; s.connect(dest); return s; };
+
+  // 遠くの車の音
+  {
+    const s = AC.createBufferSource(); s.buffer = BROWN; s.loop = true;
+    const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 320;
+    const gn = AC.createGain(); gn.gain.value = 0.16;
+    const lfo = AC.createOscillator(); lfo.frequency.value = 0.11;
+    const lg = AC.createGain(); lg.gain.value = 0.05; lfo.connect(lg); lg.connect(gn.gain);
+    s.connect(f); f.connect(gn); gn.connect(amb);
+    s.start(t0); s.stop(T(9.5)); lfo.start(t0); lfo.stop(T(9.5));
+  }
+  // 一台だけ通り過ぎる
+  {
+    const s = AC.createBufferSource(); s.buffer = BROWN; s.loop = true;
+    const f = AC.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 0.8;
+    f.frequency.setValueAtTime(380, T(3)); f.frequency.linearRampToValueAtTime(520, T(5)); f.frequency.linearRampToValueAtTime(330, T(7));
+    const gn = AC.createGain();
+    gn.gain.setValueAtTime(0.0001, T(3)); gn.gain.exponentialRampToValueAtTime(0.2, T(5)); gn.gain.exponentialRampToValueAtTime(0.0001, T(7.2));
+    s.connect(f); f.connect(gn); gn.connect(pan(-0.5, amb));
+    s.start(T(3)); s.stop(T(7.4));
+  }
+  // 秋の虫
+  const cricket = (freq, period, pulses, gain, p, off) => {
+    const o = AC.createOscillator(); o.frequency.value = freq;
+    const o2 = AC.createOscillator(); o2.frequency.value = freq * 2.01;
+    const g2 = AC.createGain(); g2.gain.value = 0.25;
+    const gn = AC.createGain(); gn.gain.value = 0;
+    o.connect(gn); o2.connect(g2); g2.connect(gn); gn.connect(pan(p, amb));
+    for (let t = T(off); t < T(9.3); t += period * (0.85 + Math.random() * 0.3)) {
+      for (let k = 0; k < pulses; k++) {
+        const s = t + k * 0.05;
+        gn.gain.setValueAtTime(0, s); gn.gain.linearRampToValueAtTime(gain, s + 0.008); gn.gain.linearRampToValueAtTime(0, s + 0.035);
+      }
+    }
+    o.start(t0); o2.start(t0); o.stop(T(9.5)); o2.stop(T(9.5));
+  };
+  cricket(4400, 0.95, 3, 0.022, -0.6, 0.1);
+  cricket(4750, 1.3, 4, 0.014, 0.5, 0.45);
+  cricket(3950, 1.7, 2, 0.010, 0.1, 0.8);
+
+  const burst = (at, o) => {
+    const a = o.a || 0.005;
+    const s = AC.createBufferSource(); s.buffer = NOISE; s.playbackRate.value = o.rate || 1;
+    const f = AC.createBiquadFilter(); f.type = o.type || 'bandpass'; f.Q.value = o.q || 1;
+    f.frequency.setValueAtTime(o.f, at); if (o.fTo) f.frequency.exponentialRampToValueAtTime(o.fTo, at + a + o.r);
+    const gn = AC.createGain();
+    gn.gain.setValueAtTime(0.0001, at); gn.gain.exponentialRampToValueAtTime(o.gain, at + a); gn.gain.exponentialRampToValueAtTime(0.0001, at + a + o.r);
+    s.connect(f); f.connect(gn); gn.connect(pan(o.pan || 0, master));
+    s.start(at, Math.random() * 0.5); s.stop(at + a + o.r + 0.05);
+  };
+  const tone = (at, o) => {
+    const os = AC.createOscillator(); os.type = o.type || 'sine';
+    os.frequency.setValueAtTime(o.f, at); if (o.fTo) os.frequency.exponentialRampToValueAtTime(o.fTo, at + o.r);
+    const gn = AC.createGain();
+    gn.gain.setValueAtTime(0.0001, at); gn.gain.exponentialRampToValueAtTime(o.gain, at + 0.004); gn.gain.exponentialRampToValueAtTime(0.0001, at + o.r);
+    os.connect(gn); gn.connect(pan(o.pan || 0, master)); os.start(at); os.stop(at + o.r + 0.05);
+  };
+
+  // 息づかい
+  burst(T(0.25), { f: 900, q: 0.7, gain: 0.07, a: 0.18, r: 0.85, pan: -0.2 });
+  burst(T(1.97), { f: 650, q: 0.9, gain: 0.10, a: 0.03, r: 0.28, pan: -0.1 });
+  burst(T(2.9), { f: 1300, q: 0.8, gain: 0.04, a: 0.25, r: 0.4 });
+  burst(T(3.45), { f: 850, q: 0.7, gain: 0.05, a: 0.12, r: 0.6 });
+  burst(T(6.05), { f: 1500, q: 0.8, gain: 0.035, a: 0.4, r: 0.45 });
+  burst(T(6.95), { f: 900, q: 0.7, gain: 0.055, a: 0.15, r: 0.95 });
+  // スパイクが土を踏む音
+  const step = (at, k, p) => {
+    burst(at, { f: 2300, q: 1.3, gain: 0.22 * k, a: 0.004, r: 0.07, pan: p });
+    burst(at, { type: 'lowpass', f: 220, q: 0.7, gain: 0.35 * k, a: 0.003, r: 0.09, pan: p });
+  };
+  step(T(0.95), 0.35, -0.3);
+  step(T(1.86), 1.0, -0.1);
+  burst(T(2.02), { f: 1700, q: 0.6, gain: 0.10, a: 0.04, r: 0.32, rate: 0.8, pan: -0.25 });
+  step(T(2.74), 0.55, -0.1); step(T(3.12), 0.45, -0.1);
+  // 腕を振る音
+  burst(T(1.9), { f: 500, fTo: 1800, q: 1.2, gain: 0.05, a: 0.06, r: 0.12 });
+  // ネットに当たる鈍い音と、枠の小さな響き
+  tone(T(2.30), { f: 95, fTo: 52, gain: 0.35, r: 0.22, pan: 0.4 });
+  burst(T(2.30), { type: 'lowpass', f: 700, q: 0.7, gain: 0.30, a: 0.003, r: 0.16, pan: 0.4 });
+  burst(T(2.31), { f: 3200, q: 0.7, gain: 0.05, a: 0.01, r: 0.3, pan: 0.4 });
+  for (const [f, gn] of [[1180, 0.018], [1734, 0.012], [2465, 0.008]]) tone(T(2.31), { type: 'triangle', f, gain: gn, r: 0.55, pan: 0.45 });
+  // 球が土に落ちる音
+  burst(T(2.61), { type: 'lowpass', f: 380, q: 0.8, gain: 0.12, a: 0.003, r: 0.07, pan: 0.4 });
+  burst(T(2.80), { type: 'lowpass', f: 420, q: 0.8, gain: 0.05, a: 0.003, r: 0.05, pan: 0.4 });
+  // 袖で汗をぬぐう衣ずれ
+  burst(T(3.95), { f: 3600, q: 0.5, gain: 0.03, a: 0.12, r: 0.35 });
+  burst(T(4.35), { f: 3000, q: 0.5, gain: 0.028, a: 0.1, r: 0.35 });
+}
+
+// ---- 再生
+let playing = false, p0 = 0;
+function play() {
+  if (playing) return;
+  playing = true;
+  ov.classList.add('hidden');
+  try {
+    initAudio();
+    if (AC) { if (AC.state === 'suspended') AC.resume(); scheduleAudio(AC.currentTime + 0.12); }
+  } catch (e) { /* 音が出せない環境でも映像は再生する */ }
+  p0 = performance.now() + 120;
+  requestAnimationFrame(loop);
+}
+function loop(now) {
+  const t = (now - p0) / 1000;
+  if (t >= DUR) {
+    render(DUR, true); playing = false;
+    setTimeout(() => { btn.textContent = '↻ もう一度'; ov.classList.add('end'); ov.classList.remove('hidden'); }, 900);
+    return;
+  }
+  render(Math.max(0, t), true);
+  requestAnimationFrame(loop);
+}
+ov.addEventListener('click', play);
+render(0, false);
+window.__render = t => render(t, false);
+})();
+</script>
+</body>
+</html>
