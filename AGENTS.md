@@ -191,10 +191,10 @@ rules apply only when transcribing. The monthly report procedure lives in
 - Every Sunday at 21:00 a scheduled task tidies both folders with
   [tidy-inbox](docs/tidy-inbox.md): safe items go to the Trash, items with a
   clear home are moved, and the rest is reported.
-- Each topic folder's `_ダウンロードから/` holds files moved out of Downloads on
-  2026-10-13 that still need sorting into subfolders. Do not add new files there.
-- The record of that cleanup, for undoing a move, is
-  [downloads-cleanup-20261013-log.tsv](private/downloads-cleanup-20261013-log.tsv).
+- Every move and trash is recorded for undoing:
+  [downloads-cleanup-20261013-log.tsv](private/downloads-cleanup-20261013-log.tsv)
+  holds the first big cleanup, and
+  [tidy-inbox-log.tsv](private/tidy-inbox-log.tsv) everything after it.
 
 ## Images for review
 
