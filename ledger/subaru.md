@@ -601,3 +601,4 @@
 - 2026-10-14 21:36 · すばる · mac/note · ホーム直下を整理。KDDI・NEC・MUIT・日本生命を 就活/ へ、Pythonデータ研磨・茶道プレゼン・卒業演奏会動画・ALC を 大学/ の下へ、BACSの1件を大阪ガス/過去資料へ、outputs・work（BLAST説明スライドとMLB勝率分析）を 野球/ へ移動。参照のある河本ゼミ、node_modules・package.json（ホーム以下のスクリプトが使う）、R、Creative Cloud Files は残した
 - 2026-10-14 22:41 · すばる · 動画/build · 動画生成AI向けの撮影監督プロンプトを、Claudeが作れる形（HTML1枚・Canvasで描く8秒の映像と合成音）に書き直したテンプレートを作成。見本として「夕方のブルペンで投手がひとりで投げ込み」を [outputs/claude-scene](../outputs/claude-scene/2026-10-14-bullpen-sunset.html) に作り、投球の各コマと再生・もう一度ボタン・スマホ幅を確認
 - 2026-10-14 23:23 · subaru · ai-os/research · 画面操作が全画面に切り替わる原因を過去の会話記録から調査。LINEはトークを開く操作が裏では4回とも失敗、SHIGABASEはグラウンド図の走者タップで失敗し全画面へ。LCU（Codexの画面操作を借りる道具）は未検証
+- 2026-10-14 23:46 · subaru · ai-os/build · LCU v0.11.3（Codexの画面操作をClaude Codeから使う道具）を導入。照合ファイルで改ざんなしを確認し、すばるがターミナルでインストール。Claude CodeにMCP・フック・承認画面が入った。cross-turnはオン、macOSの権限と動作確認は再起動後。受け取った手順書は [docs/lcu-install-guide.md](../docs/lcu-install-guide.md) へ移動

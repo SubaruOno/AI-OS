@@ -19,7 +19,7 @@
 
 | When you're working on... | Doc | What it covers |
 |---|---|---|
-| *(nothing connected yet)* | | |
+| Codexの画面操作（LCU）をClaude Codeから使うとき・直すとき・外すとき | [lcu-install-guide.md](lcu-install-guide.md) | 受け取った導入手順書。前提条件、インストール、macOSの権限、よくある詰まり、アンインストール。2026-10-14に導入、動作確認は未了 |
 
 ## Apps
 
