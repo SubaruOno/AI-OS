@@ -80,6 +80,8 @@ HAND = {"R": "右", "L": "左", "S": "両"}
 
 # 2026年大会の出場資格。2003年1月1日以降の生まれ
 ELIGIBLE_FROM = 2003
+# この文字数までの名前は縮めない
+SHORT_ENOUGH = 14
 BAT = ["名前"] + br.BAT_COLUMNS[1:]
 PIT = ["名前"] + br.PIT_COLUMNS[1:]
 # 並べ替えの1回目を低い順にする列（投手の成績で、少ないほどよいもの）
@@ -156,9 +158,13 @@ def sources(text, label: str = "出典") -> str:
 
 
 def short_name(full: str) -> str:
-    """「REMON TEJEDA, Yeison」を「REMON TEJEDA, Y.」に縮める（名を頭文字に）。"""
+    """「REMON TEJEDA, Yeison」を「REMON TEJEDA, Y.」に縮める（名を頭文字に）。
+
+    「KIM, Jongun」のように短い名前は縮めない。韓国の選手などは頭文字にすると
+    同じ表に同じ表記が並んでしまうため。
+    """
     last, sep, first = str(full or "").partition(", ")
-    if not sep or not first.strip():
+    if not sep or not first.strip() or len(full) <= SHORT_ENOUGH:
         return full
     return f"{last}, " + "".join(word[0] + "." for word in first.split())
 
@@ -461,6 +467,9 @@ def name_cell(d: dict, row: dict, root: str, marks: bool) -> str:
 
 
 def stat_cell(row: dict, column: str) -> str:
+    if column == "守備":  # 「LF/LF/RF」のような重なりをまとめる
+        value = "/".join(dict.fromkeys(x for x in str(row.get(column, "")).split("/") if x))
+        return f"<td>{esc(value)}</td>"
     if column == "投球回":
         return f'<td data-sort="{row.get("_outs", 0)}">{esc(row.get(column, ""))}</td>'
     return f"<td>{esc(row.get(column, ''))}</td>"
@@ -682,18 +691,24 @@ def roster_record(d: dict, code: str, name: str, root: str) -> str:
 
 
 def roster_table(d: dict, code: str, rows: list[dict], main: str, root: str) -> str:
+    """名簿の表。所属や過去の記録が1人も埋まっていなければ、その列は出さない。"""
     order = {p: i for i, p in enumerate(("P", "C", "IF", "OF"))}
+    rows = sorted(rows, key=lambda r: order.get(r.get("position"), 9))
+    clubs = any((r.get("club") or "").strip() for r in rows)
+    records = any(roster_record(d, code, r.get("name"), root) for r in rows)
     body = []
-    for r in sorted(rows, key=lambda r: order.get(r.get("position"), 9)):
+    for r in rows:
         status = r.get("status") or ""
         badge = "" if status == main else f' <span class="badge alt">{esc(status.split("・")[0])}</span>'
         body.append(f'<tr><td>{esc(POS_JA.get(r.get("position"), "-"))}</td>'
                     f'<td class="nm">{esc(r.get("name"))}{badge}</td>'
-                    f'<td class="cl">{esc(r.get("club"))}</td>'
-                    f'<td>{roster_record(d, code, r.get("name"), root)}</td></tr>')
-    return ('<div class="scroll"><table class="plain roster"><thead><tr><th>守備</th><th>氏名</th>'
-            '<th>発表時の所属</th><th>過去の記録</th></tr></thead><tbody>'
-            + "".join(body) + "</tbody></table></div>")
+                    + (f'<td class="cl">{esc(r.get("club"))}</td>' if clubs else "")
+                    + (f'<td>{roster_record(d, code, r.get("name"), root)}</td>' if records else "")
+                    + "</tr>")
+    head = ("<th>守備</th><th>氏名</th>" + ("<th>発表時の所属</th>" if clubs else "")
+            + ("<th>過去の記録</th>" if records else ""))
+    return (f'<div class="scroll"><table class="plain roster"><thead><tr>{head}</tr></thead>'
+            f'<tbody>{"".join(body)}</tbody></table></div>')
 
 
 def roster_block(d: dict, team: str, info: dict, root: str) -> str:
@@ -917,7 +932,7 @@ def japan_table(rows: list[dict], tid: str) -> str:
         f'<td>{esc(r.get("position"))}</td><td>{esc(r.get("throws"))}投{esc(r.get("bats"))}打</td>'
         f'<td>{esc(r.get("age"))}</td><td>{esc(r.get("height_cm"))}cm・{esc(r.get("weight_kg"))}kg</td>'
         f'<td class="cl">{esc(r.get("club"))}</td></tr>' for r in rows)
-    return (f'<div class="scroll"><table class="sort" id="{tid}"><thead><tr>{head}</tr></thead>'
+    return (f'<div class="scroll"><table class="sort jpt" id="{tid}"><thead><tr>{head}</tr></thead>'
             f"<tbody>{body}</tbody></table></div>")
 
 
@@ -975,7 +990,7 @@ def rank_cell(rank: int, day_pairs) -> str:
         if me in (away, home):
             other = home if away == me else away
             same = other[1:] == me[1:]
-            side = "先攻・後攻はコイントス" if same else ("先攻" if away == me else "後攻")
+            side = "コイントス" if same else ("先攻" if away == me else "後攻")
             return f"<td>A組{other[1:]}位<small>{side}</small></td>"
     return "<td>-</td>"
 
@@ -985,7 +1000,7 @@ def rank_table() -> str:
     head = "<th>日本の順位</th>" + "".join(
         f"<th>現地 {md(iso_day(day))}</th>" for day, _ in SECOND_ROUND)
     body = "".join(
-        f'<tr><td>B組{rank}位<small>{"スーパーラウンド" if rank <= 3 else "順位決定ラウンド"}'
+        f'<tr><td>B組{rank}位<small>{"SR" if rank <= 3 else "順位決定"}'
         "</small></td>" + "".join(rank_cell(rank, pairs) for _, pairs in SECOND_ROUND) + "</tr>"
         for rank in range(1, 7))
     return (f'<div class="scroll"><table class="plain rk fix1"><thead><tr>{head}</tr></thead>'
@@ -999,7 +1014,7 @@ def venue_rows(d: dict) -> str:
         if "Japan" in (game.get("homelabel"), game.get("awaylabel")) and sl.jst_dt(game):
             places[venue(game)].append(md(sl.jst_dt(game)))
     return "".join(
-        f'<tr><td>{esc(name)}</td><td>{len(days)}試合'
+        f'<tr><td>{esc(name)}</td><td>{f"{len(days)}試合" if days else "なし"}'
         + (f'<small>{esc("・".join(days))}（日本時間）</small>' if days else "") + "</td></tr>"
         for name, days in places.items() if name)
 
@@ -1042,8 +1057,9 @@ def format_page(d: dict) -> str:
         f"<h2>流れ</h2>{flow}",
         f"<h2>持ち越し</h2>{carry}",
         "<h2>日本の順位ごとの相手<small>公式日程から</small></h2>" + rank_table()
-        + '<p class="note">スーパーラウンド・順位決定ラウンドの時刻と球場は公式日程では未定。'
-          "1次ラウンドと同じ時間帯（現地10時半〜19時半）なら、日本時間では翌日になります。</p>",
+        + '<p class="note">SR＝スーパーラウンド。「コイントス」は同じ順位どうしの対戦で、先攻・後攻は'
+          "大会前の技術会議のコイントスで決まります。時刻と球場は公式日程では未定。1次ラウンドと同じ"
+          "時間帯（現地10時半〜19時半）なら、日本時間では翌日になります。</p>",
         "<h2>球場</h2>"
         '<div class="scroll"><table class="plain"><thead><tr><th>球場・町</th><th>日本の1次ラウンド</th>'
         f"</tr></thead><tbody>{venue_rows(d)}</tbody></table></div>"
@@ -1143,7 +1159,7 @@ def hero_block(japan: list[dict]) -> str:
         return after
     g = ahead[0]
     data = json.dumps(items, ensure_ascii=False).replace("</", "<\\/")
-    return (f'<a class="hero" id="next-jp" href="{g["href"]}"><small>次の日本戦'
+    return (f'<a class="hero" id="next-jp" href="{g["href"]}" data-start="{g["t"]}"><small>次の日本戦'
             f'<b class="when" id="next-when"></b></small><b class="opp">日本 vs {esc(g["opp"])}</b>'
             f'<span><b class="jst">{esc(g["jst"])}</b>（日本時間）・'
             f'<span class="local">現地 {esc(g["local"])}</span></span>'
@@ -1188,6 +1204,7 @@ def wbsc_links() -> str:
 def index_page(d: dict, count: int, size_mb: float) -> str:
     japan = team_games(d, "Japan")
     body = "".join([
+        '<h1 class="sr">U-23W杯 2026 スタッフ共有</h1>',
         hero_block(japan), previous_block(japan), today_block(d),
         "<h2>日本戦</h2>" + games_table(japan, "", view="Japan", table=d["starters"]),
         "<h2>順位表</h2>" + standings_block(d, ""),
@@ -1292,6 +1309,7 @@ CSS = """
 --sp-label:#5f6878;--sp-line:#7a877d;--sp-ground:#2a78d6;--sp-liner:#c4501f;--sp-fly:#12805a}}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;
 font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif}
@@ -1317,6 +1335,7 @@ p{margin:6px 0}
 .crumb{margin:4px 0 0;font-size:14px}
 .crumb a{display:inline-flex;align-items:center;min-height:44px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:10px}
+.card>h2:first-child{margin-top:4px}
 .warn{color:var(--warm);font-weight:700}
 .ext{margin-left:6px;font-size:13px}
 .ext::after{content:"↗";font-size:.8em;margin-left:1px}
@@ -1333,6 +1352,7 @@ table.games th,table.games td{text-align:left}
 table.games td.t{width:1%}
 table.games td.t b{font-size:14px}
 table.games td.m{white-space:normal}
+table.games td.m a{white-space:nowrap}
 table.games small{display:block;color:var(--dim);font-size:12px}
 table.games .lk .ext{display:inline-block;margin:0 14px 0 0;padding:2px 0}
 .sc{display:inline-block;min-width:2.4em;text-align:center;font-weight:700}
@@ -1354,6 +1374,8 @@ position:sticky;left:0;z-index:1;background:var(--card);text-align:left;box-shad
 table.sort thead th:first-child,table.fix1 thead th:first-child{z-index:3}
 td.nm{white-space:normal;min-width:7.5em;max-width:10em;line-height:1.35}
 td.cl,td.ev{white-space:normal;min-width:7em}
+table.jpt td{text-align:left}
+table.jpt td.nm,table.jpt td.cl{white-space:nowrap}
 td.app{text-align:left;line-height:1.35}
 td.app small{display:block;color:var(--dim);font-size:11px}
 table.log th small{color:var(--dim);font-size:11px}
@@ -1571,6 +1593,7 @@ SITE_JS = r"""// U-23W杯 共有サイトの画面の動き。build_site.py が�
         : n === 1 ? "明日 " + hhmm(t, 9) + "（日本時間）" : "あと" + n + "日";
     }
     hero.href = g.href;
+    hero.setAttribute("data-start", g.t);
     hero.querySelector(".opp").textContent = "日本 vs " + g.opp;
     hero.querySelector(".jst").textContent = g.jst;
     hero.querySelector(".local").textContent = "現地 " + g.local;
