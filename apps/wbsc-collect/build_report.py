@@ -202,9 +202,22 @@ def add_batted_rates(entry: dict, hit: dict) -> None:
     entry["_points"] = hit.get("点", [])
 
 
+def row_order(row: dict) -> tuple:
+    """行の新しさ（日付 → 試合ID）。同じ選手の綴りが大会の途中で変わったとき、新しい方を選ぶ。"""
+    return (str(row.get("date") or ""), int(number(row.get("gameid"))))
+
+
+def newer_name(entry: dict, row: dict) -> None:
+    """entry の名前を、より新しい試合の行の綴りにする（"VAZQUE RIZO" → "VAZQUEZ RIZO" など）。"""
+    order = row_order(row)
+    if "_name_at" not in entry or order >= entry["_name_at"]:
+        entry["名前"] = name_of(row) or entry.get("名前", "")
+        entry["_name_at"] = order
+
+
 def collect_batters(rows: list[dict], team: str,
                     balls: dict[str, dict] | None = None) -> list[dict]:
-    """打者を選手ごとに積み上げる。"""
+    """打者を選手ごとに積み上げる。名前は一番新しい試合の綴り。"""
     balls = balls or {}
     agg: dict[str, dict] = {}
     for row in rows:
@@ -215,6 +228,7 @@ def collect_batters(rows: list[dict], team: str,
             "名前": name_of(row), "試合": 0,
             **{label: 0 for label, _ in BAT_FIELDS}, "守備": set(),
         })
+        newer_name(entry, row)
         entry["試合"] += 1
         for label, field in BAT_FIELDS:
             entry[label] += int(number(row.get(field)))
@@ -267,7 +281,7 @@ def add_pitching_rates(entry: dict) -> None:
 
 
 def collect_pitchers(rows: list[dict], team: str) -> list[dict]:
-    """投手を選手ごとに積み上げる。投球回は登板ごとにアウト数へ直して足す。"""
+    """投手を選手ごとに積み上げる。投球回は登板ごとにアウト数へ直して足す。名前は一番新しい試合の綴り。"""
     agg: dict[str, dict] = {}
     for row in rows:
         if row.get("team") != team:
@@ -277,6 +291,7 @@ def collect_pitchers(rows: list[dict], team: str) -> list[dict]:
             "名前": name_of(row), "登板": 0, "先発": 0, "投球回": "0.0",
             **{label: 0 for label, _ in PIT_FIELDS}, "_outs": 0,
         })
+        newer_name(entry, row)
         entry["登板"] += 1
         entry["_id"] = str(row.get("playerid"))
         entry["先発"] += int(number(row.get("pitch_gs")))
@@ -307,7 +322,7 @@ def team_tendency(batters: list[dict], plays: list[dict], team: str) -> dict:
         kind = batted_kind(row)
         if kind:
             kinds[kind] += 1
-    in_play = sum(kinds.values()) or 1
+    in_play = sum(kinds.values())  # 打球のデータがなければ率は "-"（".00" にしない）
     return {
         "打席": plate,
         "犠打": bunt,

@@ -26,6 +26,7 @@ raw を使い回すのは、終わった試合（gamestatustext が F で始ま�
     - 日程が0件、または前回の games.json より試合が減った（--allow-fewer で通す）
     - 終わった試合の読み込みが、やり直しても通信の失敗で取れなかった
 試合中の試合が取れなかったときは、注意を出して次へ進む（その試合の途中の成績は入らない）。
+CSV の行が0件になったときは、前回の CSV をゴミ箱へ送る（古い成績が残って読まれないように）。
 """
 
 from __future__ import annotations
@@ -35,6 +36,8 @@ import csv
 import html
 import http.client
 import json
+import shutil
+import subprocess
 import sys
 import time
 import urllib.error
@@ -137,23 +140,38 @@ def is_complete(game: dict) -> bool:
     return is_final(game.get("gameData") or {}) and bool(game.get("boxScore"))
 
 
-def not_started(summary: dict) -> bool:
+def parse_utc(text) -> datetime | None:
+    """utc 列の時刻をタイムゾーンつきで読む。時差がない・読めないときは None。
+
+    "-06:00" のほかに "Z" や "+00:00" で来ても同じ時刻として読む
+    （Python 3.9 の fromisoformat は末尾の "Z" を読めないので "+00:00" に直す）。
+    site_logic.parse_utc と同じ決まり。
+    """
+    value = str(text or "").strip()
+    if value[-1:] in ("Z", "z"):
+        value = value[:-1] + "+00:00"
+    try:
+        moment = datetime.fromisoformat(value)
+    except ValueError:
+        return None
+    return moment if moment.tzinfo else None
+
+
+def not_started(summary: dict, now: datetime | None = None) -> bool:
     """日程の上でまだ始まっていない試合か。
 
     状態が空で、開始時刻（utc。時差つき）が今より後なら、取りに行っても
     中身は空。開始時刻を過ぎても状態が変わらない試合（遅れ・中断）は取りに行く。
+    now は試し用（タイムゾーンつき）。省くと今。
     """
     if str(summary.get("gamestatustext") or "").strip():
         return False
     if str(summary.get("gamestatus") or "0") != "0":
         return False
-    try:
-        start = datetime.fromisoformat(str(summary.get("utc")))
-    except ValueError:
+    start = parse_utc(summary.get("utc"))
+    if start is None:
         return False
-    if start.tzinfo is None:
-        return False
-    return start > datetime.now(timezone.utc)
+    return start > (now or datetime.now(timezone.utc))
 
 
 def load_cached(path: Path) -> dict | None:
@@ -218,9 +236,29 @@ def iter_box(game: dict):
                 yield team_id, spot, row
 
 
+def discard(path: Path) -> None:
+    """ファイルをゴミ箱へ送る（元に戻せない消し方はしない）。"""
+    if Path("/usr/bin/trash").exists():
+        subprocess.run(["/usr/bin/trash", str(path)], check=True,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+        return
+    trash = Path.home() / ".Trash"
+    trash.mkdir(exist_ok=True)
+    shutil.move(str(path), str(trash / f"{path.name}-{time.strftime('%Y%m%d%H%M%S')}"))
+
+
 def write_csv(path: Path, rows: list[dict]) -> None:
+    """CSV を書く。0行なら、前回の CSV をゴミ箱へ送る（古い成績を残さない）。"""
     if not rows:
-        print(f"  {path.name}: 0行のため書き出しません")
+        if not path.exists():
+            print(f"  {path.name}: 0行のため書き出しません")
+            return
+        try:
+            discard(path)
+        except (OSError, subprocess.CalledProcessError) as error:
+            raise Refused(f"{path.name} が0行になりましたが、前回の {path.name} をゴミ箱へ"
+                          f"送れませんでした（{error}）。古い成績が残るので止めました。") from error
+        print(f"  {path.name}: 0行のため、前回の {path.name} をゴミ箱へ送りました")
         return
     fields: list[str] = []
     for row in rows:
@@ -340,9 +378,10 @@ def collect(key: str, out_root: Path, allow_fewer: bool = False) -> None:
 
     if skipped:
         print(f"  まだ始まっていない {skipped}試合は取りに行きませんでした")
-    write_csv(out_dir / "batting.csv", batting)
-    write_csv(out_dir / "pitching.csv", pitching)
-    write_csv(out_dir / "plays.csv", plays)
+    # 0行の CSV を先に片付ける。ゴミ箱へ送れずに止まったときは、まだ何も書いていない
+    outputs = (("batting.csv", batting), ("pitching.csv", pitching), ("plays.csv", plays))
+    for name, rows in sorted(outputs, key=lambda item: bool(item[1])):
+        write_csv(out_dir / name, rows)
     # games.json は最後に書く。途中で止まっても、前回の games.json と CSV の組が残る
     (out_dir / "games.json").write_text(
         json.dumps(games, ensure_ascii=False, indent=2), encoding="utf-8"

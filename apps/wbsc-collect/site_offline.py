@@ -6,7 +6,7 @@ build_site.py から呼ぶ。画面は持たず、タグを返すか、ファイ
     head_tags(root)          <head> に足すタグ（ホーム画面用の manifest・アイコン・色、帯の見た目）
     body_end(root)           </body> の直前に足す <script>（Service Worker の登録、帯、全ページ保存）
     write_assets(...)        sw.js・manifest・アイコン・offline/・status.js・pages.json を書く
-    headers_rules(token)     Cloudflare Pages の _headers に足す行
+    headers_rules()          Cloudflare Pages の _headers に足す行（合言葉は書かない）
     status_from_games(...)   status.js に入れる中身を games.json の一覧から作る
 
 URL はすべてサイトの根元（合言葉のフォルダ）からの相対で、フォルダ形式で書く。
@@ -14,7 +14,12 @@ URL はすべてサイトの根元（合言葉のフォルダ）からの相対�
 トップなら ""、team/cuba/ なら "../../"。
 
 各ページはヘッダーのすぐ下に <div id="band"></div> を置く（なければ script が作る）。
-トップには <button id="save-all">全ページを端末に保存</button> を置く。
+トップには <button id="save-all">全ページを端末に保存</button> と、その下に進み具合を出す
+<p id="save-status"></p> を置く（なければ script が作る）。ボタンの文字は短いまま変えず、
+件数や結果は下の行に出すので、押しても幅が変わらない。
+
+アイコンは assets/ の icon-192.png・icon-512.png・icon-180.png を使う（絵の元は assets/icon.svg）。
+ファイルがない、または大きさが合わないときは、ここで赤地に白い球のアイコンを作る。
 
     python3 site_offline.py --selftest   # 一時フォルダに書き出して中身を確かめる
 """
@@ -38,6 +43,7 @@ THEME = {"dark": "#0f1115", "light": "#f6f7f9"}
 RED = (200, 16, 46)
 WHITE = (255, 255, 255)
 ICONS = {"icon-192.png": 192, "icon-512.png": 512, "icon-180.png": 180}
+ASSETS = Path(__file__).resolve().parent / "assets"
 # install のときに core_urls と一緒に先に保存するもの
 EXTRA = ["status.js", "pages.json", "manifest.webmanifest",
          "icons/icon-192.png", "icons/icon-180.png"]
@@ -84,18 +90,23 @@ def write_assets(site_dir, core_urls, all_urls, version, status) -> None:
     for name, size in ICONS.items():
         target = site / "icons" / name
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(icon_png(size))
+        target.write_bytes(icon_bytes(name, size))
     write(site / "offline" / "index.html", OFFLINE_HTML)
     write(site / "status.js", status_js(status, version))
     write(site / "pages.json", json.dumps(every, ensure_ascii=False) + "\n")
     warn_missing(site, every)
 
 
-def headers_rules(token: str) -> str:
-    """_headers に足す行を返す。sw.js・status.js・pages.json は毎回サーバーに確かめさせる。"""
+def headers_rules(token: str = "") -> str:
+    """_headers に足す行を返す。sw.js・status.js・pages.json は毎回サーバーに確かめさせる。
+
+    合言葉は書かない（_headers はリポジトリの外でも見られることがあるため）。
+    Cloudflare Pages の _headers は * で任意の文字列に当たるので、"/*/sw.js" で
+    合言葉のフォルダの sw.js に当てる。token は前の呼び方との互換のために受けるだけで使わない。
+    """
     lines = []
     for name in ("sw.js", "status.js", "pages.json"):
-        lines += [f"/{token}/{name}", "  Cache-Control: no-cache"]
+        lines += [f"/*/{name}", "  Cache-Control: no-cache"]
     return "\n".join(lines) + "\n"
 
 
@@ -202,6 +213,27 @@ def manifest() -> str:
             "display": "standalone", "theme_color": THEME["dark"],
             "background_color": THEME["dark"], "icons": icons}
     return json.dumps(data, ensure_ascii=False, indent=1) + "\n"
+
+
+def png_size(data: bytes) -> tuple[int, int] | None:
+    """PNG の幅と高さ。PNG でなければ None。"""
+    if data[:8] != b"\x89PNG\r\n\x1a\n" or data[12:16] != b"IHDR":
+        return None
+    return struct.unpack(">II", data[16:24])
+
+
+def icon_bytes(name: str, size: int) -> bytes:
+    """assets/ のアイコンがあればそれを、なければ（大きさが違っても）作ったものを返す。"""
+    path = ASSETS / name
+    try:
+        data = path.read_bytes()
+    except OSError:
+        return icon_png(size)
+    if png_size(data) != (size, size):
+        print(f"注意: {path} が {size}x{size} の PNG でないので、作ったアイコンを使います",
+              file=sys.stderr)
+        return icon_png(size)
+    return data
 
 
 def icon_png(size: int) -> bytes:
@@ -359,10 +391,19 @@ PAGE_JS = r"""
     });
   }
   function setupSave(btn) {
+    // ボタンの文字は短いまま（幅を変えない）。件数と結果はボタンの下の行に出す
     var label = btn.textContent || "全ページを端末に保存", busy = false;
+    var st = document.getElementById("save-status");
+    if (!st) {
+      st = document.createElement("p");
+      st.id = "save-status";
+      btn.parentNode.insertBefore(st, btn.nextSibling);
+    }
+    function say(text) { st.textContent = text; }
     if (!sw || !window.caches) {
       btn.disabled = true;
-      btn.textContent = "この画面では保存できません（Safariで開いてください）";
+      btn.textContent = "保存できません";
+      say("この画面では保存できません。Safariで開いてください。");
       return;
     }
     function list() {
@@ -375,13 +416,13 @@ PAGE_JS = r"""
           return caches.match(keyOf(abs(u)), { ignoreVary: true });
         })).then(function (hits) {
           var n = hits.filter(Boolean).length;
-          if (!busy) btn.textContent = label + "（保存済み " + n + "/" + urls.length + "）";
+          if (!busy) say("保存済み " + n + "/" + urls.length + " ページ");
         });
       }).catch(function () {});
     }
     function saveAll(urls) {
       var i = 0, good = 0, bad = 0;
-      function show() { btn.textContent = "保存中… " + (good + bad) + "/" + urls.length; }
+      function show() { say("保存中 " + (good + bad) + "/" + urls.length + " ページ"); }
       function next() {
         if (i >= urls.length) return Promise.resolve();
         return saveOne(abs(urls[i++])).then(function (ok) {
@@ -390,11 +431,13 @@ PAGE_JS = r"""
           return next();
         });
       }
+      btn.textContent = "保存中…";
       show();
       return Promise.all([next(), next(), next(), next()]).then(function () {
-        btn.textContent = bad
-          ? "保存できなかったページが " + bad + " 件あります（押すともう一度）"
-          : "保存しました（" + good + "/" + urls.length + "）";
+        btn.textContent = bad ? "もう一度保存" : label;
+        say(bad
+          ? "保存できなかったページが " + bad + " 件あります。電波のよい所でもう一度押してください。"
+          : "保存しました（" + good + "/" + urls.length + " ページ）");
       });
     }
     btn.addEventListener("click", function () {
@@ -402,11 +445,13 @@ PAGE_JS = r"""
       busy = true;
       btn.disabled = true;
       btn.textContent = "保存の準備中…";
+      say("");
       ready().then(function (ok) {
         if (!ok) throw new Error("not ready");
         return list();
       }).then(saveAll).catch(function () {
-        btn.textContent = "保存できませんでした。電波のある所でもう一度押してください";
+        btn.textContent = "もう一度保存";
+        say("保存できませんでした。電波のある所でもう一度押してください。");
       }).then(function () { busy = false; btn.disabled = false; });
     });
     count();
@@ -586,7 +631,7 @@ small{display:block;margin-top:28px;color:var(--dim);font-size:13px}
 <p>この画面は端末に保存されていません。電波のある所で開くか、トップの『全ページを端末に保存』を押してください。</p>
 <div class="row"><button type="button" onclick="location.reload()">もう一度読み込む</button>
 <a id="top" href="javascript:history.back()">トップへ</a></div>
-<small>LINEなどのアプリの中で開くと保存が効きません。Safariで開いて、ホーム画面に追加してください。</small>
+<small>LINEなどアプリの中で開くと、保存が効かないことがあります。Safariで開いて、ホーム画面に追加してください。</small>
 </main>
 <script>
 if (navigator.serviceWorker) navigator.serviceWorker.getRegistration().then(function (r) {
@@ -635,12 +680,16 @@ def selftest() -> None:
         assert '"t1"' in sw and '["", "team/cuba/"]' in sw and "__" not in sw
         for name, size in ICONS.items():
             data = (site / "icons" / name).read_bytes()
-            assert data[:8] == b"\x89PNG\r\n\x1a\n"
-            assert struct.unpack(">II", data[16:24]) == (size, size)
+            assert png_size(data) == (size, size), name
+            if (ASSETS / name).is_file():  # assets/ にあればそのまま使う
+                assert data == (ASSETS / name).read_bytes(), name
+        assert png_size(icon_png(48)) == (48, 48)  # assets/ がないときに作るアイコン
         assert "端末に保存されていません" in (site / "offline" / "index.html").read_text()
     assert '"../../"' in body_end("../../") and "__ROOT__" not in body_end("")
     assert 'href="../manifest.webmanifest"' in head_tags("../")
-    assert "/tok/status.js\n  Cache-Control: no-cache" in headers_rules("tok")
+    rules = headers_rules("tok")
+    assert "tok" not in rules and "/*/status.js\n  Cache-Control: no-cache" in rules, rules
+    assert all(f"/*/{n}" in rules for n in ("sw.js", "status.js", "pages.json"))
     try:
         clean_urls(["/team/"])
         raise AssertionError("先頭の / を通してしまった")

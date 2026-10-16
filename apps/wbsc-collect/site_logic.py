@@ -10,7 +10,7 @@
 同率の決め方は WBSC Baseball World Cups Tournament Regulations（2024年6月14日改訂）
 の C11 による。12チームの大会方式と持ち越しは同じ資料の「12-Team Format」。
 https://static.wbsc.org/uploads/federations/0/cms/documents/84c93467-7438-c6b9-5a72-6d2419e95abf.pdf
-2026年大会の要項そのものとは照らしていない。
+2026年大会の要項そのものとは照らし合わせていない。
 """
 
 from __future__ import annotations
@@ -77,19 +77,32 @@ def game_state(game: dict) -> str:
     return "pre" if status == 0 else "other"
 
 
+def parse_utc(text) -> datetime | None:
+    """utc 列の時刻を、タイムゾーンつきで読む。時差のない値や読めない値は None。
+
+    Python 3.9 の fromisoformat は末尾の "Z" を読めないので、"+00:00" に直してから読む。
+    """
+    value = str(text or "").strip()
+    if value[-1:] in ("Z", "z"):
+        value = value[:-1] + "+00:00"
+    try:
+        moment = datetime.fromisoformat(value)
+    except ValueError:
+        return None
+    return moment if moment.tzinfo else None
+
+
 def local_dt(game: dict) -> datetime | None:
-    """現地の開始時刻（タイムゾーンつき）。
+    """現地の開始時刻（ニカラグア時間 UTC-6 のタイムゾーンつき）。
 
     games.json の utc 列は "2026-11-06T10:30:00-06:00" のように現地の時差つきで入っている。
+    "Z" や "+00:00" など別の時差で来ても、現地の時刻に直してから返す（日付がずれないように）。
     ない場合は start 列をニカラグア時間（UTC-6）と見なす。
     比べるときは datetime.now(JST) のようにタイムゾーンつき同士で比べること。
     """
-    try:
-        moment = datetime.fromisoformat(str(game.get("utc") or ""))
-        if moment.tzinfo:
-            return moment
-    except ValueError:
-        pass
+    moment = parse_utc(game.get("utc"))
+    if moment:
+        return moment.astimezone(LOCAL_TZ)
     try:
         moment = datetime.strptime(str(game.get("start") or ""), "%Y-%m-%d %H:%M:%S")
     except ValueError:
@@ -153,8 +166,32 @@ def load_outs(raw_dir) -> dict[str, tuple[int, int]]:
 
 
 def runs(game: dict) -> tuple[int, int]:
-    """(先攻の得点, 後攻の得点)。"""
+    """(先攻の得点, 後攻の得点)。空の値は0として数える（点数の表示には known_runs を使う）。"""
     return int(br.number(game.get("awayruns"))), int(br.number(game.get("homeruns")))
+
+
+def known_runs(game: dict) -> tuple[int, int] | None:
+    """(先攻の得点, 後攻の得点)。どちらかがまだ入っていない（None・空文字・数でない）なら None。
+
+    試合中に点数が届く前の値を「0-0」と見せないためのもの。記録された0はそのまま0。
+    """
+    out = []
+    for key in ("awayruns", "homeruns"):
+        value = game.get(key)
+        try:
+            out.append(int(float(str(value).strip())))
+        except (TypeError, ValueError, OverflowError):
+            return None
+    return out[0], out[1]
+
+
+def score_text(game: dict, home_first: bool = False) -> str:
+    """点数の表示。先攻-後攻の順（home_first なら後攻-先攻）。点数がそろっていなければ "-"。"""
+    known = known_runs(game)
+    if not known:
+        return "-"
+    away, home = known
+    return f"{home}-{away}" if home_first else f"{away}-{home}"
 
 
 def batting_outs(game: dict, outs: dict | None = None) -> tuple[int, int, bool]:
@@ -203,8 +240,8 @@ def _tally(games: list[dict], teams: list[str], outs: dict | None) -> dict[str, 
              for t in teams}
     for game in games:
         home, away = game.get("homelabel"), game.get("awaylabel")
-        if home not in table or away not in table:
-            continue
+        if home not in table or away not in table or not known_runs(game):
+            continue  # 点数が入っていない試合は、0-0の引き分けと数えない
         away_runs, home_runs = runs(game)
         away_outs, home_outs, _ = batting_outs(game, outs)
         for team, mine, theirs, bat, field in (
@@ -467,22 +504,26 @@ def japan_view(game: dict, japan: str = "Japan") -> dict | None:
     先攻はビジター（away）、後攻はホーム（home）。
     mark は終了した試合だけ（○勝ち・●負け・△引き分け）。score は日本の得点が先。
     試合中は score にその時点の得点を入れ、mark は空にする。
+    点数がまだ両方そろっていない（None や空文字）ときは score を "-" にし、mark は付けない。
     """
     home, away = game.get("homelabel"), game.get("awaylabel")
     if japan not in (home, away):
         return None
     is_home = home == japan
     state = game_state(game)
-    away_runs, home_runs = runs(game)
-    mine, theirs = (home_runs, away_runs) if is_home else (away_runs, home_runs)
-    mark = ""
-    if state == "final":
+    known = known_runs(game)
+    mark, score = "", ""
+    if state in ("final", "live"):
+        score = score_text(game, home_first=is_home)
+    if state == "final" and known:
+        away_runs, home_runs = known
+        mine, theirs = (home_runs, away_runs) if is_home else (away_runs, home_runs)
         mark = "○" if mine > theirs else "●" if mine < theirs else "△"
     return {
         "opponent": away if is_home else home,
         "batting": "後攻" if is_home else "先攻",
         "mark": mark,
-        "score": f"{mine}-{theirs}" if state in ("final", "live") else "",
+        "score": score,
         "state": state,
     }
 
@@ -557,7 +598,13 @@ def pitcher_log(pitching_rows: list[dict], games: list[dict], team: str,
             continue
         seen.add((pid, gid))
         entry = pitchers.setdefault(pid, {"name": _name(row), "_id": pid, "apps": []})
-        entry["apps"].append(_appearance(row, by_id.get(gid), team))
+        app = _appearance(row, by_id.get(gid), team)
+        # 綴りが大会の途中で変わった選手は、一番新しい登板の綴りにする
+        order = (app["_sort"], int(br.number(gid)))
+        if order >= entry.get("_name_at", order):
+            entry["name"] = _name(row) or entry["name"]
+            entry["_name_at"] = order
+        entry["apps"].append(app)
     day = _as_date(today)
     out = [_summarize(entry, day) for entry in pitchers.values()]
     out.sort(key=lambda e: (e["last_date"], e["total_pitches"]), reverse=True)
@@ -565,6 +612,7 @@ def pitcher_log(pitching_rows: list[dict], games: list[dict], team: str,
 
 
 def _summarize(entry: dict, today: date) -> dict:
+    entry = {k: v for k, v in entry.items() if k != "_name_at"}
     apps = sorted(entry["apps"], key=lambda a: a["_sort"])
     previous = ""
     for app in apps:
@@ -838,6 +886,19 @@ def _selftest_states(check: Check) -> None:
     empty = standings([], {"Cuba": "B", "Japan": "B"})["B"]
     check([r["team"] for r in empty] == ["Cuba", "Japan"] and empty[0]["rank"] is None,
           "試合前は順位なし・組み合わせ表の順（Cuba, Japan）")
+    live = {"homelabel": "Japan", "awaylabel": "Cuba", "gamestatus": 1, "gamestatustext": "T3"}
+    views = [japan_view({**live, "awayruns": a, "homeruns": h})["score"]
+             for a, h in ((None, None), ("", ""), (None, 2), (0, 0), (1, 0))]
+    check(views == ["-", "-", "-", "0-0", "0-1"],
+          f"試合中で点数が届く前は「-」、記録された0は「0-0」（{' / '.join(views)}）")
+    unknown = {**tie, "id": 2, "homeruns": None, "awayruns": None}
+    rows = {r["team"]: r for r in standings([unknown], {"Japan": "B", "Cuba": "B"})["B"]}
+    check(rows["Japan"]["g"] == 0 and japan_view(unknown)["mark"] == "",
+          "終了でも点数のない試合は、0-0の引き分けと数えない（印も付けない）")
+    days = {utc: local_day({"utc": utc}) for utc in
+            ("2026-11-07T05:30:00+00:00", "2026-11-07T05:30:00Z", "2026-11-06T23:30:00-06:00")}
+    check(set(days.values()) == {"2026-11-06"},
+          "utc が Z・+00:00・-06:00 のどれでも現地の日付は 11/6（" + " / ".join(days.values()) + "）")
 
 
 def _read_rows_settled(path: Path, games: list[dict], tries: int = 6) -> list[dict]:

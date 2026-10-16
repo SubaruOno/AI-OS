@@ -12,6 +12,13 @@ collect.py が集めたデータと、手で整えた今大会の情報（07_出
     python3 build_site.py --data-root DIR    # 収集データの場所を変える（試し用のダミーなど）
     python3 build_site.py --new-token        # 合言葉を作り直す（リンクが漏れたとき）
 
+手で整えたデータのうち、次の2つはあれば使い、なくても動く。
+    サイト用/同一人物.csv   team,keep_playerid,merge_playerid,evidence
+                            merge_playerid の選手を keep_playerid と同じ人として1つの選手ページに
+                            まとめる（名前と生年で作る鍵 site_logic.person_key より優先）
+    サイト用/名簿_読み.csv  team,roster_name,reading,club_ja,note
+                            相手国ページの今大会の名簿と注目選手に、読み（カタカナ）と所属の日本語名を添える
+
 合言葉はリポジトリに入らない private/u23-site-token に保存する。
 URL はフォルダ形式（team/cuba/ → team/cuba/index.html）。Cloudflare Pages は .html を
 拡張子なしへ308で転送するので、その往復をなくすため。
@@ -33,7 +40,9 @@ import secrets
 import shutil
 import string
 import subprocess
+import sys
 import time
+import unicodedata
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -72,6 +81,9 @@ GROUPS = {
 TEAM_CODE = {"Cuba": "CUB", "Korea": "KOR", "Venezuela": "VEN", "Great Britain": "GBR",
              "South Africa": "RSA", "Chinese Taipei": "TPE", "Puerto Rico": "PUR",
              "Panama": "PAN", "Australia": "AUS", "Nicaragua": "NCA", "Czechia": "CZE"}
+CODE_TEAM = {code: team for team, code in TEAM_CODE.items()}
+# まだ決まっていない対戦相手の表記（日程の TBD など）
+PLACEHOLDER = {"", "TBD", "TBA"}
 TOWN = {"Managua": "マナグア", "Masaya": "マサヤ", "León": "レオン", "Leon": "レオン"}
 # gametypelabel に含まれる語 → 札の文字とクラス
 ROUND_TAG = (("Opening Round", "1次R", "op"), ("Super Round", "SR", "sup"),
@@ -154,6 +166,34 @@ def public(text) -> str:
         label = FILE_LABEL.get(match.group(1))
         return f"（{label}）" if label else ""
     return esc(FILE_REF.sub(swap, str(text if text is not None else "")))
+
+
+def name_key(text) -> str:
+    """名前の照合用。大文字小文字・アクセント・空白の違いを無視する（ハングルもそろう）。"""
+    decomposed = unicodedata.normalize("NFKD", str(text or ""))
+    plain = "".join(c for c in decomposed if not unicodedata.combining(c))
+    return " ".join(plain.casefold().split())
+
+
+def team_code(value) -> str:
+    """「KOR」「Korea」「韓国」のどれでも、今大会_発表名簿.csv の略号にする。分からなければ空。"""
+    text = str(value or "").strip()
+    if text.upper() in CODE_TEAM:
+        return text.upper()
+    if text in TEAM_CODE:
+        return TEAM_CODE[text]
+    named = {label: team for team, label in JA.items()}
+    return TEAM_CODE.get(named.get(text, ""), "")
+
+
+def undecided(team) -> bool:
+    """日程でまだ決まっていない相手（TBD など）か。"""
+    return str(team or "").strip().upper() in PLACEHOLDER
+
+
+def team_name(team) -> str:
+    """国名の日本語。まだ決まっていない相手は「未定」。"""
+    return "未定" if undecided(team) else ja(team)
 
 
 def slug(team: str) -> str:
@@ -276,9 +316,25 @@ def load() -> dict:
         "roster": br.read_csv(INFO / "今大会_発表名簿.csv"),
         "match": br.read_csv(SITE_INFO / "名簿照合.csv"),
         "japan": br.read_csv(SITE_INFO / "日本代表_公式発表.csv"),
+        "same": br.read_csv(SITE_INFO / "同一人物.csv"),
+        "reading": readings(br.read_csv(SITE_INFO / "名簿_読み.csv")),
         "outs": sl.load_outs(br.DATA_ROOT / CURRENT / "raw"),
         "tables": {}, "people": {}, "pid_key": {},
     }
+
+
+def readings(rows: list[dict]) -> dict[tuple[str, str], dict]:
+    """名簿_読み.csv を {(略号, 名前の照合用の形): 行} にする。ファイルがなければ空。"""
+    out: dict[tuple[str, str], dict] = {}
+    for row in rows:
+        code, name = team_code(row.get("team")), name_key(row.get("roster_name"))
+        if code and name and ((row.get("reading") or "").strip() or (row.get("club_ja") or "").strip()):
+            out.setdefault((code, name), row)
+    return out
+
+
+def reading_of(d: dict, code: str, name) -> dict:
+    return d["reading"].get((code, name_key(name))) or {}
 
 
 def player_infos(events: dict) -> dict[str, dict]:
@@ -304,6 +360,7 @@ def analyze(d: dict) -> None:
     for team, srcs in team_sources():
         for event, name in srcs:
             add_event(d, team, event, name)
+    merge_people(d)
     d["paged"] = {key for key, person in d["people"].items() if eligible(person["year"])}
     link_roster(d)
     d["starters"] = starters(d["events"][CURRENT]["pitching"])
@@ -337,6 +394,53 @@ def remember(d: dict, entry: dict, team: str) -> dict:
                                           "pid": pid, "pids": set(), "blocks": []})
     person["pids"].add(pid)
     return person
+
+
+def merge_people(d: dict) -> None:
+    """同一人物.csv の組を1人にまとめる。名前と生年で作る鍵（person_key）より優先する。
+
+    綴りや生年の登録が大会ごとに違って、鍵では1人にまとまらなかった選手のため。
+    ファイルがなければ何もしない。見つからない選手や国が合わない行は、注意を出して飛ばす。
+    """
+    order = {team: {event: i for i, (event, _) in enumerate(srcs)} for team, srcs in team_sources()}
+    for row in d["same"]:
+        keep_pid = str(row.get("keep_playerid") or "").strip()
+        drop_pid = str(row.get("merge_playerid") or "").strip()
+        keep_key, drop_key = d["pid_key"].get(keep_pid), d["pid_key"].get(drop_pid)
+        if not keep_key or not drop_key:
+            missing = keep_pid if not keep_key else drop_pid
+            print(f"注意: 同一人物.csv の playerid {missing} が記録にないので、この行は飛ばします"
+                  f"（{keep_pid} ← {drop_pid}）", file=sys.stderr)
+            continue
+        if keep_key == drop_key:
+            continue
+        keep, drop = d["people"][keep_key], d["people"][drop_key]
+        code = team_code(row.get("team"))
+        if keep["team"] != drop["team"] or (code and code != TEAM_CODE.get(keep["team"], code)):
+            print(f"注意: 同一人物.csv の {keep_pid} と {drop_pid} は国が合わないので、まとめません",
+                  file=sys.stderr)
+            continue
+        absorb(d, keep_key, drop_key, order.get(keep["team"], {}))
+
+
+def absorb(d: dict, keep_key: str, drop_key: str, order: dict[str, int]) -> None:
+    """drop_key の人の記録を keep_key の人に移し、drop_key を消す。"""
+    keep, drop = d["people"][keep_key], d["people"].pop(drop_key)
+    keep["pids"] |= drop["pids"]
+    keep["year"] = keep["year"] if keep["year"] is not None else drop["year"]
+    keep["blocks"] = sorted(keep["blocks"] + drop["blocks"],  # 新しい大会が先、同じ大会は打撃→投球
+                            key=lambda b: (order.get(b[1], 99), b[0] != "bat"))
+    for _, _, entry in keep["blocks"]:
+        entry["_key"] = keep_key
+        if entry.get("_year") is None and keep["year"] is not None:
+            entry.update(_year=keep["year"], _elig=eligible(keep["year"]))
+    for pid, key in d["pid_key"].items():
+        if key == drop_key:
+            d["pid_key"][pid] = keep_key
+    newest = keep["blocks"][0][2]  # 名前は一番新しい大会の綴り
+    keep["name"] = newest["名前"]
+    if d["info"].get(str(newest.get("_id"))):
+        keep["pid"] = str(newest.get("_id"))
 
 
 def link_roster(d: dict) -> None:
@@ -402,7 +506,7 @@ def team_link(team, root: str) -> str:
         return f'<a href="{root}japan/">日本</a>'
     if team in OPP:
         return f'<a href="{root}team/{slug(team)}/">{esc(ja(team))}</a>'
-    return esc(ja(team))
+    return esc(team_name(team))
 
 
 def when_cell(game: dict, mode: str = "full") -> str:
@@ -429,9 +533,10 @@ def matchup(game: dict, root: str, view, strong=None) -> str:
         text = (f'{mark_html(seen["mark"])}<b>{esc(ja(view))}</b> '
                 f'<span class="sc">{seen["score"] or "vs"}</span> '
                 f'{team_link(seen["opponent"], root)}')
+    elif undecided(game.get("awaylabel")) and undecided(game.get("homelabel")):
+        text = '<span class="tbd">未定</span>'  # 「TBD vs TBD」と出さない
     else:
-        away_runs, home_runs = sl.runs(game)
-        middle = f"{away_runs}-{home_runs}" if state in ("final", "live") else "vs"
+        middle = sl.score_text(game) if state in ("final", "live") else "vs"
         mine = sl.japan_view(game, strong) if strong else None
 
         def side(team) -> str:
@@ -474,7 +579,8 @@ def game_row(game: dict, root: str, view=None, mode: str = "full",
              table: dict | None = None, today: bool = False) -> str:
     """試合1行。日本戦は日本の側から、view を渡せばそのチームの側から書く。"""
     japan = "Japan" in (game.get("homelabel"), game.get("awaylabel"))
-    side = view or ("Japan" if japan else None)
+    # 日本戦は、相手国のページでも日本から見た形で書く（○●はいつも日本の勝ち負け）
+    side = "Japan" if japan else view
     seen = sl.japan_view(game, side) if side else None
     sub = [esc(venue(game))]
     if seen:  # 「日本は後攻」は途中で割らない
@@ -485,7 +591,8 @@ def game_row(game: dict, root: str, view=None, mode: str = "full",
     if today:
         attrs += f' data-day="{sl.local_day(game)}" hidden'
     return (f"<tr{attrs}>{when_cell(game, mode)}<td class=\"m\">{tag(game)}"
-            f"{matchup(game, root, view, side)}<small>{'・'.join(x for x in sub if x)}</small>"
+            f"{matchup(game, root, side if view else None, side)}"
+            f"<small>{'・'.join(x for x in sub if x)}</small>"
             f'<small class="lk">{game_links(game)}</small></td></tr>')
 
 
@@ -652,7 +759,7 @@ def standings_block(d: dict, root: str) -> str:
     note = ("試合前なので順位は「-」で、並びは組み合わせ表の順です。" if not started else
             "差はゲーム差です。")
     parts.append(f'<p class="note">{note}同率の並べ方は WBSC のW杯共通の規程（2024年版）で'
-                 "計算しています。2026年大会の要項とは照らしていないので、同率のときは WBSC の"
+                 "計算しています。2026年大会の要項とは照らし合わせていないので、同率のときは WBSC の"
                  '公式の順位も確かめてください。持ち越しの決まりは<a href="'
                  f'{root}format/">大会方式</a>に。</p>')
     return "".join(parts)
@@ -760,7 +867,9 @@ def roster_table(d: dict, code: str, rows: list[dict], main: str, root: str) -> 
     """名簿の表。所属や過去の記録が1人も埋まっていなければ、その列は出さない。"""
     order = {p: i for i, p in enumerate(("P", "C", "IF", "OF"))}
     rows = sorted(rows, key=lambda r: order.get(r.get("position"), 9))
-    clubs = any((r.get("club") or "").strip() for r in rows)
+    yomi = {id(r): reading_of(d, code, r.get("name")) for r in rows}
+    clubs = any((r.get("club") or "").strip() or (yomi[id(r)].get("club_ja") or "").strip()
+                for r in rows)
     records = any(roster_record(d, code, r.get("name"), root) for r in rows)
     body = []
     for r in rows:
@@ -770,16 +879,31 @@ def roster_table(d: dict, code: str, rows: list[dict], main: str, root: str) -> 
         key = d["match_by_name"].get((code, r.get("name")))
         if key in d["paged"]:  # 名前からも選手ページへ（「あり」だけでは押す所が小さい）
             name = f'<a href="{root}p/{key}/">{name}</a>'
+        extra = yomi[id(r)]
+        reading = (extra.get("reading") or "").strip()
+        if reading:
+            name += f'<small class="yomi">{esc(reading)}</small>'
         body.append(f'<tr><td>{esc(POS_JA.get(r.get("position"), "-"))}</td>'
                     f'<td class="nm">{name}{badge}</td>'
-                    + (f'<td class="cl">{esc(r.get("club"))}</td>' if clubs else "")
+                    + (club_cell(r.get("club"), extra.get("club_ja")) if clubs else "")
                     + (f'<td class="rec">{roster_record(d, code, r.get("name"), root)}</td>'
                        if records else "")
                     + "</tr>")
     head = ("<th>守備</th><th>氏名</th>" + ("<th>発表時の所属</th>" if clubs else "")
             + ("<th>過去の記録</th>" if records else ""))
-    return (f'<div class="scroll"><table class="plain roster"><thead><tr>{head}</tr></thead>'
+    hint = ('<p class="note">読みは目安です。</p>'
+            if any((yomi[id(r)].get("reading") or "").strip() for r in rows) else "")
+    return (f'{hint}<div class="scroll"><table class="plain roster"><thead><tr>{head}</tr></thead>'
             f'<tbody>{"".join(body)}</tbody></table></div>')
+
+
+def club_cell(club, club_ja) -> str:
+    """所属。日本語名があればそれを出し、元の表記は title に残す。"""
+    club, club_ja = (club or "").strip(), (club_ja or "").strip()
+    if club_ja:
+        title = f' title="{esc(club)}"' if club and club != club_ja else ""
+        return f'<td class="cl"{title}>{esc(club_ja)}</td>'
+    return f'<td class="cl">{esc(club)}</td>'
 
 
 def roster_block(d: dict, team: str, info: dict, root: str) -> str:
@@ -808,24 +932,28 @@ def roster_block(d: dict, team: str, info: dict, root: str) -> str:
     return head + note + roster_table(d, code, rows, main, root)
 
 
-def notable_card(d: dict, item: dict, root: str) -> str:
+def notable_card(d: dict, item: dict, root: str, code: str = "") -> str:
     key = d["pid_key"].get(str(item.get("playerid") or ""))
+    reading = (reading_of(d, code, item.get("name")).get("reading") or "").strip()
+    yomi = f'<small class="yomi">{esc(reading)}</small>' if reading else ""
     record = f'<a href="{root}p/{key}/">WBSCの記録</a>' if key in d["paged"] else ""
     sub = "・".join(x for x in (POS_JA.get(item.get("pos"), item.get("pos") or ""),
                                 item.get("club") or "") if x)
     japan = '<span class="badge jpl">日本の球団</span>' if item.get("japan_league") else ""
     facts = "".join(f"<li>{public(f)}</li>" for f in item.get("facts") or [])
     links = " ".join(x for x in (record, sources(item.get("source"))) if x)
-    return (f'<div class="card nb"><h3>{esc(item.get("name"))}<small>{esc(sub)}</small>{japan}</h3>'
+    return (f'<div class="card nb"><h3>{esc(item.get("name"))}{yomi}<small>{esc(sub)}</small>{japan}</h3>'
             f'<ul>{facts}</ul><p class="note">{links}</p></div>')
 
 
-def notable_block(d: dict, info: dict, root: str) -> str:
+def notable_block(d: dict, info: dict, root: str, code: str = "") -> str:
     items = info.get("notable") or []
     if not items:
         return '<p class="empty">載せる材料がまだありません。</p>'
-    return ('<p class="note">事実と公開データだけを載せています。</p>'
-            + "".join(notable_card(d, item, root) for item in items))
+    read = any(reading_of(d, code, item.get("name")).get("reading") for item in items)
+    return ('<p class="note">事実と公開データだけを載せています。'
+            + ("名前の横の読みは目安です。" if read else "") + "</p>"
+            + "".join(notable_card(d, item, root, code) for item in items))
 
 
 def vs_japan_block(info: dict) -> str:
@@ -918,7 +1046,7 @@ def team_page(d: dict, label: str, team: str, group: str) -> str:
         "</small></h1>",
         facts_block(info), notes_block(info), TOC,
         section("roster", "今大会の名簿", roster_block(d, team, info, root)),
-        section("notable", "注目選手", notable_block(d, info, root)),
+        section("notable", "注目選手", notable_block(d, info, root, TEAM_CODE.get(team, ""))),
         section("vsjapan", "日本との対戦<small>参考値</small>", vs_japan_block(info)),
         section("now", "今大会", current_block(d, team, root)),
         section("trend", "大会ごとの傾向", trend_block(d, team)),
@@ -958,7 +1086,7 @@ def player_block(kind: str, event: str, line: dict) -> str:
 
 def player_chips(d: dict, key: str, person: dict, meta: dict) -> str:
     pos = meta.get("position") or "?"
-    pairs = [("国", ja(person["team"])), ("位置", POS_JA.get(pos, pos)),
+    pairs = [("国", ja(person["team"])), ("登録守備", POS_JA.get(pos, pos)),
              ("投打", f'{HAND.get(meta.get("throws"), "?")}投{HAND.get(meta.get("bats"), "?")}打')]
     if person["team"] != "Japan":
         year = person["year"]
@@ -1007,8 +1135,13 @@ def hands_text(players: list[dict]) -> str:
             f'野手 {len(fielders)}人（右打ち {bats["右"]}・左打ち {bats["左"]}・両打ち {bats["両"]}）</p>')
 
 
+# 日本代表の表の列幅。背番号順の表と守備別の4つの表で列がそろうよう、幅を決めておく（最後の所属は残り）
+JAPAN_COLS = '<colgroup><col class="c-nm"><col class="c-pos"><col class="c-hand"><col class="c-age">' \
+             '<col class="c-size"><col></colgroup>'
+
+
 def japan_table(rows: list[dict], tid: str) -> str:
-    """24人の表。公式発表の項目だけ。"""
+    """日本代表の選手の表。公式発表の項目だけ。12人を超える表は見出し行を固定する。"""
     head = "".join(th(c) for c in ("選手", "守備", "投打", "年齢", "身長・体重", "所属"))
     body = "".join(
         f'<tr><td class="nm" data-sort="{int(br.number(r.get("number"))):03d}">'
@@ -1016,8 +1149,9 @@ def japan_table(rows: list[dict], tid: str) -> str:
         f'<td>{esc(r.get("position"))}</td><td>{esc(r.get("throws"))}投{esc(r.get("bats"))}打</td>'
         f'<td>{esc(r.get("age"))}</td><td>{esc(r.get("height_cm"))}cm・{esc(r.get("weight_kg"))}kg</td>'
         f'<td class="cl">{esc(r.get("club"))}</td></tr>' for r in rows)
-    return (f'<div class="scroll"><table class="sort jpt" id="{tid}"><thead><tr>{head}</tr></thead>'
-            f"<tbody>{body}</tbody></table></div>")
+    tall = " tall" if len(rows) > 12 else ""
+    return (f'<div class="scroll{tall}"><table class="sort jpt" id="{tid}">{JAPAN_COLS}'
+            f"<thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>")
 
 
 def japan_players(players: list[dict]) -> str:
@@ -1223,7 +1357,7 @@ def hero_item(game: dict) -> dict:
     rival = seen["opponent"]
     return {
         "t": local.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "opp": ja(rival), "href": f"team/{slug(rival)}/" if rival in OPP else "schedule/",
+        "opp": team_name(rival), "href": f"team/{slug(rival)}/" if rival in OPP else "schedule/",
         "jst": f"{md(jst)} {jst:%H:%M}", "local": f"{md(local)} {local:%H:%M}",
         "venue": f'{venue(game)}・日本は{seen["batting"]}', "done": seen["state"] == "final",
     }
@@ -1296,11 +1430,14 @@ def today_block(d: dict) -> str:
 
 
 def save_block(count: int, size_mb: float) -> str:
+    # 件数と結果はボタンの下の行（save-status）に出す。ボタンの幅は変わらない（site_offline.py）
     return ('<h2>電波が弱い所で使うには</h2><div class="card">'
             '<button type="button" id="save-all" class="save">全ページを端末に保存</button>'
+            '<p class="save-st" id="save-status" aria-live="polite"></p>'
             f'<p class="note">ホテルのWi-Fiなど電波のよい所で押すと、全{count}件（約{size_mb:.1f}MB）を'
             "端末に保存し、電波がなくても開けるようになります。iPhone は Safari で開き、共有ボタンから"
-            "「ホーム画面に追加」してください。LINEの中で開くと保存が効きません。</p></div>")
+            "「ホーム画面に追加」してください。LINEなどアプリの中で開くと、保存が効かないことが"
+            "あります。Safariで開いてください。</p></div>")
 
 
 def wbsc_links() -> str:
@@ -1414,9 +1551,10 @@ def write_site(out: Path, token: str, pages: dict[str, str], games: list[dict]) 
     (out / "index.html").write_text(BLANK)
     (out / "404.html").write_text(BLANK)
     (out / "robots.txt").write_text("User-agent: *\nDisallow: /\n")
+    # _headers に合言葉は書かない（site_offline.headers_rules は /*/sw.js の形で当てる）
     (out / "_headers").write_text(
         "/*\n  X-Robots-Tag: noindex, nofollow\n  Referrer-Policy: no-referrer\n"
-        + so.headers_rules(token))
+        + so.headers_rules())
 
 
 def main() -> None:
@@ -1525,9 +1663,16 @@ table.sort th:first-child,table.sort td:first-child,table.fix1 th:first-child,ta
 position:sticky;left:0;z-index:1;background:var(--card);text-align:left;box-shadow:1px 0 0 var(--line)}
 table.sort thead th:first-child,table.fix1 thead th:first-child{z-index:3}
 td.nm{white-space:normal;min-width:7.5em;max-width:10em;line-height:1.35}
+@media (min-width:768px){td.nm{min-width:160px;max-width:200px}}
+.yomi{display:block;margin-top:1px;color:var(--dim);font-size:11.5px;font-weight:400;line-height:1.3}
+h3 .yomi{display:inline;margin-left:.5em;font-size:13px}
+.tbd{color:var(--dim)}
 td.cl,td.ev{white-space:normal;min-width:7em}
-table.jpt td{text-align:left}
-table.jpt td.nm,table.jpt td.cl{white-space:nowrap}
+table.jpt{table-layout:fixed;min-width:47.5em}
+table.jpt th,table.jpt td{text-align:left}
+table.jpt td.nm,table.jpt td.cl{white-space:nowrap;max-width:none}
+table.jpt td.cl{overflow:hidden;text-overflow:ellipsis}
+.c-nm{width:9.6em}.c-pos{width:4.6em}.c-hand{width:5.4em}.c-age{width:4em}.c-size{width:8.8em}
 td.app{text-align:left;line-height:1.35}
 td.app small{display:block;color:var(--dim);font-size:11px}
 table.log th small{color:var(--dim);font-size:11px}
@@ -1568,9 +1713,11 @@ background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(
 .tcard span{font-weight:600;font-size:14.5px;white-space:nowrap}
 .tcard small{color:var(--dim);font-size:12px;white-space:nowrap;line-height:1.4}
 .go{display:flex;align-items:center;min-height:52px;margin-top:24px;color:var(--text);font-weight:600}
-.save{min-height:44px;padding:0 16px;border:1px solid var(--btn);border-radius:8px;background:var(--btn);
-color:#fff;font:inherit;font-weight:600;cursor:pointer}
+.save{width:15em;max-width:100%;min-height:44px;padding:0 12px;border:1px solid var(--btn);border-radius:8px;
+background:var(--btn);color:#fff;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;
+overflow:hidden;text-overflow:ellipsis}
 .save:disabled{opacity:.6}
+.save-st{min-height:1.5em;margin:4px 0 2px;color:var(--dim);font-size:12.5px}
 .links .ext{display:inline-flex;align-items:center;min-height:44px;margin:0 18px 0 0;font-size:15px}
 .facts{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:8px 0}
 .facts dt{padding-top:1px;color:var(--dim);font-size:13px;white-space:nowrap}

@@ -22,6 +22,7 @@ SITE_DIR="${U23_SITE_DIR:-$HOME/野球/U23ワールドカップ2026/07_サイト
 DIST="$SITE_DIR/dist"
 NEW="$SITE_DIR/dist.new"
 PREV="$SITE_DIR/dist.prev"
+SWAP="$SITE_DIR/dist.swap"
 COLLECT="${U23_COLLECT:-python3 collect.py --event u23-wc-2026}"
 BUILD="${U23_BUILD:-python3 build_site.py}"
 DEPLOY="${U23_DEPLOY:-sh deploy_site.sh}"
@@ -43,19 +44,70 @@ done
 if [ "$FORCE" = 1 ] && [ -z "${U23_COLLECT:-}" ]; then COLLECT="$COLLECT --allow-fewer"; fi
 
 STEP="準備"
+SWAPPED=0  # 入れ替え・戻すの進み具合。1 = dist を脇へ動かした、2 = 新しい dist を置き終えた
+
+folders() {  # いま実際にあるフォルダを並べる（止まったときの案内用）
+  found=""
+  for name in dist dist.prev dist.new dist.swap; do
+    if [ -d "$SITE_DIR/$name" ]; then found="$found $name"; fi
+  done
+  echo "いまあるフォルダ:${found:- なし}（場所 $SITE_DIR）" >&2
+}
+
+undo_swap() {  # 入れ替えの途中で止まったら、脇へ動かした前の版を dist に戻す
+  if [ "$SWAPPED" = 1 ] && [ ! -d "$DIST" ] && [ -d "$PREV" ]; then
+    if mv "$PREV" "$DIST"; then
+      echo "新しい版を dist に置けなかったので、前の版を dist に戻しました。手元の dist と公開中のサイトは前のままです。組み立てた版は dist.new に残っています。" >&2
+    else
+      echo "dist がない状態です。前の版は dist.prev、組み立てた版は dist.new にあります。どちらかの名前を dist に変えてください。" >&2
+    fi
+  elif [ "$SWAPPED" = 2 ]; then
+    echo "手元の dist は新しい版に入れ替わっています。公開はまだです。上げるときは: sh deploy_site.sh" >&2
+  elif [ -d "$DIST" ]; then
+    echo "手元の dist はそのままです（公開中のサイトも変わっていません）。組み立てた版は dist.new に残っています。" >&2
+  else
+    echo "dist がありません。下のフォルダの中身を確かめてください。" >&2
+  fi
+  folders
+}
+
+undo_rollback() {  # 戻すの途中で止まったら、元の dist に戻す
+  if [ "$SWAPPED" = 1 ] && [ ! -d "$DIST" ] && [ -d "$SWAP" ]; then
+    if mv "$SWAP" "$DIST"; then
+      echo "1つ前の版を dist に置けなかったので、元の版を dist に戻しました。何も変わっていません。" >&2
+    else
+      echo "dist がない状態です。元の版は dist.swap、1つ前の版は dist.prev にあります。どちらかの名前を dist に変えてください。" >&2
+    fi
+  elif [ "$SWAPPED" = 2 ] && [ -d "$SWAP" ] && [ ! -d "$PREV" ]; then
+    echo "dist は1つ前の版に戻っています。元の版は dist.prev ではなく dist.swap に残っています。公開はまだです。" >&2
+  elif [ -d "$DIST" ]; then
+    echo "手元の dist はそのままです（公開中のサイトも変わっていません）。" >&2
+  else
+    echo "dist がありません。下のフォルダの中身を確かめてください。" >&2
+  fi
+  folders
+}
+
 finish() {
   code=$?
+  trap - EXIT INT TERM HUP
   [ "$code" -eq 0 ] && return 0
   echo "" >&2
   echo "止まりました（${STEP}の段）。" >&2
   case "$STEP" in
     検査) echo "公開中のサイトと手元の dist はそのままです。組み立てた版は dist.new に残っています。" >&2 ;;
-    公開) echo "手元の dist は新しい版に入れ替わっています。電波のある所で sh deploy_site.sh を流し直してください。" >&2 ;;
-    戻す) echo "dist・dist.prev・dist.swap の中身を確かめてください。" >&2 ;;
+    入れ替え) undo_swap ;;
+    戻す) undo_rollback ;;
+    公開) echo "手元の dist は入れ替わっていますが、公開中のサイトはまだ前のままです。電波のある所で sh deploy_site.sh を流し直してください。" >&2 ;;
     *) echo "公開中のサイトと手元の dist はそのままです。" >&2 ;;
   esac
+  return "$code"
 }
+# 途中で失敗したとき（set -e）も、Ctrl-C などで止めたときも、finish を通ってから終わる
 trap finish EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
 
 discard() {  # 消すときはゴミ箱へ（rm は使わない）
   [ -e "$1" ] || return 0
@@ -117,11 +169,12 @@ if [ "$ROLLBACK" = 1 ]; then
     echo "dist.prev がないので戻せません。" >&2
     exit 1
   fi
-  SWAP="$SITE_DIR/dist.swap"
   discard "$SWAP"
-  if [ -d "$DIST" ]; then mv "$DIST" "$SWAP"; fi
+  if [ -d "$DIST" ]; then mv "$DIST" "$SWAP"; SWAPPED=1; fi
   mv "$PREV" "$DIST"
+  SWAPPED=2
   if [ -d "$SWAP" ]; then mv "$SWAP" "$PREV"; fi
+  SWAPPED=3
   echo "1つ前の版に戻しました（もう一度 --rollback を付けると元に戻ります）。"
   echo "戻した版: $(look "$DIST" line)"
   publish
@@ -187,8 +240,10 @@ STEP="入れ替え"
 if [ -d "$DIST" ]; then
   discard "$PREV"
   mv "$DIST" "$PREV"
+  SWAPPED=1
 fi
 mv "$NEW" "$DIST"
+SWAPPED=2
 echo "取り込み $((t1 - t0))秒・組み立て $((t2 - t1))秒"
 publish
 

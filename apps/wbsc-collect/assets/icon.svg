@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <clipPath id="ball"><circle cx="256" cy="226" r="150"/></clipPath>
+  </defs>
+  <rect width="512" height="512" fill="#0f1115"/>
+  <rect x="0" y="452" width="512" height="60" fill="#d0103a"/>
+  <circle cx="256" cy="226" r="150" fill="#f4f1ea"/>
+  <g clip-path="url(#ball)" fill="none" stroke="#d0103a" stroke-width="7" stroke-linecap="round">
+    <path d="M150 96 C 210 160, 210 292, 150 356"/>
+    <path d="M362 96 C 302 160, 302 292, 362 356"/>
+  </g>
+  <g stroke="#d0103a" stroke-width="5" stroke-linecap="round">
+    <path d="M176 138 l14 -8 M186 160 l15 -5 M192 184 l16 -2 M195 208 l16 0 M195 232 l16 2 M192 256 l16 5 M186 280 l15 8 M176 304 l14 10"/>
+    <path d="M336 138 l-14 -8 M326 160 l-15 -5 M320 184 l-16 -2 M317 208 l-16 0 M317 232 l-16 2 M320 256 l-16 5 M326 280 l-15 8 M336 304 l-14 10"/>
+  </g>
+  <text x="256" y="250" text-anchor="middle" font-family="-apple-system, 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="92" fill="#0f1115" letter-spacing="-2">U-23</text>
+  <text x="256" y="420" text-anchor="middle" font-family="-apple-system, 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="44" fill="#e8eaed" letter-spacing="6">2026</text>
+</svg>
