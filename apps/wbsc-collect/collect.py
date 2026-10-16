@@ -25,6 +25,7 @@ raw を使い回すのは、終わった試合（gamestatustext が F で始ま�
 終了コード1で止まる（前回の取り込み結果がそのまま残る）。
     - 日程が0件、または前回の games.json より試合が減った（--allow-fewer で通す）
     - 終わった試合の読み込みが、やり直しても通信の失敗で取れなかった
+    - 終わった試合を、WBSCが 404 や 5xx（やり直したあと）で返した（--skip-missing で通す）
 試合中の試合が取れなかったときは、注意を出して次へ進む（その試合の途中の成績は入らない）。
 CSV の行が0件になったときは、前回の CSV をゴミ箱へ送る（古い成績が残って読まれないように）。
 """
@@ -114,6 +115,15 @@ def fetch_page_props(url: str, attempts: int = 4) -> dict:
     start = body.index(marker) + len(marker)
     end = body.index('"', start)
     return json.loads(html.unescape(body[start:end]))["props"]
+
+
+def http_reason(code: int) -> str:
+    """HTTPの状態番号を、止めたときの説明にする。"""
+    if code >= 500:
+        return "WBSC側の不調。間隔を空けて4回試しました"
+    if code == 404:
+        return "WBSCにその試合のページがない"
+    return "WBSCに断られた"
 
 
 def event_url(domain: str, slug: str, tail: str = "") -> str:
@@ -284,7 +294,13 @@ def previous_count(path: Path) -> int | None:
     return len(data) if isinstance(data, list) else None
 
 
-def collect(key: str, out_root: Path, allow_fewer: bool = False) -> None:
+def collect(key: str, out_root: Path, allow_fewer: bool = False,
+            skip_missing: bool = False) -> None:
+    """1大会を取り込む。止めるときは何も書かずに Refused を投げる。
+
+    skip_missing は、WBSCが終わった試合を 404 や 5xx で返したときに止めず、その試合の
+    成績を入れないまま書き出す（ボックススコアがないと分かっているときだけ使う）。
+    """
     domain, slug, note = EVENTS[key]
     out_dir = out_root / key
     (out_dir / "raw").mkdir(parents=True, exist_ok=True)
@@ -305,6 +321,7 @@ def collect(key: str, out_root: Path, allow_fewer: bool = False) -> None:
     plays: list[dict] = []
 
     skipped = 0
+    missing: list[str] = []
     for index, summary in enumerate(games, 1):
         game_id = summary.get("id")
         if not game_id:
@@ -318,7 +335,20 @@ def collect(key: str, out_root: Path, allow_fewer: bool = False) -> None:
             try:
                 game = fetch_game(domain, slug, game_id)
             except urllib.error.HTTPError as error:
-                print(f"  [{index}/{len(games)}] {game_id} 取得できず（{error.code}）")
+                # 終わった試合を飛ばすと、日程では「終了」なのに成績の行がない組ができる
+                if is_final(summary) and not skip_missing:
+                    raise Refused(f"終わった試合 {game_id} を、WBSCが {error.code} で返したため"
+                                  f"取れませんでした（{http_reason(error.code)}）。前回の取り込み結果は"
+                                  "そのままです。しばらくしてもう一度流してください。ボックススコアが"
+                                  "ないまま進めるなら --skip-missing を付けてください"
+                                  "（その試合の成績は入りません）。") from error
+                if is_final(summary):
+                    missing.append(str(game_id))
+                    print(f"  [{index}/{len(games)}] {game_id} 取得できず（{error.code}）。"
+                          "--skip-missing なので、終わった試合の成績を入れずに進みます")
+                else:
+                    print(f"  [{index}/{len(games)}] {game_id} 取得できず（{error.code}）。"
+                          "試合中の試合なので飛ばします")
                 continue
             except (urllib.error.URLError, http.client.HTTPException, OSError) as error:
                 if is_final(summary):
@@ -378,6 +408,9 @@ def collect(key: str, out_root: Path, allow_fewer: bool = False) -> None:
 
     if skipped:
         print(f"  まだ始まっていない {skipped}試合は取りに行きませんでした")
+    if missing:
+        print(f"  注意: 終わった {len(missing)}試合（{', '.join(missing)}）は成績が入っていません。"
+              "次に流したときに取り直します")
     # 0行の CSV を先に片付ける。ゴミ箱へ送れずに止まったときは、まだ何も書いていない
     outputs = (("batting.csv", batting), ("pitching.csv", pitching), ("plays.csv", plays))
     for name, rows in sorted(outputs, key=lambda item: bool(item[1])):
@@ -398,6 +431,8 @@ def main() -> int:
     parser.add_argument("--out", type=Path, default=OUT_ROOT, help="出力先")
     parser.add_argument("--allow-fewer", action="store_true",
                         help="日程の試合が前回より減っても書き出す（意図して減ったとき）")
+    parser.add_argument("--skip-missing", action="store_true",
+                        help="終わった試合が404や5xxで取れなくても、その試合の成績を入れずに書き出す")
     args = parser.parse_args()
 
     if args.list:
@@ -415,7 +450,7 @@ def main() -> int:
             print(f"知らない大会キーです: {key}", file=sys.stderr)
             return 1
         try:
-            collect(key, args.out, args.allow_fewer)
+            collect(key, args.out, args.allow_fewer, args.skip_missing)
         except Refused as error:
             print(f"  止めました: {error}", file=sys.stderr)
             return 1

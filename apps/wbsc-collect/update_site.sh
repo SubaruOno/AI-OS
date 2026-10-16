@@ -6,7 +6,8 @@
 #   sh update_site.sh              全部流す
 #   sh update_site.sh --no-deploy  入れ替えまでで止め、公開しない
 #   sh update_site.sh --rollback   1つ前の版（dist.prev）と入れ替えて上げ直す。もう一度で元に戻る
-#   sh update_site.sh --force      日程の試合数・ページ数・終了試合数が減っても止めない（意図して減らしたとき）
+#   sh update_site.sh --force      日程の試合数・ページ数・終了試合数が減っても止めない（意図して減らしたとき）。
+#                                  終わった試合のボックススコアが404などで取れなくても、成績を入れずに進む
 #
 # 試すときだけ、次の環境変数で中身を差し替えられる。
 #   U23_SITE_DIR  dist を置くフォルダ（既定 ~/野球/U23ワールドカップ2026/07_サイト）
@@ -35,13 +36,13 @@ for arg in "$@"; do
     --no-deploy) PUBLISH=0 ;;
     --rollback) ROLLBACK=1 ;;
     --force) FORCE=1 ;;
-    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
     *) echo "知らない指定です: $arg（--no-deploy / --rollback / --force）" >&2; exit 2 ;;
   esac
 done
 
-# --force のときは、取り込みでも日程の試合が減ったのを通す（既定の取り込みのときだけ）
-if [ "$FORCE" = 1 ] && [ -z "${U23_COLLECT:-}" ]; then COLLECT="$COLLECT --allow-fewer"; fi
+# --force のときは、取り込みでも日程の試合が減ったのと、終わった試合が取れないのを通す（既定の取り込みのときだけ）
+if [ "$FORCE" = 1 ] && [ -z "${U23_COLLECT:-}" ]; then COLLECT="$COLLECT --allow-fewer --skip-missing"; fi
 
 STEP="準備"
 SWAPPED=0  # 入れ替え・戻すの進み具合。1 = dist を脇へ動かした、2 = 新しい dist を置き終えた
