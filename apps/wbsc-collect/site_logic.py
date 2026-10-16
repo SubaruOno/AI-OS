@@ -19,6 +19,7 @@ import argparse
 import ast
 import hashlib
 import json
+import re
 import sys
 import time
 import unicodedata
@@ -41,6 +42,11 @@ RUN_DIFFERENCE_FROM = 5
 
 # 試合が始まらない・止まっているときの gamestatustext に含まれそうな語（推測）
 OTHER_WORDS = ("PPD", "POSTP", "SUSP", "CANC", "DELAY", "RAIN")
+# そのうち、もう行われない（中止）と読む語。CANCELLED・CANCELED も含む（推測）
+CANCEL_WORDS = ("CANC",)
+# 試合中と読む gamestatustext の形（推測）。「T3」「B5」「Top 3rd」「Bot 5」「M3」「End 7」のように表裏と回。
+# これに当たらない知らない文字は「試合中」と決めつけず、game_state で "unknown" にする
+LIVE_TEXT = re.compile(r"(T|B|M|E|TOP|BOT|BOTTOM|MID|MIDDLE|END)[\s.]*\d{1,2}(ST|ND|RD|TH)?")
 
 # 大会によって表記が違う国名をそろえる
 TEAM_ALIAS = {
@@ -60,11 +66,25 @@ def is_final(game: dict) -> bool:
     return str(game.get("gamestatustext") or "").strip().upper().startswith("F")
 
 
+def is_cancelled(game: dict) -> bool:
+    """中止になった試合か。延期（PPD）や中断（SUSP）は、あとで行われるので含めない。"""
+    text = str(game.get("gamestatustext") or "").strip().upper()
+    return not is_final(game) and any(word in text for word in CANCEL_WORDS)
+
+
+def is_settled(game: dict) -> bool:
+    """もう結果の動かない試合か（終了か中止）。ラウンドが終わったかを見るときに使う。"""
+    return is_final(game) or is_cancelled(game)
+
+
 def game_state(game: dict) -> str:
-    """"pre"（試合前）・"live"（試合中）・"final"（終了）・"other"（中止や中断）を返す。
+    """"pre"（試合前）・"live"（試合中）・"final"（終了）・"other"（中止や中断）・
+    "unknown"（知らない状態の文字）を返す。
 
     試合中や中断のときの値は手元のデータに例がないので推測で分けている。
-    gamestatus は試合前が0、終了が2か3だった。
+    gamestatus は試合前が0、終了が2か3だった。試合中と読むのは、状態の文字が LIVE_TEXT の形
+    （「T3」など）のときと、文字が空で gamestatus が1のときだけ。ほかの文字は "unknown" にして、
+    画面には「状態: <文字>」と出す（大会初日に実際の値を見て、LIVE_TEXT などを足す）。
     """
     if is_final(game):
         return "final"
@@ -72,8 +92,10 @@ def game_state(game: dict) -> str:
     status = int(br.number(game.get("gamestatus")))
     if any(word in text for word in OTHER_WORDS):
         return "other"
-    if status == 1 or text:
+    if LIVE_TEXT.fullmatch(text) or (status == 1 and not text):
         return "live"
+    if text:
+        return "unknown"
     return "pre" if status == 0 else "other"
 
 
@@ -202,10 +224,16 @@ def batting_outs(game: dict, outs: dict | None = None) -> tuple[int, int, bool]:
       10点差のコールド（U-23は5回以降10点差。WBSC Official Rules 2025-2026 A1.4.1.2）なら確か。
     - 後攻がリードして最終回の裏を始めなかった（7回裏・9回裏をしない、表の終わりで
       10点差がついた）: 後攻の攻撃は1回少ない。7回まで行ったか、10点差なら確か。
+    - 引き分け: サヨナラでは終わらないので、後攻も最終回の裏を最後まで攻撃したと見なす。
+      回の途中で打ち切られた試合はずれるので、確かではない。
     - サヨナラ（裏の途中で10点差に届いた場合も含む）: 裏の途中で終わるが、そこまでの
-      アウト数は games.json に入っていない。1アウトで終わったと見なす近似。
-    - 引き分けや、点差が足りないのに7回より前に終わった試合（雨など）も確かでない。
+      アウト数は games.json に入っていない（outs 欄は終了後いつも0）。1アウトで終わったと見なす。
+      過去5大会の raw では、サヨナラで終わった裏のアウト数は0・1・2がほぼ同じ数（19試合で
+      6・7・6）なので、外れても1アウト以内に収まるこの置き方にしている。これ以上は直せない。
+    - 点差が足りないのに7回より前に終わった試合（雨など）も確かでない。
     確かでない試合は、raw から load_outs() で取った値を outs に渡せば正確になる。
+    終わった試合の raw は collect.py が残すので、ふつうは近似を使わない。raw がないのは、
+    ボックススコアのないまま終了になった試合や、collect.py を --skip-missing で流したとき。
     確かな試合は raw より回ごとの得点を信じる（2022年 Mexico@Australia は raw の投球回の
     合計が8回1/3で、8回で終わった試合としてありえない値だった）。
     """
@@ -219,6 +247,8 @@ def batting_outs(game: dict, outs: dict | None = None) -> tuple[int, int, bool]:
         guess, sure = (full, full), late or called
     elif home > away and home - last > away and last == 0:
         guess, sure = (full, full - 3), late or called
+    elif home == away:
+        guess, sure = (full, full), False
     else:
         guess, sure = (full, full - 2), False
     exact = (outs or {}).get(str(game.get("id")))
@@ -236,14 +266,15 @@ def _label_match(game: dict, label: str) -> bool:
 
 def _tally(games: list[dict], teams: list[str], outs: dict | None) -> dict[str, dict]:
     """チームごとに試合数・勝敗・得失点・攻撃と守備のアウト数を数える。"""
-    table = {t: {"g": 0, "w": 0, "l": 0, "t": 0, "rs": 0, "ra": 0, "ob": 0, "of": 0}
+    # est は、攻撃と守備のアウト数を推定で数えた試合の数（batting_outs が確かでない試合）
+    table = {t: {"g": 0, "w": 0, "l": 0, "t": 0, "rs": 0, "ra": 0, "ob": 0, "of": 0, "est": 0}
              for t in teams}
     for game in games:
         home, away = game.get("homelabel"), game.get("awaylabel")
         if home not in table or away not in table or not known_runs(game):
             continue  # 点数が入っていない試合は、0-0の引き分けと数えない
         away_runs, home_runs = runs(game)
-        away_outs, home_outs, _ = batting_outs(game, outs)
+        away_outs, home_outs, sure = batting_outs(game, outs)
         for team, mine, theirs, bat, field in (
             (away, away_runs, home_runs, away_outs, home_outs),
             (home, home_runs, away_runs, home_outs, away_outs),
@@ -255,6 +286,7 @@ def _tally(games: list[dict], teams: list[str], outs: dict | None) -> dict[str, 
             row["ra"] += theirs
             row["ob"] += bat
             row["of"] += field
+            row["est"] += not sure
     return table
 
 
@@ -284,7 +316,7 @@ def _bands(teams: list[str], key) -> list[list[str]]:
 
 
 def _break_tie(members: list[str], games: list[dict], outs: dict | None,
-               notes: dict[str, str]) -> list[list[str]]:
+               notes: dict[str, str], cancelled: frozenset = frozenset()) -> list[list[str]]:
     """勝率が並んだチームを、WBSCの C11 の順に並べる。分けきれない組はまとめて返す。
 
     1. 当該チーム同士の勝敗（2チームなら直接対決）。3チーム以上で一部だけ分かれたら、
@@ -292,24 +324,32 @@ def _break_tie(members: list[str], games: list[dict], outs: dict | None,
     2. 当該チーム同士の試合での TQB。3チーム以上はこれで全員を上から並べる。
     3. ER-TQB と打率は games.json から出せないので計算しない。そこまで並んだら同率のまま。
     当該チーム同士の対戦が残っているうち（大会の途中）は決めず、同率のままにする。
+    cancelled は中止になった組（frozenset の集まり）。もう行われないので「残っている」とは
+    見なさず、行われた試合だけで比べる（規程に定めがないので、この扱いは推測）。
     """
     if len(members) < 2:
         return [members]
     between = [g for g in games
                if g.get("homelabel") in members and g.get("awaylabel") in members]
     played = {frozenset((g["homelabel"], g["awaylabel"])) for g in between}
-    if any(frozenset(pair) not in played for pair in combinations(members, 2)):
+    if any(frozenset(pair) not in played and frozenset(pair) not in cancelled
+           for pair in combinations(members, 2)):
         for team in members:
             notes[team] = "同率（当該チームの対戦が残っている）"
+        return [members]
+    if not between:
+        for team in members:
+            notes[team] = "同率（当該チーム同士の試合は中止）"
         return [members]
     table = _tally(between, members, outs)
     bands = _bands(members, lambda t: _pct(table[t]) or Fraction(0))
     if len(bands) > 1:
-        return _split_by_record(members, bands, table, games, outs, notes)
+        return _split_by_record(members, bands, table, games, outs, notes, cancelled)
     return _split_by_tqb(members, table, notes)
 
 
-def _split_by_record(members, bands, table, games, outs, notes) -> list[list[str]]:
+def _split_by_record(members, bands, table, games, outs, notes,
+                     cancelled=frozenset()) -> list[list[str]]:
     tiers: list[list[str]] = []
     for band in bands:
         for team in band:
@@ -318,21 +358,22 @@ def _split_by_record(members, bands, table, games, outs, notes) -> list[list[str
                 notes[team] = "直接対決で勝ち" if row["w"] > row["l"] else "直接対決で負け"
             else:
                 notes[team] = f"同率{len(members)}チームの当該対戦 {row['w']}勝{row['l']}敗"
-        tiers.extend(_break_tie(band, games, outs, notes) if len(band) > 1 else [band])
+        tiers.extend(_break_tie(band, games, outs, notes, cancelled) if len(band) > 1 else [band])
     return tiers
 
 
 def _split_by_tqb(members, table, notes) -> list[list[str]]:
     tqb = {t: _tqb(table[t]) for t in members}
-    for team in members:
-        value = tqb[team]
-        shown = f"{float(value):+.4f}" if value is not None else "-"
-        notes[team] = f"同率{len(members)}チーム・当該TQB {shown}"
     tiers = _bands(members, lambda t: tqb[t] if tqb[t] is not None else Fraction(-999))
+    guessed = any(table[t]["est"] for t in members)
     for tier in tiers:
-        if len(tier) > 1:
-            for team in tier:
-                notes[team] += "（TQBも同じ。ER-TQB以降は未計算）"
+        for team in tier:
+            value = tqb[team]
+            shown = f"{float(value):+.4f}" if value is not None else "-"
+            remarks = (["TQBも同じ。ER-TQB以降は未計算"] if len(tier) > 1 else []) \
+                + (["イニングの一部は推定"] if guessed else [])
+            extra = f"（{'。'.join(remarks)}）" if remarks else ""
+            notes[team] = f"同率{len(members)}チーム・当該TQB {shown}{extra}"
     return tiers
 
 
@@ -342,15 +383,19 @@ def _fmt_pct(value: Fraction | None) -> str:
     return f"{float(value):.3f}".lstrip("0") if value < 1 else "1.000"
 
 
-def _rows(teams: list[str], games: list[dict], outs: dict | None) -> list[dict]:
-    """1つの表（組）の順位を決めて、行の一覧にする。試合のないチームは順位なしで最後。"""
+def _rows(teams: list[str], games: list[dict], outs: dict | None,
+          cancelled: frozenset = frozenset()) -> list[dict]:
+    """1つの表（組）の順位を決めて、行の一覧にする。試合のないチームは順位なしで最後。
+
+    games は終わった試合だけ。cancelled は中止になった組（_cancelled_pairs）。
+    """
     table = _tally(games, teams, outs)
     played = [t for t in teams if table[t]["g"]]
     notes: dict[str, str] = {}
     tiers: list[list[str]] = []
     for band in _bands(played, lambda t: _pct(table[t]) if _pct(table[t]) is not None
                        else Fraction(1, 2)):
-        for tier in _break_tie(band, games, outs, notes):
+        for tier in _break_tie(band, games, outs, notes, cancelled):
             # 同率のまま残った組は、首位とのゲーム差が小さい順に見せる
             tiers.append(sorted(tier, key=lambda t: table[t]["l"] - table[t]["w"]))
     out: list[dict] = []
@@ -387,6 +432,12 @@ def _fill_gb(out: list[dict], table: dict) -> None:
         row["gb"] = f"{behind:.1f}" if behind > 0 else "-"
 
 
+def _cancelled_pairs(games: list[dict], label: str) -> frozenset:
+    """label のラウンドで中止になった試合の組（{frozenset((先攻, 後攻)), ...}）。"""
+    return frozenset(frozenset((g.get("homelabel"), g.get("awaylabel"))) for g in games
+                     if is_cancelled(g) and _label_match(g, label))
+
+
 def standings(games: list[dict], groups: dict[str, str],
               round_label: str = "Opening Round",
               outs: dict | None = None) -> dict[str, list[dict]]:
@@ -402,11 +453,12 @@ def standings(games: list[dict], groups: dict[str, str],
                if is_final(g) and _label_match(g, round_label)
                and g.get("homelabel") in groups and g.get("awaylabel") in groups
                and groups[g["homelabel"]] == groups[g["awaylabel"]]]
+    cancelled = _cancelled_pairs(games, round_label)
     out: dict[str, list[dict]] = {}
     for group in sorted(set(groups.values())):
         teams = [t for t in groups if groups[t] == group]
         mine = [g for g in counted if groups[g["homelabel"]] == group]
-        out[group] = _rows(teams, mine, outs)
+        out[group] = _rows(teams, mine, outs, cancelled)
     return out
 
 
@@ -449,7 +501,8 @@ def _second_table(teams: list[str], games: list[dict], label: str,
     added = [g for g in games
              if is_final(g) and _label_match(g, label)
              and g.get("homelabel") in members and g.get("awaylabel") in members]
-    rows = _rows(teams, carried + added, outs)
+    cancelled = _cancelled_pairs(games, "Opening Round") | _cancelled_pairs(games, label)
+    rows = _rows(teams, carried + added, outs, cancelled)
     carry = _tally(carried, teams, outs)
     for row in rows:
         mine = carry[row["team"]]
@@ -469,13 +522,14 @@ def second_round(games: list[dict], groups: dict[str, str],
     そちらの顔ぶれを正とする（3位と4位が同率のまま計算で分けられない場合もこれで決まる）。
     ready は顔ぶれが決まったかどうか。1次ラウンドの途中は False で、
     「今の順位のまま終わったら」の暫定の表を返す（全チームが1試合以上してから）。
+    中止（CANC など）のまま日程に残った試合は、もう行われないので「終わった」側に数える。
     行は standings() と同じ形に、group（1次ラウンドの組）と carry（持ち越しの勝敗）を足したもの。
     """
     first = standings(games, groups, "Opening Round", outs)
     top, bottom, clear = _split_first_round(first)
     opening = [g for g in games if _label_match(g, "Opening Round")
                and g.get("homelabel") in groups and g.get("awaylabel") in groups]
-    done = bool(opening) and all(is_final(g) for g in opening)
+    done = bool(opening) and all(is_settled(g) for g in opening)
     ready = done and clear
     super_sched = _scheduled(games, "Super Round", groups)
     place_sched = _scheduled(games, "Placement Round", groups)
@@ -503,7 +557,7 @@ def japan_view(game: dict, japan: str = "Japan") -> dict | None:
 
     先攻はビジター（away）、後攻はホーム（home）。
     mark は終了した試合だけ（○勝ち・●負け・△引き分け）。score は日本の得点が先。
-    試合中は score にその時点の得点を入れ、mark は空にする。
+    試合中と、状態の文字が知らないもの（unknown）は score にその時点の得点を入れ、mark は空にする。
     点数がまだ両方そろっていない（None や空文字）ときは score を "-" にし、mark は付けない。
     """
     home, away = game.get("homelabel"), game.get("awaylabel")
@@ -513,7 +567,7 @@ def japan_view(game: dict, japan: str = "Japan") -> dict | None:
     state = game_state(game)
     known = known_runs(game)
     mark, score = "", ""
-    if state in ("final", "live"):
+    if state in ("final", "live", "unknown"):
         score = score_text(game, home_first=is_home)
     if state == "final" and known:
         away_runs, home_runs = known
@@ -866,13 +920,43 @@ def _selftest_rules(check: Check) -> None:
           "Scenario 3: 3チームが2勝2敗でも、当該対戦の勝敗で C・E・D（TQB は使わない）")
 
 
+def _selftest_cancel(check: Check) -> None:
+    """1次ラウンドの試合が中止（CANC）のまま日程に残ったとき。"""
+    print("\n== 中止の試合が日程に残ったとき")
+    games, folder = _event("u23-wc-2024")
+    groups, outs = _groups(games), load_outs(folder / "raw")
+    target = next(g for g in games if g["gametypelabel"] == "Opening Round")
+    cancel = {"gamestatus": 4, "gamestatustext": "CANC", "awayruns": None, "homeruns": None}
+    changed = [dict(g, **cancel) if g is target else g for g in games]
+    check(second_round(changed, groups, outs)["ready"],
+          f"{target['awaylabel']} @ {target['homelabel']} が中止でも、第2ラウンドの顔ぶれが決まる")
+    opening = [g for g in changed if g["gametypelabel"] == "Opening Round"]
+    check(second_round(opening, groups, outs)["ready"],
+          "第2ラウンドの組み合わせが日程に載る前でも、計算で顔ぶれが決まる")
+    check(not second_round([{**g, **cancel, "gamestatustext": "PPD"} if g is target else g
+                            for g in games], groups, outs)["ready"],
+          "延期（PPD）はあとで行われるので、まだ決まらない")
+    tied = [_fake("1", "A", 5, "C", 1), _fake("2", "E", 5, "A", 1),
+            _fake("3", "B", 5, "C", 1), _fake("4", "E", 5, "B", 1),
+            {**_fake("5", "A", 0, "B", 0), **cancel}]
+    rows = {r["team"]: r for r in standings(tied, {t: "X" for t in "ABCE"})["X"]}
+    check(rows["A"]["rank"] == rows["B"]["rank"] == 2
+          and rows["A"]["note"] == "同率（当該チーム同士の試合は中止）",
+          f"同率の2チームの直接対決が中止: 同率のまま「{rows['A']['note']}」")
+
+
 def _selftest_states(check: Check) -> None:
     print("\n== 試合の状態と引き分け")
     cases = [({"gamestatus": 0, "gamestatustext": ""}, "pre"),
              ({"gamestatus": 2, "gamestatustext": "F/7"}, "final"),
              ({"gamestatus": 3, "gamestatustext": "F"}, "final"),
              ({"gamestatus": 1, "gamestatustext": "T3"}, "live"),
-             ({"gamestatus": 0, "gamestatustext": "PPD"}, "other")]
+             ({"gamestatus": 1, "gamestatustext": "Bot 5th"}, "live"),
+             ({"gamestatus": 1, "gamestatustext": ""}, "live"),
+             ({"gamestatus": 0, "gamestatustext": "PPD"}, "other"),
+             ({"gamestatus": 0, "gamestatustext": "CANC"}, "other"),
+             ({"gamestatus": 0, "gamestatustext": "Warm-up"}, "unknown"),
+             ({"gamestatus": 1, "gamestatustext": "Protest"}, "unknown")]
     for game, want in cases:
         check(game_state(game) == want, f"{game} → {game_state(game)}")
     tie = {"id": 1, "gametypelabel": "Opening Round", "gamestatustext": "F/7",
@@ -883,6 +967,15 @@ def _selftest_states(check: Check) -> None:
     check(japan["t"] == 1 and japan["l"] == 0 and japan["g"] == 1 and japan["pct"] == "-",
           f"F/7 の引き分け: 日本 {japan['w']}勝{japan['l']}敗{japan['t']}分（敗に数えない）")
     check(japan_view(tie)["mark"] == "△", f"引き分けの印 {japan_view(tie)['mark']}")
+    check(batting_outs(tie)[:2] == (21, 21),
+          "raw のない引き分けは、後攻も7回の裏を最後まで攻撃したと数える（21/21アウト）")
+    pair = [{**_fake("t", "B", 3, "A", 3), "runshome7": 1},
+            _fake("1", "A", 5, "C", 1), _fake("2", "E", 5, "A", 1),
+            _fake("3", "B", 5, "C", 1), _fake("4", "E", 5, "B", 1)]
+    rows = {r["team"]: r for r in standings(pair, {t: "X" for t in "ABCE"})["X"]}
+    check(rows["A"]["rank"] == rows["B"]["rank"] and "推定" in rows["A"]["note"],
+          f"並んだ2チームの当該対戦が raw のない引き分けなら、同率のまま注記に推定と出す"
+          f"（{rows['A']['note']}）")
     empty = standings([], {"Cuba": "B", "Japan": "B"})["B"]
     check([r["team"] for r in empty] == ["Cuba", "Japan"] and empty[0]["rank"] is None,
           "試合前は順位なし・組み合わせ表の順（Cuba, Japan）")
@@ -993,6 +1086,7 @@ def selftest() -> int:
         _selftest_event(key, check)
     _selftest_netherlands(check)
     _selftest_rules(check)
+    _selftest_cancel(check)
     _selftest_times_and_japan(check)
     _selftest_states(check)
     _selftest_pitchers(check)

@@ -71,7 +71,21 @@ def head_tags(root: str) -> str:
 
 def body_end(root: str) -> str:
     """</body> の直前に足す <script> を返す。帯・Service Worker・全ページ保存をまとめて受け持つ。"""
-    return "<script>" + PAGE_JS.replace("__ROOT__", json.dumps(root)) + "</script>"
+    return "<script>" + PAGE_JS.replace("__ROOT__", script_json(root)) + "</script>"
+
+
+def script_json(data) -> str:
+    """ページの <script> の中に置く JSON。
+
+    「<」「>」「&」を \\u003c のような形にして、中の文字列に </script> や <!--<script> が
+    入っていても <script> の終わりがずれないようにする（JSON.parse や JavaScript では同じ文字に戻る）。
+    U+2028・U+2029 も、古い JavaScript で文の切れ目と読まれないよう同じ形にする。
+    """
+    text = json.dumps(data, ensure_ascii=False)
+    for char, code in (("<", "\\u003c"), (">", "\\u003e"), ("&", "\\u0026"),
+                       ("\u2028", "\\u2028"), ("\u2029", "\\u2029")):
+        text = text.replace(char, code)
+    return text
 
 
 # ---------------------------------------------------------------- 書き出すもの
@@ -686,6 +700,9 @@ def selftest() -> None:
         assert png_size(icon_png(48)) == (48, 48)  # assets/ がないときに作るアイコン
         assert "端末に保存されていません" in (site / "offline" / "index.html").read_text()
     assert '"../../"' in body_end("../../") and "__ROOT__" not in body_end("")
+    # <script> の中に置く JSON は「<」を残さず、読み直すと元に戻る
+    risky = {"opp": "<!--<script></script>", "v": "a&b>c\u2028"}
+    assert "<" not in script_json(risky) and json.loads(script_json(risky)) == risky
     assert 'href="../manifest.webmanifest"' in head_tags("../")
     rules = headers_rules("tok")
     assert "tok" not in rules and "/*/status.js\n  Cache-Control: no-cache" in rules, rules

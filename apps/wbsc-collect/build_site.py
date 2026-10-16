@@ -43,6 +43,7 @@ import subprocess
 import sys
 import time
 import unicodedata
+import urllib.parse
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -147,6 +148,10 @@ FILE_LABEL = {"名簿照合.csv": "名簿の「過去の記録」欄"}
 CHECKED_IN_TEXT = re.compile(r"\d+月\d+日確認")
 # build_site.py が書き出したフォルダの目印。--out はこれがあるフォルダだけを作り直す
 MARK = ".u23-site"
+# 外部リンクにしてよいURLの形（http か https で、空白や制御文字を含まない）
+WEB_URL = re.compile(r"https?://[^\x00-\x20\x7f]+", re.IGNORECASE)
+# リンクにしなかったURL（同じ注意を何度も出さないため）
+SKIPPED_URLS: set[str] = set()
 
 
 # ---------------------------------------------------------------- 小さな道具
@@ -222,15 +227,33 @@ def iso_day(text: str) -> datetime:
     return datetime.strptime(text, "%Y-%m-%d")
 
 
+def web_url(url) -> str:
+    """外部リンクにしてよいURL（http・https）ならそのまま、ほかは空文字を返す。
+
+    javascript: や data: のURL、相対パスや作業用のファイル名をリンクにしないため。
+    はじいたURLは、組み立てのときに1回だけ「注意:」と出す。
+    """
+    text = str(url if url is not None else "").strip()
+    if WEB_URL.fullmatch(text):
+        return text
+    if text and text not in SKIPPED_URLS:
+        SKIPPED_URLS.add(text)
+        print(f"注意: http・https ではないURLはリンクにしません: {text[:80]!r}", file=sys.stderr)
+    return ""
+
+
 def ext(url, text) -> str:
-    """外部へのリンク。参照元（合言葉入りのURL）は送らない。"""
-    return (f'<a class="ext" href="{esc(url)}" target="_blank" rel="noreferrer noopener">'
+    """外部へのリンク。参照元（合言葉入りのURL）は送らない。http・https でなければ何も出さない。"""
+    href = web_url(url)
+    if not href:
+        return ""
+    return (f'<a class="ext" href="{esc(href)}" target="_blank" rel="noreferrer noopener">'
             f"{esc(text)}</a>")
 
 
 def sources(text, label: str = "出典") -> str:
-    """「URL | URL」の形の出典を、外部リンクに並べる。"""
-    urls = [u.strip() for u in str(text or "").split("|") if u.strip()]
+    """「URL | URL」の形の出典を、外部リンクに並べる。http・https でないものは飛ばす。"""
+    urls = [u for u in (web_url(x) for x in str(text or "").split("|")) if u]
     if len(urls) <= 1:
         return ext(urls[0], label) if urls else ""
     return "・".join(ext(u, f"{label}{i}") for i, u in enumerate(urls, 1))
@@ -482,7 +505,8 @@ def has_current(d: dict, team: str) -> bool:
 
 
 def box_url(game_id) -> str:
-    return collect.event_url(WBSC_DOMAIN, WBSC_SLUG, f"schedule-and-results/box-score/{game_id}")
+    game = urllib.parse.quote(str(game_id), safe="")
+    return collect.event_url(WBSC_DOMAIN, WBSC_SLUG, f"schedule-and-results/box-score/{game}")
 
 
 def venue(game: dict) -> str:
@@ -536,7 +560,7 @@ def matchup(game: dict, root: str, view, strong=None) -> str:
     elif undecided(game.get("awaylabel")) and undecided(game.get("homelabel")):
         text = '<span class="tbd">未定</span>'  # 「TBD vs TBD」と出さない
     else:
-        middle = sl.score_text(game) if state in ("final", "live") else "vs"
+        middle = sl.score_text(game) if state in ("final", "live", "unknown") else "vs"
         mine = sl.japan_view(game, strong) if strong else None
 
         def side(team) -> str:
@@ -557,6 +581,9 @@ def state_label(game: dict, state: str) -> str:
         return ' <span class="live">試合中</span>'
     if state == "other":
         return f' <span class="live">{esc(game.get("gamestatustext") or "中止・延期など")}</span>'
+    if state == "unknown":  # 知らない状態の文字は「試合中」と決めつけず、そのまま見せる
+        text = esc(str(game.get("gamestatustext")).strip())
+        return f' <span class="st" title="{text}">状態: {text}</span>'
     return ""
 
 
@@ -705,8 +732,8 @@ def log_table(d: dict, team: str, root: str) -> str:
         last = pitcher["last_date"]
         body.append(
             f'<tr>{log_name(d, pitcher, root)}'
-            f'<td data-sort="{last.replace("-", "")}">{iso_md(last)}</td>'
-            f'<td data-last="{last}">-</td><td>{pitcher["total_pitches"]}</td>'
+            f'<td data-sort="{esc(last.replace("-", ""))}">{iso_md(last)}</td>'
+            f'<td data-last="{esc(last)}">-</td><td>{pitcher["total_pitches"]}</td>'
             + "".join(app_cell(apps.get(str(g.get("id")))) for g in games)
             + f'<td data-sort="{sl.ip_to_outs(pitcher["ip_total"])}">{pitcher["ip_total"]}</td>'
             f'<td>{pitcher["gs_count"]}</td></tr>')
@@ -838,7 +865,7 @@ def staff_text(staff) -> str:
 
 def facts_block(info: dict) -> str:
     rank = info.get("ranking") or {}
-    rank_text = (f'{rank["rank"]}位<small>（{iso_md(rank.get("as_of"))}時点）</small>'
+    rank_text = (f'{esc(rank["rank"])}位<small>（{iso_md(rank.get("as_of"))}時点）</small>'
                  + sources(rank.get("source")) if rank.get("rank") else "未確認")
     route = (esc(info["route"]) + sources(info.get("route_source"))
              if info.get("route") else "未確認")
@@ -1332,7 +1359,7 @@ def team_cards(d: dict, root: str) -> str:
                 "<small>グループB</small></a>"
                 for t, g in GROUPS.items() if g == "B" and t in OPP and t not in seen]
     cards_a = [f'<a class="tcard" href="{root}team/{slug(t)}/"><span>{esc(ja(t))}</span>'
-               f'<small>{"世界" + str(rank[t]) + "位" if rank.get(t) else "グループA"}</small></a>'
+               f'<small>{esc("世界" + str(rank[t]) + "位") if rank.get(t) else "グループA"}</small></a>'
                for t, g in GROUPS.items() if g == "A" and t in OPP]
     title = "・".join(sorted(rounds, reverse=True)) or "スーパーラウンド"
     second = (f'<h3>{title}の日本の相手</h3><div class="tgrid">{"".join(later)}</div>'
@@ -1373,17 +1400,18 @@ def after_text(d: dict, japan: list[dict]) -> str:
     done = "日本の試合はすべて終わりました。"
     medal_jp = [g for g in japan if round_of(g, "Final", "Bronze")]
     medal = [g for g in games if round_of(g, "Final", "Bronze")]
-    if (medal_jp or medal) and all(sl.is_final(g) for g in (medal_jp or medal)):
+    # 中止のまま日程に残った試合も「もう動かない」側に数える（sl.is_settled）
+    if (medal_jp or medal) and all(sl.is_settled(g) for g in (medal_jp or medal)):
         return done  # 日本の入ったメダル戦、またはメダル戦そのものが終わった（もう試合はない）
     opening = [g for g in games if round_of(g, "Opening")]
     second_jp = [g for g in japan if round_of(g, "Super", "Placement")]
-    if not opening or not all(sl.is_final(g) for g in opening) or not second_jp:
+    if not opening or not all(sl.is_settled(g) for g in opening) or not second_jp:
         return ("次の日本戦は、組み合わせが決まりしだい載ります（スーパーラウンドと順位決定ラウンドの"
                 "相手は1次ラウンドの結果で決まります）。")
     if any(round_of(g, "Placement") for g in second_jp):
         return done  # 順位決定ラウンドの後に日本の試合はない
     super_round = [g for g in games if round_of(g, "Super")]
-    if super_round and all(sl.is_final(g) for g in super_round):
+    if super_round and all(sl.is_settled(g) for g in super_round):
         rows = sl.second_round(games, GROUPS, outs=d["outs"])["super"]
         rank = next((r["rank"] for r in rows if r["team"] == "Japan"), None)
         named = [t for g in medal for t in (g.get("awaylabel"), g.get("homelabel")) if t in JA]
@@ -1401,8 +1429,8 @@ def hero_block(d: dict, japan: list[dict]) -> str:
     if not ahead:
         return after
     g = ahead[0]
-    data = json.dumps(items, ensure_ascii=False).replace("</", "<\\/")
-    return (f'<a class="hero" id="next-jp" href="{g["href"]}" data-start="{g["t"]}"><small>次の日本戦'
+    data = so.script_json(items)  # 相手の名前などに </script> や <!-- が入っても中身の終わりがずれない
+    return (f'<a class="hero" id="next-jp" href="{esc(g["href"])}" data-start="{esc(g["t"])}"><small>次の日本戦'
             f'<b class="when" id="next-when"></b></small><b class="opp">日本 vs {esc(g["opp"])}</b>'
             f'<span><b class="jst">{esc(g["jst"])}</b>（日本時間）・'
             f'<span class="local">現地 {esc(g["local"])}</span></span>'
@@ -1651,6 +1679,8 @@ font-size:11px;color:var(--dim);vertical-align:1px;white-space:nowrap}
 .live{margin-left:4px;padding:1px 6px;border-radius:4px;background:var(--red);color:#fff;font-size:11px;font-weight:700;
 white-space:nowrap}
 .inn{margin-left:4px;color:var(--dim);font-size:12px}
+.st{display:inline-block;max-width:100%;margin-left:4px;padding:0 6px;border:1px solid var(--line);border-radius:4px;
+color:var(--dim);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
 .nw{white-space:nowrap}
 tr.jp td{background:var(--jp)}
 .scroll{overflow:auto;-webkit-overflow-scrolling:touch;background:var(--card);border:1px solid var(--line);border-radius:10px}
