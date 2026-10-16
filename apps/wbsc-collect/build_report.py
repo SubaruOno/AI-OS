@@ -14,6 +14,7 @@ from __future__ import annotations
 import csv
 import html as html_mod
 import json
+import math
 from collections import defaultdict
 from pathlib import Path
 
@@ -82,29 +83,112 @@ def rate(numerator: float, denominator: float, digits: int = 3) -> str:
 # hittype の意味。narrative と突き合わせて確かめた
 HIT_TYPE = {"1": "ゴロ", "2": "ライナー", "3": "フライ", "4": "ポップ"}
 
+FAIR_DEGREES = 45   # hitpull がこの角度を超える打球はファウル域
+PULL_DEGREES = 8    # 中堅から左右この角度までは「センター」
+
+
+def batted_kind(row: dict) -> str | None:
+    """打球の種類。打球でない行は None。
+
+    hittype が入っていても、距離と角度がどちらも0の行は打球ではない。
+    暴投・盗塁・送球エラーなどの行に hittype が残っていることがある。
+    """
+    kind = HIT_TYPE.get(str(row.get("hittype") or ""))
+    if not kind:
+        return None
+    if number(row.get("hitdistance")) == 0 and number(row.get("hitpull")) == 0:
+        return None
+    return kind
+
+
+def bat_side(row: dict) -> str:
+    """打者が実際に立った打席（"L" か "R"）。分からなければ空。
+
+    collect.py が plays.csv に書いた batter_bats と pitcher_throws を見る。
+    両打ち（S）は、相手投手の投げ手の逆の打席に立ったと見なす。
+    """
+    bats = str(row.get("batter_bats") or "").strip().upper()
+    if bats in ("L", "R"):
+        return bats
+    throws = str(row.get("pitcher_throws") or "").strip().upper()
+    if bats == "S" and throws in ("L", "R"):
+        return "R" if throws == "L" else "L"
+    return ""
+
+
+def direction(angle: float, side: str) -> str:
+    """打球方向を 引っ張り・センター・流し に分ける。左打ちは右方向が引っ張り。"""
+    if not side:
+        return ""
+    toward_pull = angle if side == "L" else -angle
+    if toward_pull > PULL_DEGREES:
+        return "引っ張り"
+    if toward_pull < -PULL_DEGREES:
+        return "流し"
+    return "センター"
+
 
 def batted_balls(plays: list[dict], team: str) -> dict[str, dict]:
     """打者ごとの打球の内訳と方向。
 
-    hitpull は打球方向の角度で、負が左方向、正が右方向。
-    hitdistance は飛距離。この2つで落下点が決まる。
+    hitpull は打球方向の角度で、0が中堅、負が左方向、正が右方向。
+    hitdistance は記録用の距離（単位の見立ては SPRAY_NOTE）。
+    図と方向の割合には、フェアの範囲（±45°）で距離が0より大きい打球だけを使う。
     """
     out: dict[str, dict] = {}
     for row in plays:
         if row.get("batting_team") != team:
             continue
-        kind = HIT_TYPE.get(row.get("hittype"))
+        kind = batted_kind(row)
         if not kind:
             continue
         entry = out.setdefault(str(row.get("batterid")), {
             "ゴロ": 0, "ライナー": 0, "フライ": 0, "ポップ": 0, "点": [],
+            "引っ張り": 0, "センター": 0, "流し": 0,
         })
         entry[kind] += 1
-        angle = row.get("hitpull")
-        distance = row.get("hitdistance")
-        if angle not in ("", None) and distance not in ("", "0", None):
-            entry["点"].append((float(angle), float(distance), kind))
+        angle = number(row.get("hitpull"))
+        distance = number(row.get("hitdistance"))
+        if distance <= 0 or abs(angle) > FAIR_DEGREES:
+            continue
+        entry["点"].append((angle, distance, kind))
+        way = direction(angle, bat_side(row))
+        if way:
+            entry[way] += 1
     return out
+
+
+BAT_FIELDS = (("打席", "pa"), ("打数", "ab"), ("安打", "h"),
+              ("二塁打", "double"), ("三塁打", "triple"), ("本塁打", "hr"),
+              ("打点", "rbi"), ("四球", "bb"), ("死球", "hbp"), ("三振", "so"),
+              ("見逃三振", "kl"), ("盗塁", "sb"), ("盗塁死", "cs"),
+              ("犠打", "sh"), ("犠飛", "sf"), ("ゴロ", "ground"), ("フライ", "fly"))
+
+
+def add_batting_rates(entry: dict) -> None:
+    """打率・出塁率・長打率・三振率。出塁率の分母は 打数＋四球＋死球＋犠飛。"""
+    hits = entry["安打"]
+    at_bats = entry["打数"]
+    singles = hits - entry["二塁打"] - entry["三塁打"] - entry["本塁打"]
+    bases = singles + 2 * entry["二塁打"] + 3 * entry["三塁打"] + 4 * entry["本塁打"]
+    on_base = hits + entry["四球"] + entry["死球"]
+    chances = at_bats + entry["四球"] + entry["死球"] + entry["犠飛"]
+    entry["打率"] = rate(hits, at_bats)
+    entry["出塁率"] = rate(on_base, chances)
+    entry["長打率"] = rate(bases, at_bats)
+    entry["三振率"] = rate(entry["三振"], entry["打席"], 3)
+
+
+def add_batted_rates(entry: dict, hit: dict) -> None:
+    """打球の内訳と方向の割合。左右が分からない打球は方向の分母に入れない。"""
+    in_play = sum(hit.get(kind, 0) for kind in HIT_TYPE.values())
+    entry["打球"] = in_play
+    entry["ゴロ率"] = rate(hit.get("ゴロ", 0), in_play, 2)
+    entry["フライ率"] = rate(hit.get("フライ", 0) + hit.get("ポップ", 0), in_play, 2)
+    known = sum(hit.get(way, 0) for way in ("引っ張り", "センター", "流し"))
+    entry["引っ張り率"] = rate(hit.get("引っ張り", 0), known, 2)
+    entry["流し率"] = rate(hit.get("流し", 0), known, 2)
+    entry["_points"] = hit.get("点", [])
 
 
 def collect_batters(rows: list[dict], team: str,
@@ -117,18 +201,11 @@ def collect_batters(rows: list[dict], team: str,
             continue
         key = row.get("playerid") or name_of(row)
         entry = agg.setdefault(key, {
-            "名前": name_of(row), "試合": 0, "打席": 0, "打数": 0, "安打": 0,
-            "二塁打": 0, "三塁打": 0, "本塁打": 0, "打点": 0, "四球": 0,
-            "死球": 0, "三振": 0, "見逃三振": 0, "盗塁": 0, "盗塁死": 0,
-            "犠打": 0, "ゴロ": 0, "フライ": 0, "守備": set(),
+            "名前": name_of(row), "試合": 0,
+            **{label: 0 for label, _ in BAT_FIELDS}, "守備": set(),
         })
         entry["試合"] += 1
-        for label, field in (("打席", "pa"), ("打数", "ab"), ("安打", "h"),
-                             ("二塁打", "double"), ("三塁打", "triple"),
-                             ("本塁打", "hr"), ("打点", "rbi"), ("四球", "bb"),
-                             ("死球", "hbp"), ("三振", "so"), ("見逃三振", "kl"),
-                             ("盗塁", "sb"), ("盗塁死", "cs"), ("犠打", "sh"),
-                             ("ゴロ", "ground"), ("フライ", "fly")):
+        for label, field in BAT_FIELDS:
             entry[label] += int(number(row.get(field)))
         if row.get("pos"):
             entry["守備"].add(row["pos"].strip())
@@ -136,80 +213,70 @@ def collect_batters(rows: list[dict], team: str,
 
     out = []
     for entry in agg.values():
-        hits = entry["安打"]
-        at_bats = entry["打数"]
-        singles = hits - entry["二塁打"] - entry["三塁打"] - entry["本塁打"]
-        bases = singles + 2 * entry["二塁打"] + 3 * entry["三塁打"] + 4 * entry["本塁打"]
-        on_base = hits + entry["四球"] + entry["死球"]
-        chances = at_bats + entry["四球"] + entry["死球"] + entry["犠打"]
-        balls_in_play = entry["ゴロ"] + entry["フライ"]
         entry["守備"] = "/".join(sorted(entry["守備"]))
-        entry["打率"] = rate(hits, at_bats)
-        entry["出塁率"] = rate(on_base, chances)
-        entry["長打率"] = rate(bases, at_bats)
-        entry["三振率"] = rate(entry["三振"], entry["打席"], 3)
-        hit = balls.get(entry.get("_id", ""), {})
-        ground = hit.get("ゴロ", 0)
-        liner = hit.get("ライナー", 0)
-        fly = hit.get("フライ", 0)
-        pop = hit.get("ポップ", 0)
-        in_play = ground + liner + fly + pop
-        entry["打球"] = in_play
-        entry["ゴロ率"] = rate(ground, in_play, 2)
-        entry["フライ率"] = rate(fly + pop, in_play, 2)
-        points = hit.get("点", [])
-        pulled = sum(1 for angle, _, _ in points if angle < -8)
-        opposite = sum(1 for angle, _, _ in points if angle > 8)
-        entry["引っ張り率"] = rate(pulled, len(points), 2)
-        entry["流し率"] = rate(opposite, len(points), 2)
-        entry["_points"] = points
+        add_batting_rates(entry)
+        add_batted_rates(entry, balls.get(entry.get("_id", ""), {}))
         out.append(entry)
     out.sort(key=lambda e: (-e["打席"], e["名前"]))
     return out
 
 
+def outs_of(value) -> int:
+    """投球回の表記（"6.2"）をアウトの数（20）に直す。小数点の後ろはアウト数。"""
+    whole, _, part = str(value or "0").strip().partition(".")
+    try:
+        return int(whole or 0) * 3 + int((part or "0")[0])
+    except ValueError:
+        return 0
+
+
+def innings_text(outs: int) -> str:
+    """アウトの数を野球の表記に戻す（28アウト → "9.1"）。"""
+    return f"{outs // 3}.{outs % 3}"
+
+
+PIT_FIELDS = (("被安打", "pitch_h"), ("失点", "pitch_r"), ("自責点", "pitch_er"),
+              ("四球", "pitch_bb"), ("死球", "pitch_hbp"), ("三振", "pitch_so"),
+              ("被本塁打", "pitch_hr"), ("球数", "pitch_pitches"),
+              ("ストライク", "pitch_strikes"), ("打者", "pitch_bf"),
+              ("ゴロ", "pitch_ground"), ("フライ", "pitch_fly"), ("暴投", "pitch_wp"))
+
+
+def add_pitching_rates(entry: dict) -> None:
+    """投球回は野球の表記（9回1/3 → "9.1"）。率の計算には実数（_ip）を使う。"""
+    innings = entry["_outs"] / 3
+    entry["投球回"] = innings_text(entry["_outs"])
+    entry["防御率"] = f"{entry['自責点'] * 9 / innings:.2f}" if innings else "-"
+    entry["奪三振率"] = f"{entry['三振'] * 9 / innings:.1f}" if innings else "-"
+    entry["与四球率"] = f"{entry['四球'] * 9 / innings:.1f}" if innings else "-"
+    entry["ストライク率"] = rate(entry["ストライク"], entry["球数"], 2)
+    entry["ゴロ率"] = rate(entry["ゴロ"], entry["ゴロ"] + entry["フライ"], 2)
+    entry["_ip"] = innings
+
+
 def collect_pitchers(rows: list[dict], team: str) -> list[dict]:
+    """投手を選手ごとに積み上げる。投球回は登板ごとにアウト数へ直して足す。"""
     agg: dict[str, dict] = {}
     for row in rows:
         if row.get("team") != team:
             continue
         key = row.get("playerid") or name_of(row)
         entry = agg.setdefault(key, {
-            "名前": name_of(row), "登板": 0, "先発": 0, "投球回": 0.0,
-            "被安打": 0, "失点": 0, "自責点": 0, "四球": 0, "死球": 0,
-            "三振": 0, "被本塁打": 0, "球数": 0, "ストライク": 0,
-            "打者": 0, "ゴロ": 0, "フライ": 0, "暴投": 0,
+            "名前": name_of(row), "登板": 0, "先発": 0, "投球回": "0.0",
+            **{label: 0 for label, _ in PIT_FIELDS}, "_outs": 0,
         })
         entry["登板"] += 1
         entry["_id"] = str(row.get("playerid"))
         entry["先発"] += int(number(row.get("pitch_gs")))
-        entry["投球回"] += number(row.get("pitch_ip"))
-        for label, field in (("被安打", "pitch_h"), ("失点", "pitch_r"),
-                             ("自責点", "pitch_er"), ("四球", "pitch_bb"),
-                             ("死球", "pitch_hbp"), ("三振", "pitch_so"),
-                             ("被本塁打", "pitch_hr"), ("球数", "pitch_pitches"),
-                             ("ストライク", "pitch_strikes"), ("打者", "pitch_bf"),
-                             ("ゴロ", "pitch_ground"), ("フライ", "pitch_fly"),
-                             ("暴投", "pitch_wp")):
+        entry["_outs"] += outs_of(row.get("pitch_ip"))
+        for label, field in PIT_FIELDS:
             entry[label] += int(number(row.get(field)))
 
     out = []
     for entry in agg.values():
-        # 投球回は .1 と .2 が1/3回と2/3回を表すので、実数に直す
-        whole = int(entry["投球回"])
-        fraction = round((entry["投球回"] - whole) * 10)
-        innings = whole + fraction / 3
-        entry["投球回"] = f"{innings:.1f}"
-        entry["防御率"] = f"{entry['自責点'] * 9 / innings:.2f}" if innings else "-"
-        entry["奪三振率"] = f"{entry['三振'] * 9 / innings:.1f}" if innings else "-"
-        entry["与四球率"] = f"{entry['四球'] * 9 / innings:.1f}" if innings else "-"
-        entry["ストライク率"] = rate(entry["ストライク"], entry["球数"], 2)
-        entry["ゴロ率"] = rate(entry["ゴロ"], entry["ゴロ"] + entry["フライ"], 2)
-        entry["_ip"] = innings
+        add_pitching_rates(entry)
         out.append(entry)
     out.sort(key=lambda e: (-e["_ip"], e["名前"]))
-    for entry in out:
-        entry.pop("_ip")
     return out
 
 
@@ -225,7 +292,7 @@ def team_tendency(batters: list[dict], plays: list[dict], team: str) -> dict:
     for row in plays:
         if row.get("batting_team") != team:
             continue
-        kind = HIT_TYPE.get(row.get("hittype"))
+        kind = batted_kind(row)
         if kind:
             kinds[kind] += 1
     in_play = sum(kinds.values()) or 1
@@ -240,45 +307,134 @@ def team_tendency(batters: list[dict], plays: list[dict], team: str) -> dict:
     }
 
 
-COLOR = {"ゴロ": "#4da3ff", "ライナー": "#ffb454", "フライ": "#7ee081",
-         "ポップ": "#c792ea"}
+# 打球図。縮尺は全図で同じにする（距離1あたり SPRAY_SCALE px）
+SPRAY_SCALE = 0.75
+SPRAY_EDGE = 320          # 扇形の外周。記録の最大（本塁打の310前後）が入る
+SPRAY_INFIELD = 120       # 内野の土の目安
+SPRAY_GUIDES = (100, 200, 300)
+SPRAY_HOME = (200, 250)
+# hitdistance の単位の見立て（2026-10-16、5大会6675球で確認）。
+# 柵越えの本塁打が257〜314（82本中37本がちょうど310で、310が入力の上限と見られる）、
+# 内野ゴロが94〜113、外野フライが226に集まる。メートルではありえず、
+# フィートとしても柵や外野手の位置が2割ほど近すぎるので、記録アプリの図の上の距離と見る
+SPRAY_NOTE = ("点線は距離100・200・300。距離はWBSCの記録アプリの値で、実際のフィートより"
+              "2割ほど短めです（柵越えはおよそ260〜310）。打球の約半分は、処理した野手の定位置の"
+              "距離（94・113・179・226など）で記録されています。ファウル域と距離0以下の"
+              "打球は描いていません。")
+
+# 種類ごとのクラス・形・既定の色。色はサイト側のCSSでクラスごとに上書きできる。
+# 既定の色は単体レポート（暗い背景）用。フライとポップは同じ色で、形だけ変える
+SPRAY_MARK = {
+    "ゴロ": ("spray-ground", "circle", "#3987e5"),
+    "ライナー": ("spray-liner", "triangle", "#d95926"),
+    "フライ": ("spray-fly", "square", "#199e70"),
+    "ポップ": ("spray-pop", "diamond", "#199e70"),
+}
+COLOR = {kind: color for kind, (_, _, color) in SPRAY_MARK.items()}
+SPRAY_FIELD = "#262b27"
+
+
+def spray_xy(angle: float, distance: float) -> tuple[float, float]:
+    """角度（0が中堅、負が左）と距離を、図の上の座標に直す。"""
+    radians = math.radians(angle)
+    length = min(distance, SPRAY_EDGE) * SPRAY_SCALE
+    home_x, home_y = SPRAY_HOME
+    return home_x + length * math.sin(radians), home_y - length * math.cos(radians)
+
+
+def spray_arc(distance: float, closed: bool) -> str:
+    """本塁から distance の位置に、ファウルラインからファウルラインまでの弧を引く。"""
+    left = spray_xy(-FAIR_DEGREES, distance)
+    right = spray_xy(FAIR_DEGREES, distance)
+    radius = distance * SPRAY_SCALE
+    arc = (f"M{left[0]:.1f} {left[1]:.1f} "
+           f"A{radius:.1f} {radius:.1f} 0 0 1 {right[0]:.1f} {right[1]:.1f}")
+    if not closed:
+        return arc
+    home_x, home_y = SPRAY_HOME
+    return f"M{home_x} {home_y} L{arc[1:]} Z"
+
+
+def spray_shape(kind: str, x: float, y: float, inner: str = "") -> str:
+    """打球1つの印。ゴロ●・ライナー▲・フライ■・ポップ◆。"""
+    css, shape, color = SPRAY_MARK[kind]
+    common = (f'class="spray-dot {css}" fill="{color}" stroke="{SPRAY_FIELD}" '
+              'stroke-width="1.2"')
+    if shape == "circle":
+        return f'<circle cx="{x:.1f}" cy="{y:.1f}" r="5" {common}>{inner}</circle>'
+    if shape == "square":
+        return (f'<rect x="{x - 4.5:.1f}" y="{y - 4.5:.1f}" width="9" height="9" '
+                f'{common}>{inner}</rect>')
+    corners = {
+        "triangle": ((0, -6.5), (-6, 4.5), (6, 4.5)),
+        "diamond": ((0, -6.5), (6, 0), (0, 6.5), (-6, 0)),
+    }[shape]
+    points = " ".join(f"{x + dx:.1f},{y + dy:.1f}" for dx, dy in corners)
+    return f'<polygon points="{points}" {common}>{inner}</polygon>'
+
+
+def spray_field() -> str:
+    """扇形の地面、ファウルライン、距離の目安線とその数字。"""
+    parts = [
+        f'<path class="spray-field" d="{spray_arc(SPRAY_EDGE, True)}" '
+        f'fill="{SPRAY_FIELD}" stroke="#3d4a40"/>',
+        f'<path class="spray-infield" d="{spray_arc(SPRAY_INFIELD, True)}" '
+        'fill="#332c24" stroke="#4a3f33"/>',
+    ]
+    for distance in SPRAY_GUIDES:
+        x, y = spray_xy(FAIR_DEGREES, distance)
+        parts.append(
+            f'<path class="spray-guide" d="{spray_arc(distance, False)}" fill="none" '
+            'stroke="#7d8b80" stroke-dasharray="4 4" stroke-width="1"/>'
+            f'<text class="spray-label" x="{x + 5:.1f}" y="{y + 4:.1f}" '
+            f'fill="#9aa3b2" font-size="11">{distance}</text>'
+        )
+    home_x, home_y = SPRAY_HOME
+    for side in (-FAIR_DEGREES, FAIR_DEGREES):
+        x, y = spray_xy(side, SPRAY_EDGE)
+        parts.append(f'<line class="spray-line" x1="{home_x}" y1="{home_y}" '
+                     f'x2="{x:.1f}" y2="{y:.1f}" stroke="#8a968c" stroke-width="1.2"/>')
+    return "".join(parts)
+
+
+def spray_legend(points: list[tuple], total: int) -> str:
+    """凡例（形と色）と、図に描いた打球の数。"""
+    chips = []
+    for kind in SPRAY_MARK:
+        count = sum(1 for _, _, k in points if k == kind)
+        chips.append(
+            f'<span class="chip"><svg class="spray-key" width="14" height="14" '
+            f'viewBox="-7 -7 14 14" aria-hidden="true">{spray_shape(kind, 0, 0)}</svg>'
+            f'<b>{kind}</b>{count}</span>'
+        )
+    chips.append(f'<span class="chip"><b>図の打球</b>{len(points)}/{total}</span>')
+    return f'<div class="chips">{"".join(chips)}</div>'
 
 
 def spray_chart(batters: list[dict]) -> str:
-    """打球方向の角度と飛距離から、落下点を扇形に置く。"""
-    import math
+    """打球方向の角度と距離から、落下点を扇形に置く。
 
+    縮尺は全図で同じ。フェアの範囲（±45°）の外と距離0以下の打球は描かない
+    （batted_balls の段階で _points から外している）。
+    """
     points = [p for b in batters for p in b.get("_points", [])]
     if not points:
         return '<p class="empty">打球の記録がありません。</p>'
-    longest = max(distance for _, distance, _ in points) or 1
-    dots = []
-    for angle, distance, kind in points:
-        # 角度は0が中堅方向。負が左、正が右。
-        radians = math.radians(angle)
-        length = 190 * (distance / longest)
-        x = 200 + length * math.sin(radians)
-        y = 250 - length * math.cos(radians)
-        dots.append(
-            f'<circle cx="{x:.1f}" cy="{y:.1f}" r="3" fill="{COLOR[kind]}" '
-            f'opacity=".65"><title>{kind} {distance:.0f}</title></circle>'
-        )
-    legend = " ".join(
-        f'<span class="chip"><b style="color:{color}">●</b>{kind}</span>'
-        for kind, color in COLOR.items()
+    total = sum(b.get("打球", 0) for b in batters) or len(points)
+    dots = "".join(
+        spray_shape(kind, *spray_xy(angle, distance),
+                    inner=f"<title>{kind} {distance:.0f}</title>")
+        for angle, distance, kind in points
     )
+    _, home_y = SPRAY_HOME
     return f"""<div class="spray">
-<svg viewBox="0 0 400 270" width="100%" style="max-width:420px">
-  <path d="M200 250 L60 110 A198 198 0 0 1 340 110 Z"
-        fill="#1b2a20" stroke="#2f4638"/>
-  <path d="M200 250 L128 178 A102 102 0 0 1 272 178 Z"
-        fill="#2a2018" stroke="#3d3025"/>
-  <line x1="200" y1="250" x2="60" y2="110" stroke="#41503f"/>
-  <line x1="200" y1="250" x2="340" y2="110" stroke="#41503f"/>
-  {''.join(dots)}
+<svg class="spray-svg" viewBox="0 0 400 {home_y + 8}" width="100%" style="max-width:440px"
+     role="img" aria-label="打球の落下点の図（{len(points)}球）">
+{spray_field()}
+{dots}
 </svg>
-<div class="chips">{legend}<span class="chip"><b>打球</b>{len(points)}</span>
-<span class="chip"><b>最長</b>{longest:.0f}</span></div>
+{spray_legend(points, total)}
+<p class="spray-note">{html_mod.escape(SPRAY_NOTE)}</p>
 </div>"""
 
 
@@ -300,7 +456,7 @@ def table(rows: list[dict], columns: list[str]) -> str:
 
 BAT_COLUMNS = ["名前", "守備", "試合", "打席", "打数", "安打", "打率", "出塁率",
                "長打率", "二塁打", "三塁打", "本塁打", "打点", "四球", "三振",
-               "三振率", "盗塁", "盗塁死", "犠打", "打球", "ゴロ率", "フライ率",
+               "三振率", "盗塁", "盗塁死", "犠打", "犠飛", "打球", "ゴロ率", "フライ率",
                "引っ張り率", "流し率"]
 PIT_COLUMNS = ["名前", "登板", "先発", "投球回", "防御率", "被安打", "自責点",
                "三振", "奪三振率", "四球", "与四球率", "被本塁打", "球数",
@@ -397,6 +553,8 @@ h4{margin:18px 0 6px;font-size:13px;color:var(--dim)}
 .chip b{color:var(--dim);font-weight:500;margin-right:6px}
 .empty{color:var(--dim);font-size:13px}
 .spray{margin:8px 0 4px}
+.spray-key{vertical-align:-2px;margin-right:5px}
+.spray-note{color:var(--dim);font-size:11px;margin:2px 0 0}
 table{width:100%;border-collapse:collapse;font-size:12px;
       font-variant-numeric:tabular-nums;display:block;overflow-x:auto}
 th,td{padding:5px 8px;border-bottom:1px solid var(--line);

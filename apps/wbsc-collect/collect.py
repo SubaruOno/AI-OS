@@ -11,11 +11,15 @@ HTMLの <div data-page="..."> に描画用のJSONがそのまま埋まってい�
     python3 collect.py --all                      登録済みを全部取る
 
 出力先は既定で ~/野球/U23ワールドカップ2026/05_収集データ/<大会キー>/。
-    games.json        日程と結果の一覧
-    raw/<試合ID>.json 試合ごとの生データ
+    games.json        日程と結果の一覧（毎回取り直す）
+    raw/<試合ID>.json 試合ごとの生データ（終わった試合だけ残す）
     batting.csv       打者成績（1行＝1試合1選手）
     pitching.csv      投手成績
-    plays.csv         打席ごとの記録
+    plays.csv         1球ごとの記録。batter_bats と pitcher_throws に打者と投手の左右
+
+raw を使い回すのは、終わった試合（gamestatustext が F で始まる）で boxScore が
+空でないものだけ。試合前・試合中のものは毎回取り直し、raw には残さない。
+日程の上でまだ始まっていない試合は、中身が空なので取りに行かない。
 """
 
 from __future__ import annotations
@@ -28,6 +32,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"
@@ -107,13 +112,79 @@ def fetch_game(domain: str, slug: str, game_id: int) -> dict:
     return fetch_page_props(url)["viewData"]["original"]
 
 
+def is_final(info: dict) -> bool:
+    """終わった試合か。コールドなどは "F/7" のように後ろに回が付く。"""
+    return str(info.get("gamestatustext") or "").startswith("F")
+
+
+def is_complete(game: dict) -> bool:
+    """raw に残してよい試合か。終わっていて、ボックススコアが入っている。"""
+    return is_final(game.get("gameData") or {}) and bool(game.get("boxScore"))
+
+
+def not_started(summary: dict) -> bool:
+    """日程の上でまだ始まっていない試合か。
+
+    状態が空で、開始時刻（utc。時差つき）が今より後なら、取りに行っても
+    中身は空。開始時刻を過ぎても状態が変わらない試合（遅れ・中断）は取りに行く。
+    """
+    if str(summary.get("gamestatustext") or "").strip():
+        return False
+    if str(summary.get("gamestatus") or "0") != "0":
+        return False
+    try:
+        start = datetime.fromisoformat(str(summary.get("utc")))
+    except ValueError:
+        return False
+    if start.tzinfo is None:
+        return False
+    return start > datetime.now(timezone.utc)
+
+
+def load_cached(path: Path) -> dict | None:
+    """保存済みの raw を、使い回せるときだけ返す。"""
+    if not path.exists():
+        return None
+    try:
+        game = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return game if is_complete(game) else None
+
+
+def game_date(info: dict, summary: dict) -> str:
+    """試合の日付。gamedate が空なら、日程の start（現地時刻）の日付で埋める。"""
+    date = info.get("gamedate") or summary.get("gamedate")
+    if date:
+        return str(date)
+    start = str(summary.get("start") or info.get("start") or "")
+    return start[:10]
+
+
+def player_hands(game: dict) -> dict:
+    """選手IDごとの投打（bats と throws）。boxScore の player 列から引く。"""
+    hands = {}
+    for _, _, row in iter_box(game):
+        player = row.get("player") or {}
+        hands[row.get("playerid")] = {
+            "bats": player.get("bats") or "",
+            "throws": player.get("throws") or "",
+        }
+    return hands
+
+
 def iter_plays(game: dict):
-    """打席の記録を、回の表裏の順に並べて返す。"""
+    """打席の記録を、回の表裏の順に並べて返す。
+
+    WBSCの生データでは裏のキーが "bot"。念のため "bottom" も受ける。
+    """
     plays = (game.get("gamePlays") or {}).get("all") or {}
     for inning in sorted(plays, key=lambda x: int(x)):
         block = plays[inning] or {}
-        for half in ("top", "bottom"):
-            for play in block.get(half) or []:
+        halves = (("top", block.get("top")),
+                  ("bot", block.get("bot") or block.get("bottom")))
+        for half, rows in halves:
+            for play in rows or []:
                 yield inning, half, play
 
 
@@ -164,30 +235,35 @@ def collect(key: str, out_root: Path) -> None:
     pitching: list[dict] = []
     plays: list[dict] = []
 
+    skipped = 0
     for index, summary in enumerate(games, 1):
         game_id = summary.get("id")
         if not game_id:
             continue
         cached = out_dir / "raw" / f"{game_id}.json"
-        if cached.exists():
-            game = json.loads(cached.read_text(encoding="utf-8"))
-        else:
+        game = load_cached(cached)
+        if game is None:
+            if not_started(summary):
+                skipped += 1
+                continue
             try:
                 game = fetch_game(domain, slug, game_id)
             except urllib.error.HTTPError as error:
                 print(f"  [{index}/{len(games)}] {game_id} 取得できず（{error.code}）")
                 continue
-            cached.write_text(
-                json.dumps(game, ensure_ascii=False), encoding="utf-8"
-            )
+            if is_complete(game):
+                cached.write_text(
+                    json.dumps(game, ensure_ascii=False), encoding="utf-8"
+                )
             time.sleep(SLEEP_SECONDS)
 
         info = game.get("gameData") or {}
+        hands = player_hands(game)
         # 選手行にも home（0か1か）があるので、試合側は別の名前にする
         context = {
             "event": key,
             "gameid": game_id,
-            "date": info.get("gamedate") or summary.get("gamedate"),
+            "date": game_date(info, summary),
             "away_team": info.get("awaylabel"),
             "home_team": info.get("homelabel"),
         }
@@ -213,10 +289,18 @@ def collect(key: str, out_root: Path) -> None:
                 "inning": inning,
                 "half": half,
                 **play,
+                "batter_bats": hands.get(play.get("batterid"), {}).get("bats", ""),
+                "pitcher_throws": hands.get(play.get("pitcherid"), {}).get("throws", ""),
             })
 
-        print(f"  [{index}/{len(games)}] {context['away_team']} @ {context['home_team']}")
+        state = ""
+        if not is_complete(game):
+            state = f"（{info.get('gamestatustext') or '試合前'}。raw には残さない）"
+        print(f"  [{index}/{len(games)}] {context['away_team']} @ "
+              f"{context['home_team']}{state}")
 
+    if skipped:
+        print(f"  まだ始まっていない {skipped}試合は取りに行きませんでした")
     write_csv(out_dir / "batting.csv", batting)
     write_csv(out_dir / "pitching.csv", pitching)
     write_csv(out_dir / "plays.csv", plays)
