@@ -11,7 +11,7 @@ HTMLの <div data-page="..."> に描画用のJSONがそのまま埋まってい�
     python3 collect.py --all                      登録済みを全部取る
 
 出力先は既定で ~/野球/U23ワールドカップ2026/05_収集データ/<大会キー>/。
-    games.json        日程と結果の一覧（毎回取り直す）
+    games.json        日程と結果の一覧（毎回取り直す。CSV を書き終えてから最後に書く）
     raw/<試合ID>.json 試合ごとの生データ（終わった試合だけ残す）
     batting.csv       打者成績（1行＝1試合1選手）
     pitching.csv      投手成績
@@ -20,6 +20,12 @@ HTMLの <div data-page="..."> に描画用のJSONがそのまま埋まってい�
 raw を使い回すのは、終わった試合（gamestatustext が F で始まる）で boxScore が
 空でないものだけ。試合前・試合中のものは毎回取り直し、raw には残さない。
 日程の上でまだ始まっていない試合は、中身が空なので取りに行かない。
+
+途中で止まったときに games.json と CSV の中身が食い違わないよう、次のときは何も書かずに
+終了コード1で止まる（前回の取り込み結果がそのまま残る）。
+    - 日程が0件、または前回の games.json より試合が減った（--allow-fewer で通す）
+    - 終わった試合の読み込みが、やり直しても通信の失敗で取れなかった
+試合中の試合が取れなかったときは、注意を出して次へ進む（その試合の途中の成績は入らない）。
 """
 
 from __future__ import annotations
@@ -27,6 +33,7 @@ from __future__ import annotations
 import argparse
 import csv
 import html
+import http.client
 import json
 import sys
 import time
@@ -87,7 +94,15 @@ def fetch_page_props(url: str, attempts: int = 4) -> dict:
             with urllib.request.urlopen(request, timeout=120) as response:
                 body = response.read().decode("utf-8", "ignore")
             break
-        except (TimeoutError, OSError) as error:
+        except urllib.error.HTTPError as error:
+            # 404 など相手が「ない」と答えたものは、やり直しても変わらないのですぐ投げる
+            if error.code < 500 or attempt == attempts:
+                raise
+            print(f"    やり直し {attempt}/{attempts - 1}（{error}）")
+            time.sleep(3 * attempt)
+        except (TimeoutError, OSError, http.client.HTTPException) as error:
+            # 読み込みが途中で切れたとき（IncompleteRead・RemoteDisconnected）は
+            # OSError の仲間ではなく HTTPException の仲間なので、ここで一緒に受ける
             if attempt == attempts:
                 raise
             print(f"    やり直し {attempt}/{attempts - 1}（{error}）")
@@ -219,17 +234,33 @@ def write_csv(path: Path, rows: list[dict]) -> None:
     print(f"  {path.name}: {len(rows)}行")
 
 
-def collect(key: str, out_root: Path) -> None:
+class Refused(Exception):
+    """書き出すと前回の取り込み結果を壊すので、何も書かずに止めるとき。"""
+
+
+def previous_count(path: Path) -> int | None:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return len(data) if isinstance(data, list) else None
+
+
+def collect(key: str, out_root: Path, allow_fewer: bool = False) -> None:
     domain, slug, note = EVENTS[key]
     out_dir = out_root / key
     (out_dir / "raw").mkdir(parents=True, exist_ok=True)
     print(f"\n{key} — {note}")
 
     games = fetch_games(domain, slug)
-    (out_dir / "games.json").write_text(
-        json.dumps(games, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
     print(f"  試合 {len(games)}件")
+    before = previous_count(out_dir / "games.json")
+    if not games:
+        raise Refused("日程が0件で返ってきました。WBSCのページの形が変わったか、"
+                      "読み込みに失敗した可能性があります。前回の取り込み結果はそのままです。")
+    if before is not None and len(games) < before and not allow_fewer:
+        raise Refused(f"日程の試合が前回より減りました（{before}件 → {len(games)}件）。"
+                      "前回の取り込み結果はそのままです。意図したものなら --allow-fewer を付けてください。")
 
     batting: list[dict] = []
     pitching: list[dict] = []
@@ -250,6 +281,14 @@ def collect(key: str, out_root: Path) -> None:
                 game = fetch_game(domain, slug, game_id)
             except urllib.error.HTTPError as error:
                 print(f"  [{index}/{len(games)}] {game_id} 取得できず（{error.code}）")
+                continue
+            except (urllib.error.URLError, http.client.HTTPException, OSError) as error:
+                if is_final(summary):
+                    raise Refused(f"終わった試合 {game_id} を、やり直しても読み込めませんでした"
+                                  f"（{error}）。前回の取り込み結果はそのままです。"
+                                  "電波のよい所でもう一度流してください。") from error
+                print(f"  [{index}/{len(games)}] {game_id} 取得できず（{error}）。"
+                      "試合中の試合なので飛ばします")
                 continue
             if is_complete(game):
                 cached.write_text(
@@ -304,6 +343,11 @@ def collect(key: str, out_root: Path) -> None:
     write_csv(out_dir / "batting.csv", batting)
     write_csv(out_dir / "pitching.csv", pitching)
     write_csv(out_dir / "plays.csv", plays)
+    # games.json は最後に書く。途中で止まっても、前回の games.json と CSV の組が残る
+    (out_dir / "games.json").write_text(
+        json.dumps(games, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    print(f"  games.json: {len(games)}件")
     print(f"  出力先 {out_dir}")
 
 
@@ -313,6 +357,8 @@ def main() -> int:
     parser.add_argument("--all", action="store_true", help="登録済みを全部取る")
     parser.add_argument("--list", action="store_true", help="大会の一覧を表示")
     parser.add_argument("--out", type=Path, default=OUT_ROOT, help="出力先")
+    parser.add_argument("--allow-fewer", action="store_true",
+                        help="日程の試合が前回より減っても書き出す（意図して減ったとき）")
     args = parser.parse_args()
 
     if args.list:
@@ -329,7 +375,11 @@ def main() -> int:
         if key not in EVENTS:
             print(f"知らない大会キーです: {key}", file=sys.stderr)
             return 1
-        collect(key, args.out)
+        try:
+            collect(key, args.out, args.allow_fewer)
+        except Refused as error:
+            print(f"  止めました: {error}", file=sys.stderr)
+            return 1
     return 0
 
 

@@ -16,6 +16,7 @@ import html as html_mod
 import json
 import math
 from collections import defaultdict
+from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
 DATA_ROOT = Path.home() / "野球" / "U23ワールドカップ2026" / "05_収集データ"
@@ -74,10 +75,20 @@ def name_of(row: dict) -> str:
     return f"{last}, {first}".strip(", ")
 
 
+def fixed(numerator: float, denominator: float, digits: int) -> str:
+    """割り算を小数 digits 桁で四捨五入した文字列にする。
+
+    f"{x:.3f}" は2進数でちょうど半分になる値（5/16 = .3125 など）を偶数の側に丸めるので、
+    .312 と .313 が混ざる。Decimal で四捨五入（ROUND_HALF_UP）にそろえる。
+    """
+    value = Decimal(str(numerator)) / Decimal(str(denominator))
+    return format(value.quantize(Decimal(1).scaleb(-digits), rounding=ROUND_HALF_UP), f".{digits}f")
+
+
 def rate(numerator: float, denominator: float, digits: int = 3) -> str:
     if not denominator:
         return "-"
-    return f"{numerator / denominator:.{digits}f}".lstrip("0") or "0"
+    return fixed(numerator, denominator, digits).lstrip("0") or "0"
 
 
 # hittype の意味。narrative と突き合わせて確かめた
@@ -246,9 +257,10 @@ def add_pitching_rates(entry: dict) -> None:
     """投球回は野球の表記（9回1/3 → "9.1"）。率の計算には実数（_ip）を使う。"""
     innings = entry["_outs"] / 3
     entry["投球回"] = innings_text(entry["_outs"])
-    entry["防御率"] = f"{entry['自責点'] * 9 / innings:.2f}" if innings else "-"
-    entry["奪三振率"] = f"{entry['三振'] * 9 / innings:.1f}" if innings else "-"
-    entry["与四球率"] = f"{entry['四球'] * 9 / innings:.1f}" if innings else "-"
+    outs = entry["_outs"]  # 9イニングあたり = 数 × 27 ÷ アウト数
+    entry["防御率"] = fixed(entry["自責点"] * 27, outs, 2) if outs else "-"
+    entry["奪三振率"] = fixed(entry["三振"] * 27, outs, 1) if outs else "-"
+    entry["与四球率"] = fixed(entry["四球"] * 27, outs, 1) if outs else "-"
     entry["ストライク率"] = rate(entry["ストライク"], entry["球数"], 2)
     entry["ゴロ率"] = rate(entry["ゴロ"], entry["ゴロ"] + entry["フライ"], 2)
     entry["_ip"] = innings
@@ -314,12 +326,14 @@ SPRAY_INFIELD = 120       # 内野の土の目安
 SPRAY_GUIDES = (100, 200, 300)
 SPRAY_HOME = (200, 250)
 # hitdistance の単位の見立て（2026-10-16、5大会6675球で確認）。
-# 柵越えの本塁打が257〜314（82本中37本がちょうど310で、310が入力の上限と見られる）、
-# 内野ゴロが94〜113、外野フライが226に集まる。メートルではありえず、
-# フィートとしても柵や外野手の位置が2割ほど近すぎるので、記録アプリの図の上の距離と見る
-SPRAY_NOTE = ("点線は距離100・200・300。距離はWBSCの記録アプリの値で、実際のフィートより"
-              "2割ほど短めです（柵越えはおよそ260〜310）。打球の約半分は、処理した野手の定位置の"
-              "距離（94・113・179・226など）で記録されています。ファウル域と距離0以下の"
+# 柵越えの本塁打が234〜314（82本中37本がちょうど310で、310が入力の上限と見られる）、
+# 内野ゴロが94〜113、外野フライが226に集まる（上位4つの値で打球の45%）。メートルではありえず、
+# フィートとしても柵や外野手の位置が2割ほど近すぎるので、記録アプリの図の上の距離と見る。
+# 単位はどこにも書かれておらず確かめていないので、ページの文も見立てとして書く
+SPRAY_NOTE = ("点線は距離100・200・300。距離はWBSCの記録アプリの値で、単位は確かめられていません。"
+              "本塁打がおよそ260〜310に集まるので、実際のフィートより2割ほど短く出ているようです。"
+              "打球の半分近くが同じいくつかの値（94・113・179・226など）に集まっていて、"
+              "処理した野手の定位置の距離で記録されているとみられます。ファウル域と距離0以下の"
               "打球は描いていません。")
 
 # 種類ごとのクラス・形・既定の色。色はサイト側のCSSでクラスごとに上書きできる。

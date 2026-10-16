@@ -102,9 +102,14 @@ def headers_rules(token: str) -> str:
 def status_from_games(games, version, updated=None) -> dict:
     """games.json の一覧から status.js の中身を作る。updated は UTC の時刻（省略時は今）。
 
-    戻り値: {"version", "updated": "2026-11-09T05:10:00Z", "finals": 終了試合の数,
-             "last_final": {"date": 現地の日付, "nth": その日の何試合目, "day_finals": その日に
-             終わった数, "day_games": その日の試合数} か None}
+    戻り値: {"version", "updated": "2026-11-09T05:10:00Z", "games": 全試合の数,
+             "finals": 終了試合の数,
+             "last_final": {"date": 現地の日付, "nth": その日の第1試合から続けて終わっている
+             試合の数, "day_finals": その日に終わった数, "day_games": その日の試合数} か None}
+
+    nth は「第1〜第N試合がすべて終わっている最大の N」。同じ時刻に2試合ある日は後の番号の
+    試合が先に終わることがあり、一番遅く始まった終了試合の番号を出すと、まだ終わっていない
+    試合まで入っているように読めてしまうため。
     """
     finals = [g for g in games if is_final(g)]
     last = None
@@ -112,13 +117,18 @@ def status_from_games(games, version, updated=None) -> dict:
         end = max(finals, key=order)
         day = str(end.get("start") or "")[:10]
         same = sorted((g for g in games if str(g.get("start") or "")[:10] == day), key=order)
+        nth = 0
+        for game in same:
+            if not is_final(game):
+                break
+            nth += 1
         last = {
             "date": day,
-            "nth": next(i for i, g in enumerate(same, 1) if g is end),
+            "nth": nth,
             "day_finals": sum(1 for g in same if is_final(g)),
             "day_games": len(same),
         }
-    return {"version": str(version), "updated": utc_iso(updated),
+    return {"version": str(version), "updated": utc_iso(updated), "games": len(games),
             "finals": len(finals), "last_final": last}
 
 
@@ -177,6 +187,7 @@ def status_js(status: dict | None, version: str) -> str:
     data = dict(status or {})
     data.setdefault("version", str(version))
     data.setdefault("updated", utc_iso(None))
+    data.setdefault("games", 0)
     data.setdefault("finals", 0)
     data.setdefault("last_final", None)
     return "window.U23_STATUS = " + json.dumps(data, sort_keys=True) + ";\n"
@@ -241,7 +252,7 @@ BAND_CSS = (
     "#band:empty{display:none}"
     "#band.off{background:#3a2a0e;color:#ffd79a}"
     "#band button{font:inherit;min-height:44px;padding:0 14px;border-radius:8px;cursor:pointer;"
-    "border:1px solid var(--accent,#4da3ff);background:var(--accent,#4da3ff);color:#fff;"
+    "border:1px solid var(--btn,#1f6fd1);background:var(--btn,#1f6fd1);color:#fff;"
     "font-weight:600}"
     "@media (prefers-color-scheme: light){#band.off{background:#fff1d6;color:#7a4300}}"
 )
@@ -280,11 +291,12 @@ PAGE_JS = r"""
       two(d.getUTCHours()) + ":" + two(d.getUTCMinutes());
   }
   function both(iso) { return "日本 " + at(iso, 9) + "／現地 " + at(iso, -6); }
-  function result(s) {
+  function result(s) {  // 途中の試合が抜けている日は「6試合中5試合」と数で出す（第N試合までと言えない）
     var f = s.last_final;
     if (!f || !f.date) return "結果反映 まだ試合はありません";
-    var p = f.date.split("-");
-    return "結果反映 " + Number(p[1]) + "/" + Number(p[2]) + " 現地 第" + f.nth + "試合まで";
+    var p = f.date.split("-"), day = "現地" + Number(p[1]) + "/" + Number(p[2]);
+    if (f.nth && f.nth === f.day_finals) return "結果反映 " + day + " 第" + f.nth + "試合まで";
+    return "結果反映 " + day + " " + f.day_games + "試合中" + f.day_finals + "試合";
   }
   function add(text) {
     var el = document.createElement("span");
@@ -600,7 +612,16 @@ def selftest() -> None:
     assert status["last_final"] == {"date": "2026-11-08", "nth": 2, "day_finals": 2,
                                     "day_games": 3}, status
     assert status["updated"] == "2026-11-09T05:10:00Z", status
+    assert status["games"] == 4, status
     assert status_from_games([], "t0")["last_final"] is None
+    # 同じ時刻の2試合のうち、後の番号が先に終わった日。第2試合までしか続けて終わっていない
+    gap = [{"id": i, "gamenumber": i, "start": f"2026-11-07 {t}:00",
+            "gamestatustext": "F" if i != 3 else "B6"}
+           for i, t in ((1, "10:30"), (2, "14:30"), (3, "18:30"), (4, "18:30"))]
+    assert status_from_games(gap, "t2")["last_final"] == {
+        "date": "2026-11-07", "nth": 2, "day_finals": 3, "day_games": 4}
+    gap[0]["gamestatustext"] = "SUSP"  # 第1試合が中断なら、続けて終わった試合は0
+    assert status_from_games(gap, "t2")["last_final"]["nth"] == 0
     with tempfile.TemporaryDirectory() as tmp:
         site = Path(tmp)
         for url in ("", "team/cuba/"):

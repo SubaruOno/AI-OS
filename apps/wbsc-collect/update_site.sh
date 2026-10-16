@@ -6,7 +6,7 @@
 #   sh update_site.sh              全部流す
 #   sh update_site.sh --no-deploy  入れ替えまでで止め、公開しない
 #   sh update_site.sh --rollback   1つ前の版（dist.prev）と入れ替えて上げ直す。もう一度で元に戻る
-#   sh update_site.sh --force      ページ数・終了試合数が減っても止めない（意図して減らしたとき）
+#   sh update_site.sh --force      日程の試合数・ページ数・終了試合数が減っても止めない（意図して減らしたとき）
 #
 # 試すときだけ、次の環境変数で中身を差し替えられる。
 #   U23_SITE_DIR  dist を置くフォルダ（既定 ~/野球/U23ワールドカップ2026/07_サイト）
@@ -39,6 +39,9 @@ for arg in "$@"; do
   esac
 done
 
+# --force のときは、取り込みでも日程の試合が減ったのを通す（既定の取り込みのときだけ）
+if [ "$FORCE" = 1 ] && [ -z "${U23_COLLECT:-}" ]; then COLLECT="$COLLECT --allow-fewer"; fi
+
 STEP="準備"
 finish() {
   code=$?
@@ -63,7 +66,7 @@ discard() {  # 消すときはゴミ箱へ（rm は使わない）
   fi
 }
 
-look() {  # dist の pages.json と status.js を読む。count は「ページ数 終了試合数 合言葉のフォルダ」、line は貼る1行
+look() {  # dist の pages.json と status.js を読む。count は「ページ数 終了試合数 全試合数 合言葉のフォルダ」、line は貼る1行
   python3 - "$1" "$2" <<'PY'
 import json, sys
 from datetime import datetime, timedelta
@@ -72,14 +75,14 @@ from pathlib import Path
 dist, what = Path(sys.argv[1]), sys.argv[2]
 found = [p.parent for p in dist.glob("*/pages.json") if (p.parent / "status.js").exists()]
 if len(found) != 1:
-    print("- - -" if what == "count" else "")
+    print("- - - -" if what == "count" else "")
     sys.exit(0)
 site = found[0]
 text = (site / "status.js").read_text(encoding="utf-8")
 status = json.loads(text[text.index("{"):text.rindex("}") + 1])
 if what == "count":
     pages = json.loads((site / "pages.json").read_text(encoding="utf-8"))
-    print(len(pages), status.get("finals", 0), site.name)
+    print(len(pages), status.get("finals", 0), status.get("games", 0), site.name)
     sys.exit(0)
 jst = datetime.strptime(status["updated"], "%Y-%m-%dT%H:%M:%SZ") + timedelta(hours=9)
 last = status.get("last_final")
@@ -140,18 +143,22 @@ t2=$(date +%s)
 # ---------------------------------------------------------------- 検査
 
 STEP="検査"
-read -r NEW_PAGES NEW_FINALS NEW_SITE <<EOF
+read -r NEW_PAGES NEW_FINALS NEW_GAMES NEW_SITE <<EOF
 $(look "$NEW" count)
 EOF
 if [ -z "$NEW_PAGES" ] || [ "$NEW_PAGES" = "-" ]; then
   echo "dist.new に pages.json と status.js がそろっていません（合言葉のフォルダが1つでない可能性もあります）。" >&2
   exit 1
 fi
+if [ "$NEW_GAMES" -eq 0 ]; then
+  echo "日程の試合が0件です。空の日程を公開しないよう止めました。取り込みを確かめてください。" >&2
+  exit 1
+fi
 if ! grep -q "日本戦" "$NEW/$NEW_SITE/index.html"; then
   echo "トップに「日本戦」がありません。組み立てに失敗している可能性があります。" >&2
   exit 1
 fi
-read -r OLD_PAGES OLD_FINALS OLD_SITE <<EOF
+read -r OLD_PAGES OLD_FINALS OLD_GAMES OLD_SITE <<EOF
 $(look "$DIST" count)
 EOF
 if [ -z "$OLD_PAGES" ] || [ "$OLD_PAGES" = "-" ]; then
@@ -159,6 +166,10 @@ if [ -z "$OLD_PAGES" ] || [ "$OLD_PAGES" = "-" ]; then
   OLD_PAGES=0
   OLD_FINALS=0
 elif [ "$FORCE" = 0 ]; then
+  if [ "$NEW_GAMES" -lt "$OLD_GAMES" ]; then
+    echo "日程の試合数が減りました（${OLD_GAMES} → ${NEW_GAMES}）。取り込みを確かめてください。意図したものなら --force を付けて流し直してください。" >&2
+    exit 1
+  fi
   if [ "$NEW_PAGES" -lt "$OLD_PAGES" ]; then
     echo "ページ数が減りました（${OLD_PAGES} → ${NEW_PAGES}）。意図したものなら --force を付けて流し直してください。" >&2
     exit 1
@@ -168,7 +179,7 @@ elif [ "$FORCE" = 0 ]; then
     exit 1
   fi
 fi
-echo "検査OK: ページ ${NEW_PAGES}（前回 ${OLD_PAGES}）・終了試合 ${NEW_FINALS}（新しく $((NEW_FINALS - OLD_FINALS))）"
+echo "検査OK: ページ ${NEW_PAGES}（前回 ${OLD_PAGES}）・試合 ${NEW_GAMES}・終了試合 ${NEW_FINALS}（新しく $((NEW_FINALS - OLD_FINALS))）"
 
 # ---------------------------------------------------------------- 入れ替え → 公開
 

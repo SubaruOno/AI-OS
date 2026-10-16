@@ -28,9 +28,12 @@ import ast
 import hashlib
 import html
 import json
+import re
 import secrets
 import shutil
 import string
+import subprocess
+import time
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -71,7 +74,7 @@ TEAM_CODE = {"Cuba": "CUB", "Korea": "KOR", "Venezuela": "VEN", "Great Britain":
              "Panama": "PAN", "Australia": "AUS", "Nicaragua": "NCA", "Czechia": "CZE"}
 TOWN = {"Managua": "マナグア", "Masaya": "マサヤ", "León": "レオン", "Leon": "レオン"}
 # gametypelabel に含まれる語 → 札の文字とクラス
-ROUND_TAG = (("Opening Round", "1次R", "op"), ("Super Round", "SR", "sr"),
+ROUND_TAG = (("Opening Round", "1次R", "op"), ("Super Round", "SR", "sup"),
              ("Placement Round", "順位決定", "pl"), ("Bronze", "3位決定", "md"),
              ("Final", "決勝", "md"))
 POS_JA = {"P": "投手", "C": "捕手", "IF": "内野手", "OF": "外野手"}
@@ -111,12 +114,12 @@ FOOTER = "WBSCの大会サイトの記録と公表された情報から作成・
 FORMAT_FLOW = (
     '<ol class="flow">'
     "<li>12チームが6チームずつ2組に分かれ、1次ラウンドを総当たりで戦います"
-    "（日本 11/7〜11・現地 11/6〜10、各チーム5試合）。</li>"
+    "（日本時間 11/7〜11・現地 11/6〜10、各チーム5試合）。</li>"
     "<li>各組の上位3チームがスーパーラウンド、下位3チームが順位決定ラウンドに進みます"
     "（現地 11/12〜14、各チーム3試合）。相手はもう一方の組の3チームです。</li>"
     "<li>現地 11/11 は予備日です。</li>"
     "<li>現地 11/15 に3位決定戦（スーパーラウンド3位 対 4位）と決勝（1位 対 2位）。"
-    "会場はどちらも Nacional Soberanía（マナグア）です。時刻は公式日程では未定。</li></ol>"
+    "会場はどちらも Nacional Soberania（マナグア）です。時刻は公式日程では未定。</li></ol>"
 )
 FORMAT_CARRY = (
     "<p>スーパーラウンドでは、1次ラウンドで進出3チーム同士が戦った2試合の結果を持ち越し、"
@@ -125,6 +128,13 @@ FORMAT_CARRY = (
     "決まりません。順位決定ラウンドも同じやり方です（WBSCの公式日程の注記）。</p>"
 )
 WEEK = "月火水木金土日"
+# ページに出さない作業用のファイル名と、代わりに出す言い方（public() で使う）
+FILE_REF = re.compile(r"（([^（）\s]+\.(?:csv|json))）")
+FILE_LABEL = {"名簿照合.csv": "名簿の「過去の記録」欄"}
+# 「（10月15日確認）」のように、注記の中に確認日が書いてあるか
+CHECKED_IN_TEXT = re.compile(r"\d+月\d+日確認")
+# build_site.py が書き出したフォルダの目印。--out はこれがあるフォルダだけを作り直す
+MARK = ".u23-site"
 
 
 # ---------------------------------------------------------------- 小さな道具
@@ -132,6 +142,18 @@ WEEK = "月火水木金土日"
 
 def esc(value) -> str:
     return html.escape(str(value if value is not None else ""))
+
+
+def public(text) -> str:
+    """相手国.json の文を、ページに出す形にする（エスケープ込み）。
+
+    手元の作業用のファイル名（「（名簿照合.csv）」など）は読む人に分からないので、
+    ページの上の言い方に置き換えるか、外す。
+    """
+    def swap(match) -> str:
+        label = FILE_LABEL.get(match.group(1))
+        return f"（{label}）" if label else ""
+    return esc(FILE_REF.sub(swap, str(text if text is not None else "")))
 
 
 def slug(team: str) -> str:
@@ -238,7 +260,15 @@ def load() -> dict:
         for event in EVENT_LABEL
     }
     games = read_json(br.DATA_ROOT / CURRENT / "games.json", [])
+    if not isinstance(games, list) or not games:
+        raise SystemExit(f"{br.DATA_ROOT / CURRENT / 'games.json'} が読めないか、試合が0件です。"
+                         "空の日程を書き出さないよう止めました。取り込みを確かめてください。")
     games.sort(key=lambda g: (str(g.get("start") or ""), int(br.number(g.get("gamenumber")))))
+    # 今大会の成績は、終わった試合の分だけを数える。collect.py は試合中の試合の行も CSV に
+    # 書くので、そのままだと途中の成績が合計や登板記録に混ざり、表の列（終了試合だけ）と合わない
+    finished = {str(g.get("id")) for g in games if sl.is_final(g)}
+    events[CURRENT] = {kind: [r for r in rows if str(r.get("gameid")) in finished]
+                       for kind, rows in events[CURRENT].items()}
     opponents = read_json(SITE_INFO / "相手国.json", {})
     return {
         "events": events, "games": games, "info": player_infos(events),
@@ -387,8 +417,12 @@ def when_cell(game: dict, mode: str = "full") -> str:
     return f'<td class="t"><b>{main}</b><small>現地 {sub}</small></td>'
 
 
-def matchup(game: dict, root: str, view) -> str:
-    """対戦とスコア。view のチームがいればその側から（○ 日本 5-3 イギリス）。"""
+def matchup(game: dict, root: str, view, strong=None) -> str:
+    """対戦とスコア。view のチームがいればその側から（○ 日本 5-3 イギリス）。
+
+    view がなければ先攻 - 後攻の順に書く（見出しが「先攻 - 後攻」の表）。strong のチーム
+    （日本）は、並びを変えずに太字と○●で目立たせる。
+    """
     state = sl.game_state(game)
     seen = sl.japan_view(game, view) if view else None
     if seen:
@@ -398,8 +432,15 @@ def matchup(game: dict, root: str, view) -> str:
     else:
         away_runs, home_runs = sl.runs(game)
         middle = f"{away_runs}-{home_runs}" if state in ("final", "live") else "vs"
-        text = (f'{team_link(game.get("awaylabel"), root)} <span class="sc">{middle}</span> '
-                f'{team_link(game.get("homelabel"), root)}')
+        mine = sl.japan_view(game, strong) if strong else None
+
+        def side(team) -> str:
+            link = team_link(team, root)
+            if mine and team == strong:
+                return f'{mark_html(mine["mark"])}<b>{link}</b>'
+            return link
+        text = (f'{side(game.get("awaylabel"))} <span class="sc">{middle}</span> '
+                f'{side(game.get("homelabel"))}')
     return text + state_label(game, state)
 
 
@@ -435,16 +476,16 @@ def game_row(game: dict, root: str, view=None, mode: str = "full",
     japan = "Japan" in (game.get("homelabel"), game.get("awaylabel"))
     side = view or ("Japan" if japan else None)
     seen = sl.japan_view(game, side) if side else None
-    sub = [venue(game)]
-    if seen:
-        sub.append(f'{ja(side)}は{seen["batting"]}')
+    sub = [esc(venue(game))]
+    if seen:  # 「日本は後攻」は途中で割らない
+        sub.append(f'<span class="nw">{esc(ja(side))}は{seen["batting"]}</span>')
     if seen and table is not None and seen["state"] == "final":
-        sub.append(starter_text(game, side, table))
+        sub.append(esc(starter_text(game, side, table)))
     attrs = ' class="jp"' if japan else ""
     if today:
         attrs += f' data-day="{sl.local_day(game)}" hidden'
     return (f"<tr{attrs}>{when_cell(game, mode)}<td class=\"m\">{tag(game)}"
-            f"{matchup(game, root, side)}<small>{esc('・'.join(x for x in sub if x))}</small>"
+            f"{matchup(game, root, view, side)}<small>{'・'.join(x for x in sub if x)}</small>"
             f'<small class="lk">{game_links(game)}</small></td></tr>')
 
 
@@ -543,44 +584,48 @@ def log_table(d: dict, team: str, root: str) -> str:
     log = d["logs"].get(team) or []
     if not log:
         return '<p class="empty">まだ登板の記録がありません。</p>'
-    games = [g for g in team_games(d, team) if sl.is_final(g)]
-    head = (th("選手") + "".join(
-        f'<th data-dir="desc">{iso_md(sl.local_day(g))}<br><small>{esc(ja(opponent(g, team)))}'
-        "</small></th>" for g in games)
-        + '<th data-dir="desc">最終登板</th><th data-dir="desc">今日なら</th>'
-        + th("計球数") + th("投球回") + th("先発"))
+    # スマホでは右が隠れるので、最終登板・今日なら・計球数を名前のすぐ後ろに置き、
+    # 試合の列は新しい順（直近の登板が左）に並べる
+    games = [g for g in team_games(d, team) if sl.is_final(g)][::-1]
+    head = (th("選手") + '<th data-dir="desc">最終登板</th><th data-dir="desc">今日なら</th>'
+            + th("計球数") + "".join(
+                f'<th data-dir="desc">現地{iso_md(sl.local_day(g))}<br>'
+                f"<small>{esc(ja(opponent(g, team)))}</small></th>" for g in games)
+            + th("投球回") + th("先発"))
     body = []
     for pitcher in log:
         apps = {a["gameid"]: a for a in pitcher["apps"]}
         last = pitcher["last_date"]
         body.append(
             f'<tr>{log_name(d, pitcher, root)}'
-            + "".join(app_cell(apps.get(str(g.get("id")))) for g in games)
-            + f'<td data-sort="{last.replace("-", "")}">{iso_md(last)}</td>'
+            f'<td data-sort="{last.replace("-", "")}">{iso_md(last)}</td>'
             f'<td data-last="{last}">-</td><td>{pitcher["total_pitches"]}</td>'
-            f'<td data-sort="{sl.ip_to_outs(pitcher["ip_total"])}">{pitcher["ip_total"]}</td>'
+            + "".join(app_cell(apps.get(str(g.get("id")))) for g in games)
+            + f'<td data-sort="{sl.ip_to_outs(pitcher["ip_total"])}">{pitcher["ip_total"]}</td>'
             f'<td>{pitcher["gs_count"]}</td></tr>')
-    return (f'<div class="scroll"><table class="sort log"><thead><tr>{head}</tr></thead>'
-            f'<tbody>{"".join(body)}</tbody></table></div>'
-            '<p class="note">日付は現地。「今日なら」は今日（現地）投げるとしたら中何日か。'
-            'U-23W杯には球数制限がありません（WBSC Official Rules 2025-2026 A1.8.4）。</p>')
+    return ('<p class="note">日付は現地。「今日なら」は今日（現地）投げるとしたら中何日か。'
+            '試合の列は新しい順。U-23W杯には球数制限がありません'
+            '（WBSC Official Rules 2025-2026 A1.8.4）。</p>'
+            f'<div class="scroll"><table class="sort log"><thead><tr>{head}</tr></thead>'
+            f'<tbody>{"".join(body)}</tbody></table></div>')
 
 
 # ---------------------------------------------------------------- 順位表
 
 
 def stand_table(rows: list[dict], title: str, root: str, second: bool = False) -> str:
+    """順位表。スマホで国名の横に見えるよう、勝・敗・勝率を国名のすぐ後ろに置く。"""
     ties = any(r["t"] for r in rows)
-    cols = (["順位・国"] + (["組", "持ち越し"] if second else []) + ["試合", "勝", "敗"]
-            + (["分"] if ties else []) + ["勝率", "差", "得点", "失点"])
+    cols = (["順位・国", "勝", "敗"] + (["分"] if ties else []) + ["勝率", "差", "試合"]
+            + (["持ち越し", "組"] if second else []) + ["得点", "失点"])
     body = []
     for r in rows:
         note = f'<small>{esc(r["note"])}</small>' if r.get("note") else ""
         rank = r["rank"] if r["rank"] is not None else "-"
-        cells = ([f'<span class="rk">{rank}</span>{team_link(r["team"], root)}{note}']
-                 + ([r.get("group", ""), r.get("carry", "")] if second else [])
-                 + [r["g"], r["w"], r["l"]] + ([r["t"]] if ties else [])
-                 + [r["pct"], r["gb"], r["rs"], r["ra"]])
+        cells = ([f'<span class="rk">{rank}</span>{team_link(r["team"], root)}{note}', r["w"], r["l"]]
+                 + ([r["t"]] if ties else []) + [r["pct"], r["gb"], r["g"]]
+                 + ([r.get("carry", ""), r.get("group", "")] if second else [])
+                 + [r["rs"], r["ra"]])
         cls = ' class="jp"' if r["team"] == "Japan" else ""
         body.append(f"<tr{cls}>" + "".join(f"<td>{c}</td>" for c in cells) + "</tr>")
     head = "".join(f"<th>{c}</th>" for c in cols)
@@ -604,8 +649,8 @@ def standings_block(d: dict, root: str) -> str:
                  + stand_table(first.get("B", []), "グループB（日本の組）", root)
                  + stand_table(first.get("A", []), "グループA", root) + "</div>")
     started = any(r["rank"] is not None for rows in first.values() for r in rows)
-    note = ("試合前なので順位は「-」。並びは組み合わせ表の順です。" if not started else
-            "差はゲーム差。")
+    note = ("試合前なので順位は「-」で、並びは組み合わせ表の順です。" if not started else
+            "差はゲーム差です。")
     parts.append(f'<p class="note">{note}同率の並べ方は WBSC のW杯共通の規程（2024年版）で'
                  "計算しています。2026年大会の要項とは照らしていないので、同率のときは WBSC の"
                  '公式の順位も確かめてください。持ち越しの決まりは<a href="'
@@ -668,15 +713,19 @@ def japan_game_text(d: dict, team: str) -> str:
 def manager_text(manager) -> str:
     if not manager or not manager.get("name"):
         return "未確認"
-    note = f'（{esc(manager["note"])}）' if manager.get("note") else ""
     checked = f'・{iso_md(manager["checked"])}確認' if manager.get("checked") else ""
-    return f'{esc(manager["name"])}{note}{sources(manager.get("source"))}<small>{checked}</small>'
+    note = f'<small class="mn">{public(manager["note"])}</small>' if manager.get("note") else ""
+    return (f'{esc(manager["name"])}{sources(manager.get("source"))}<small>{checked}</small>'
+            f"{note}")
 
 
 def staff_text(staff) -> str:
     if not staff:
         return ""
-    names = "、".join(f'{esc(s.get("role"))} {esc(s.get("name"))}' for s in staff)
+    roles: dict[str, list[str]] = {}
+    for person in staff:
+        roles.setdefault(person.get("role") or "", []).append(esc(person.get("name")))
+    names = "、".join(f'{esc(role)} {"・".join(people)}' for role, people in roles.items())
     return names + sources(staff[0].get("source"))
 
 
@@ -697,7 +746,7 @@ def notes_block(info: dict) -> str:
     notes = info.get("notes") or []
     if not notes:
         return ""
-    return '<ul class="notes">' + "".join(f"<li>{esc(n)}</li>" for n in notes) + "</ul>"
+    return '<ul class="notes">' + "".join(f"<li>{public(n)}</li>" for n in notes) + "</ul>"
 
 
 def roster_record(d: dict, code: str, name: str, root: str) -> str:
@@ -717,10 +766,15 @@ def roster_table(d: dict, code: str, rows: list[dict], main: str, root: str) -> 
     for r in rows:
         status = r.get("status") or ""
         badge = "" if status == main else f' <span class="badge alt">{esc(status.split("・")[0])}</span>'
+        name = esc(r.get("name"))
+        key = d["match_by_name"].get((code, r.get("name")))
+        if key in d["paged"]:  # 名前からも選手ページへ（「あり」だけでは押す所が小さい）
+            name = f'<a href="{root}p/{key}/">{name}</a>'
         body.append(f'<tr><td>{esc(POS_JA.get(r.get("position"), "-"))}</td>'
-                    f'<td class="nm">{esc(r.get("name"))}{badge}</td>'
+                    f'<td class="nm">{name}{badge}</td>'
                     + (f'<td class="cl">{esc(r.get("club"))}</td>' if clubs else "")
-                    + (f'<td>{roster_record(d, code, r.get("name"), root)}</td>' if records else "")
+                    + (f'<td class="rec">{roster_record(d, code, r.get("name"), root)}</td>'
+                       if records else "")
                     + "</tr>")
     head = ("<th>守備</th><th>氏名</th>" + ("<th>発表時の所属</th>" if clubs else "")
             + ("<th>過去の記録</th>" if records else ""))
@@ -733,20 +787,25 @@ def roster_block(d: dict, team: str, info: dict, root: str) -> str:
     meta = info.get("roster") or {}
     code = TEAM_CODE.get(team, "")
     rows = [r for r in d["roster"] if r.get("team") == code]
-    note = f'<p class="note">{esc(meta["note"])}</p>' if meta.get("note") else ""
+    note = f'<p class="note">{public(meta["note"])}</p>' if meta.get("note") else ""
     if not rows:
         found = sources(meta.get("source"), "調べた先")
-        tail = f'<p class="note">{found}{"・" if found else ""}{iso_md(d["checked"])}確認</p>'
+        # 注記に確認日が書いてあれば、それと食い違う日付は並べない
+        checked = meta.get("checked") or d["checked"]
+        day = "" if CHECKED_IN_TEXT.search(meta.get("note") or "") else f"{iso_md(checked)}確認"
+        tail = f'<p class="note">{found}{"・" if found and day else ""}{day}</p>'
         return f'<p class="warn">今大会の名簿は未確認。下は過去大会の記録。</p>{note}{tail}'
     main = Counter(r.get("status") or "" for r in rows).most_common(1)[0][0]
     first = next(r for r in rows if (r.get("status") or "") == main)
     label = meta.get("label") or main.split("・")[0]
+    # 発表日は相手国.json を先に見る。名簿の CSV の published には記事の日付が入っていることがある
+    # （韓国は9/3発表を9/7の記事で確かめた）
+    published = meta.get("published") or first.get("published")
     head = (f'<p><span class="badge">{esc(label)}</span> {len(rows)}人・'
-            f'発表 {iso_md(first.get("published"))}・{sources(first.get("source"))}・'
+            f'発表 {iso_md(published)}・{sources(first.get("source"))}・'
             f'{iso_md(first.get("checked"))}確認</p><p class="note">状態: {esc(main)}</p>')
-    extra = sorted({r.get("notes", "").strip() for r in rows if (r.get("notes") or "").strip()})
-    tail = "".join(f'<p class="note">{esc(n)}</p>' for n in extra)
-    return head + note + roster_table(d, code, rows, main, root) + tail
+    # 名簿の CSV の notes 列は作業のメモなので出さない。見せる文は相手国.json の roster.note だけ
+    return head + note + roster_table(d, code, rows, main, root)
 
 
 def notable_card(d: dict, item: dict, root: str) -> str:
@@ -755,7 +814,7 @@ def notable_card(d: dict, item: dict, root: str) -> str:
     sub = "・".join(x for x in (POS_JA.get(item.get("pos"), item.get("pos") or ""),
                                 item.get("club") or "") if x)
     japan = '<span class="badge jpl">日本の球団</span>' if item.get("japan_league") else ""
-    facts = "".join(f"<li>{esc(f)}</li>" for f in item.get("facts") or [])
+    facts = "".join(f"<li>{public(f)}</li>" for f in item.get("facts") or [])
     links = " ".join(x for x in (record, sources(item.get("source"))) if x)
     return (f'<div class="card nb"><h3>{esc(item.get("name"))}<small>{esc(sub)}</small>{japan}</h3>'
             f'<ul>{facts}</ul><p class="note">{links}</p></div>')
@@ -775,14 +834,22 @@ def vs_japan_block(info: dict) -> str:
     if not rows:
         return lead + ('<p class="empty">集めた大会（U-23W杯 2022・2024、アジア選手権 2025）'
                        "では対戦していません。</p>")
-    body = "".join(
-        f'<tr><td>{esc(r.get("event"))}</td><td>{iso_md(r.get("local_date"), True)}</td>'
-        f'<td>{esc(r.get("round"))}</td><td>{mark_html(r.get("result"))}{esc(r.get("japan_score"))}'
-        + (f'<small>{esc(r["note"])}</small>' if r.get("note") else "") + "</td></tr>"
-        for r in rows)
+    # 結果は2列目に置き、スマホの最初の画面に入れる。注意書きは表の中で細く折り返すと
+    # 読めないので、※印を付けて表の下に出す（同じ文は同じ印）
+    marks: dict[str, int] = {}
+    body = []
+    for r in rows:
+        star = ""
+        if r.get("note"):
+            n = marks.setdefault(r["note"], len(marks) + 1)
+            star = f'<sup class="fn">※{n}</sup>'
+        body.append(f'<tr><td>{esc(r.get("event"))}</td>'
+                    f'<td>{mark_html(r.get("result"))}{esc(r.get("japan_score"))}{star}</td>'
+                    f'<td>{iso_md(r.get("local_date"), True)}</td><td>{esc(r.get("round"))}</td></tr>')
+    notes = "".join(f'<p class="note">※{n} {public(text)}</p>' for text, n in marks.items())
     return (lead + '<div class="scroll"><table class="plain"><thead><tr><th>大会</th>'
-            '<th>日付（現地）</th><th>ラウンド</th><th>日本から見た結果</th></tr></thead>'
-            f"<tbody>{body}</tbody></table></div>")
+            '<th>日本から見た結果</th><th>日付（現地）</th><th>ラウンド</th></tr></thead>'
+            f'<tbody>{"".join(body)}</tbody></table></div>{notes}')
 
 
 def current_tables(d: dict, team: str, root: str, marks: bool = True) -> str:
@@ -1105,22 +1172,39 @@ def schedule_page(d: dict) -> str:
 def team_cards(d: dict, root: str) -> str:
     """相手国のカード。グループB（日本の組）は対戦順に日付つき、続いてグループA。"""
     rank = {t: (i.get("ranking") or {}).get("rank") for t, i in d["opp"].items()}
-    cards_b, seen = [], set()
+
+    def dated(team: str, game: dict) -> str:
+        jst, local = sl.jst_dt(game), sl.local_dt(game)
+        return (f'<a class="tcard" href="{root}team/{slug(team)}/"><span>{esc(ja(team))}'
+                f"</span><small>日本戦 {md(jst)}</small><small>現地 {md(local)}</small></a>")
+
+    # グループBは組で絞る（スーパーラウンド以降の日本の相手を混ぜない）。それ以降の相手は別の見出しに
+    cards_b, later, seen, later_seen = [], [], set(), set()
+    rounds = set()
     for game in team_games(d, "Japan"):
         team = opponent(game, "Japan")
-        if team in OPP and team not in seen and sl.jst_dt(game):
-            seen.add(team)
-            jst, local = sl.jst_dt(game), sl.local_dt(game)
-            cards_b.append(f'<a class="tcard" href="{root}team/{slug(team)}/"><span>{esc(ja(team))}'
-                           f"</span><small>日本戦 {md(jst)}</small><small>現地 {md(local)}</small></a>")
+        if team not in OPP or not sl.jst_dt(game):
+            continue
+        if "Opening" in str(game.get("gametypelabel")):
+            if GROUPS.get(team) == "B" and team not in seen:
+                seen.add(team)
+                cards_b.append(dated(team, game))
+        elif GROUPS.get(team) != "B" and team not in later_seen:
+            later_seen.add(team)
+            later.append(dated(team, game))
+            rounds.add("順位決定ラウンド" if "Placement" in str(game.get("gametypelabel"))
+                       else "スーパーラウンド")
     cards_b += [f'<a class="tcard" href="{root}team/{slug(t)}/"><span>{esc(ja(t))}</span>'
                 "<small>グループB</small></a>"
                 for t, g in GROUPS.items() if g == "B" and t in OPP and t not in seen]
     cards_a = [f'<a class="tcard" href="{root}team/{slug(t)}/"><span>{esc(ja(t))}</span>'
                f'<small>{"世界" + str(rank[t]) + "位" if rank.get(t) else "グループA"}</small></a>'
                for t, g in GROUPS.items() if g == "A" and t in OPP]
+    title = "・".join(sorted(rounds, reverse=True)) or "スーパーラウンド"
+    second = (f'<h3>{title}の日本の相手</h3><div class="tgrid">{"".join(later)}</div>'
+              if later else "")
     return (f'<h3>グループB（日本の組）</h3><div class="tgrid">{"".join(cards_b)}</div>'
-            f'<h3>グループA</h3><div class="tgrid">{"".join(cards_a)}</div>')
+            f'{second}<h3>グループA</h3><div class="tgrid">{"".join(cards_a)}</div>')
 
 
 def teams_page(d: dict) -> str:
@@ -1145,18 +1229,41 @@ def hero_item(game: dict) -> dict:
     }
 
 
-def after_text(japan: list[dict]) -> str:
-    medal = [g for g in japan if any(w in str(g.get("gametypelabel")) for w in ("Final", "Bronze"))]
-    if medal and all(sl.is_final(g) for g in medal):
-        return "日本の試合はすべて終わりました。"
-    return ("次の日本戦は、組み合わせが決まりしだい載ります（スーパーラウンドと順位決定ラウンドの"
-            "相手は1次ラウンドの結果で決まります）。")
+def round_of(game: dict, *words: str) -> bool:
+    return any(w in str(game.get("gametypelabel")) for w in words)
 
 
-def hero_block(japan: list[dict]) -> str:
+def after_text(d: dict, japan: list[dict]) -> str:
+    """日程に残っている日本戦がないときの文。大会の段階で言い方を変える。"""
+    games = d["games"]
+    done = "日本の試合はすべて終わりました。"
+    medal_jp = [g for g in japan if round_of(g, "Final", "Bronze")]
+    medal = [g for g in games if round_of(g, "Final", "Bronze")]
+    if (medal_jp or medal) and all(sl.is_final(g) for g in (medal_jp or medal)):
+        return done  # 日本の入ったメダル戦、またはメダル戦そのものが終わった（もう試合はない）
+    opening = [g for g in games if round_of(g, "Opening")]
+    second_jp = [g for g in japan if round_of(g, "Super", "Placement")]
+    if not opening or not all(sl.is_final(g) for g in opening) or not second_jp:
+        return ("次の日本戦は、組み合わせが決まりしだい載ります（スーパーラウンドと順位決定ラウンドの"
+                "相手は1次ラウンドの結果で決まります）。")
+    if any(round_of(g, "Placement") for g in second_jp):
+        return done  # 順位決定ラウンドの後に日本の試合はない
+    super_round = [g for g in games if round_of(g, "Super")]
+    if super_round and all(sl.is_final(g) for g in super_round):
+        rows = sl.second_round(games, GROUPS, outs=d["outs"])["super"]
+        rank = next((r["rank"] for r in rows if r["team"] == "Japan"), None)
+        named = [t for g in medal for t in (g.get("awaylabel"), g.get("homelabel")) if t in JA]
+        decided = medal and len(named) == 2 * len(medal) and "Japan" not in named
+        if (rank is not None and rank > 4) or decided:
+            return done  # スーパーラウンド5・6位か、メダル戦の顔ぶれが決まって日本がいない
+    return "3位決定戦と決勝の組み合わせは、スーパーラウンドの結果で決まりしだい載ります。"
+
+
+def hero_block(d: dict, japan: list[dict]) -> str:
     items = [hero_item(g) for g in japan if sl.local_dt(g)]
     ahead = [i for i in items if not i["done"]]
-    after = f'<p class="card" id="next-none"{"" if not ahead else " hidden"}>{esc(after_text(japan))}</p>'
+    after = (f'<p class="card" id="next-none"{"" if not ahead else " hidden"}>'
+             f"{esc(after_text(d, japan))}</p>")
     if not ahead:
         return after
     g = ahead[0]
@@ -1207,7 +1314,7 @@ def index_page(d: dict, count: int, size_mb: float) -> str:
     japan = team_games(d, "Japan")
     body = "".join([
         '<h1 class="sr">U-23W杯 2026 スタッフ共有</h1>',
-        hero_block(japan), previous_block(japan), today_block(d),
+        hero_block(d, japan), previous_block(japan), today_block(d),
         "<h2>日本戦</h2>" + games_table(japan, "", view="Japan", table=d["starters"]),
         "<h2>順位表</h2>" + standings_block(d, ""),
         '<a class="card go" href="format/">大会方式：スーパーラウンドと持ち越し、日本の順位ごとの相手 →</a>',
@@ -1243,21 +1350,57 @@ def version_of(pages: dict[str, str]) -> str:
     return digest.hexdigest()[:10]
 
 
+def old_output(out: Path) -> bool:
+    """目印を付ける前の版の build_site.py が書いたフォルダか。中身の形で確かめる。
+
+    根元に index.html・404.html・robots.txt・_headers と、合言葉（英数字24文字）のフォルダ
+    1つだけがあり、その中に pages.json と sw.js がある。
+    """
+    items = [p for p in out.iterdir() if p.name != ".DS_Store"]
+    folders = [p for p in items if p.is_dir()]
+    files = {p.name for p in items if p.is_file()}
+    return (files == {"index.html", "404.html", "robots.txt", "_headers"} and len(folders) == 1
+            and len(folders[0].name) == 24 and folders[0].name.isalnum()
+            and (folders[0] / "pages.json").is_file() and (folders[0] / "sw.js").is_file())
+
+
 def check_out(out: Path) -> None:
-    """消して作り直してよい書き出し先か確かめる。サイトの出力らしくないフォルダは消さない。"""
+    """消して作り直してよい書き出し先か確かめる。
+
+    通すのは、空のフォルダ（またはまだない）、目印（MARK）のあるフォルダ、目印を付ける前の
+    このツールの出力と同じ形のフォルダだけ。robots.txt があるだけでは通さない
+    （Web アプリの public/ にもふつうにある）。
+    """
     forbidden = {Path.home().resolve(), REPO, ROOT.resolve(), Path(out.anchor)}
     if out in forbidden:
         raise SystemExit(f"{out} には書き出せません。サイト用のフォルダを指定してください。")
-    if out.exists() and any(out.iterdir()) and not (out / "robots.txt").exists():
-        raise SystemExit(f"{out} はサイトの出力に見えない（robots.txt がない）ので消しません。"
-                         "空のフォルダか、新しい名前を指定してください。")
+    if not out.exists():
+        return
+    if not out.is_dir():
+        raise SystemExit(f"{out} はフォルダではないので書き出せません。")
+    if not any(out.iterdir()) or (out / MARK).is_file() or old_output(out):
+        return
+    raise SystemExit(f"{out} は build_site.py の出力に見えないので消しません。"
+                     "空のフォルダか、新しい名前を指定してください。")
+
+
+def discard(path: Path) -> None:
+    """古い出力をゴミ箱に送る（元に戻せない消し方はしない）。"""
+    if Path("/usr/bin/trash").exists():
+        subprocess.run(["/usr/bin/trash", str(path)], check=True)
+        return
+    trash = Path.home() / ".Trash"
+    trash.mkdir(exist_ok=True)
+    shutil.move(str(path), str(trash / f"{path.name}-{time.strftime('%Y%m%d%H%M%S')}"))
 
 
 def write_site(out: Path, token: str, pages: dict[str, str], games: list[dict]) -> None:
     """--out のフォルダだけを作り直し、合言葉のフォルダの下にページを書く。"""
     check_out(out)
-    if out.exists():
-        shutil.rmtree(out)
+    if out.exists() and any(out.iterdir()):
+        discard(out)
+    out.mkdir(parents=True, exist_ok=True)
+    (out / MARK).write_text("")
     site = out / token
     for url, content in pages.items():
         target = site / url / "index.html"
@@ -1301,12 +1444,12 @@ BLANK = """<!doctype html><html lang="ja"><head><meta charset="utf-8">
 
 # 色は site_offline.THEME（--bg）と合わせる。打球図の色は build_report.spray_chart のクラスに当てる
 CSS = """
-:root{--bg:#0f1115;--card:#171a21;--line:#272c36;--text:#e8eaed;--dim:#9aa3b2;--accent:#4da3ff;
+:root{--bg:#0f1115;--card:#171a21;--line:#272c36;--text:#e8eaed;--dim:#9aa3b2;--accent:#4da3ff;--btn:#1f6fd1;
 --warm:#ffb454;--jp:#2a1d22;--win:#4cc38a;--lose:#ff6b6b;--chip:#1e232c;--red:#d0103a;
 --sp-field:#262b27;--sp-edge:#3d4a40;--sp-infield:#332c24;--sp-inedge:#4a3f33;--sp-guide:#7d8b80;
 --sp-label:#9aa3b2;--sp-line:#8a968c;--sp-ground:#3987e5;--sp-liner:#d95926;--sp-fly:#199e70}
 @media (prefers-color-scheme: light){:root{--bg:#f6f7f9;--card:#fff;--line:#e2e5ea;--text:#1b1f27;
---dim:#5f6878;--accent:#0b64c8;--warm:#9a4f00;--jp:#fdecef;--win:#1d7f53;--lose:#c8102e;--chip:#f0f2f5;
+--dim:#5f6878;--accent:#0b64c8;--btn:#0b64c8;--warm:#9a4f00;--jp:#fdecef;--win:#1d7f53;--lose:#c8102e;--chip:#f0f2f5;
 --sp-field:#e3e9df;--sp-edge:#c3cdbf;--sp-infield:#ece1cf;--sp-inedge:#d3c3a8;--sp-guide:#8b978e;
 --sp-label:#5f6878;--sp-line:#7a877d;--sp-ground:#2a78d6;--sp-liner:#c4501f;--sp-fly:#12805a}}
 *{box-sizing:border-box}
@@ -1321,7 +1464,8 @@ position:sticky;top:0;z-index:5;background:var(--bg)}
 .brand{display:inline-flex;align-items:center;min-height:44px;margin-right:auto;padding-right:6px;
 color:var(--text);font-weight:700;font-size:15px;white-space:nowrap}
 header nav{display:flex}
-header nav a{display:inline-flex;align-items:center;min-height:44px;padding:3px 8px 0;font-size:14px;
+header nav a{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;
+padding:3px 8px 0;font-size:14px;
 color:var(--text);white-space:nowrap;border-bottom:3px solid transparent}
 header nav a[aria-current]{font-weight:700;border-bottom-color:var(--red)}
 main{max-width:1100px;margin:0 auto;padding:6px 16px 48px}
@@ -1356,14 +1500,20 @@ table.games td.t b{font-size:14px}
 table.games td.m{white-space:normal}
 table.games td.m a{white-space:nowrap}
 table.games small{display:block;color:var(--dim);font-size:12px}
-table.games .lk .ext{display:inline-block;margin:0 14px 0 0;padding:2px 0}
+table.games .lk .ext{display:inline-block;margin:-8px 14px -8px 0;padding:10px 0}
+a.ext{padding-top:9px;padding-bottom:9px}
+table.games td.m a,table.stand td a,table.roster td a{padding:9px 0}
+table.roster td.rec a{display:inline-block;margin:-9px -12px;padding:9px 12px}
 .sc{display:inline-block;min-width:2.4em;text-align:center;font-weight:700}
 .tag{display:inline-block;margin-right:6px;padding:0 6px;border:1px solid var(--line);border-radius:4px;
-font-size:11px;color:var(--dim);vertical-align:1px}
-.tag.sr,.tag.md{border-color:var(--warm);color:var(--warm)}
+font-size:11px;color:var(--dim);vertical-align:1px;white-space:nowrap}
+.tag.sup,.tag.md{border-color:var(--warm);color:var(--warm)}
+.fn{margin-left:2px;font-size:10px;color:var(--dim)}
 .mk{margin-right:4px;font-weight:700}.mk.w{color:var(--win)}.mk.l{color:var(--lose)}
-.live{margin-left:4px;padding:1px 6px;border-radius:4px;background:var(--red);color:#fff;font-size:11px;font-weight:700}
+.live{margin-left:4px;padding:1px 6px;border-radius:4px;background:var(--red);color:#fff;font-size:11px;font-weight:700;
+white-space:nowrap}
 .inn{margin-left:4px;color:var(--dim);font-size:12px}
+.nw{white-space:nowrap}
 tr.jp td{background:var(--jp)}
 .scroll{overflow:auto;-webkit-overflow-scrolling:touch;background:var(--card);border:1px solid var(--line);border-radius:10px}
 .scroll.tall{max-height:75vh}
@@ -1418,7 +1568,7 @@ background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(
 .tcard span{font-weight:600;font-size:14.5px;white-space:nowrap}
 .tcard small{color:var(--dim);font-size:12px;white-space:nowrap;line-height:1.4}
 .go{display:flex;align-items:center;min-height:52px;margin-top:24px;color:var(--text);font-weight:600}
-.save{min-height:44px;padding:0 16px;border:1px solid var(--accent);border-radius:8px;background:var(--accent);
+.save{min-height:44px;padding:0 16px;border:1px solid var(--btn);border-radius:8px;background:var(--btn);
 color:#fff;font:inherit;font-weight:600;cursor:pointer}
 .save:disabled{opacity:.6}
 .links .ext{display:inline-flex;align-items:center;min-height:44px;margin:0 18px 0 0;font-size:15px}
@@ -1426,12 +1576,14 @@ color:#fff;font:inherit;font-weight:600;cursor:pointer}
 .facts dt{padding-top:1px;color:var(--dim);font-size:13px;white-space:nowrap}
 .facts dd{margin:0}
 .facts small{color:var(--dim);font-size:12px}
+.facts small.mn{display:block;line-height:1.45}
 ul.notes{margin:8px 0;padding-left:1.2em;color:var(--dim);font-size:13px}
 .toc{display:flex;gap:6px;overflow-x:auto;margin:10px -16px 0;padding:4px 16px;background:var(--bg)}
 .toc a{flex:none;display:inline-flex;align-items:center;min-height:44px;padding:0 12px;
 border:1px solid var(--line);border-radius:999px;font-size:13px;color:var(--text)}
-@media (min-width:700px){.toc{position:sticky;top:45px;z-index:4;border-bottom:1px solid var(--line)}
+@media (min-width:700px) and (min-height:600px){.toc{position:sticky;top:45px;z-index:4;border-bottom:1px solid var(--line)}
 section{scroll-margin-top:110px}}
+@media (max-height:599px){.scroll.tall{max-height:none}}
 details{margin-top:10px;padding:0 14px;background:var(--card);border:1px solid var(--line);border-radius:10px}
 details[open]{padding-bottom:12px}
 summary{display:flex;align-items:center;gap:8px;min-height:48px;cursor:pointer;font-weight:700;
@@ -1465,7 +1617,7 @@ ul.apps{margin:4px 0;padding-left:1.2em}
 .spray-fly,.spray-pop{fill:var(--sp-fly)}
 .seg{display:inline-flex;margin:6px 0;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .seg button{min-height:44px;padding:0 16px;border:0;background:var(--card);color:var(--text);font:inherit;cursor:pointer}
-.seg button[aria-pressed=true]{background:var(--accent);color:#fff;font-weight:600}
+.seg button[aria-pressed=true]{background:var(--btn);color:#fff;font-weight:600}
 .no{display:inline-block;min-width:2em;color:var(--dim)}
 ol.flow{padding-left:1.4em}
 h2.day{color:var(--text);font-size:16px}
@@ -1490,24 +1642,20 @@ SITE_JS = r"""// U-23W杯 共有サイトの画面の動き。build_site.py が�
 // URL に ?now=2026-11-08T12:00:00-06:00 を付けると「今」を差し替えて試せる。
 (function () {
   var H = 3600000;
-  var NOW = (function () {
+  var FIXED = (function () {  // ?now= で差し替えた「今」。なければ null
     var m = /[?&]now=([^&#]+)/.exec(location.search);
     var t = m ? Date.parse(decodeURIComponent(m[1])) : NaN;
-    return isNaN(t) ? Date.now() : t;
+    return isNaN(t) ? null : t;
   })();
+  var NOW = FIXED === null ? Date.now() : FIXED;
   function dayAt(t, hours) { return new Date(t + hours * H).toISOString().slice(0, 10); }
-  var LOCAL = dayAt(NOW, -6), JAPAN = dayAt(NOW, 9);  // ニカラグアは UTC-6、日本は UTC+9
+  var LOCAL = dayAt(NOW, -6);  // ニカラグアは UTC-6（今日の試合と登板間隔は現地の日付で数える）
   var WEEK = "日月火水木金土";
   function md(iso) {
     var d = new Date(iso + "T00:00:00Z");
     return (d.getUTCMonth() + 1) + "/" + d.getUTCDate() + "(" + WEEK[d.getUTCDay()] + ")";
   }
   function gap(a, b) { return Math.round((Date.parse(b) - Date.parse(a)) / (24 * H)); }
-  function two(n) { return (n < 10 ? "0" : "") + n; }
-  function hhmm(t, hours) {
-    var d = new Date(t + hours * H);
-    return two(d.getUTCHours()) + ":" + two(d.getUTCMinutes());
-  }
   function $(id) { return document.getElementById(id); }
   function each(list, fn) { Array.prototype.forEach.call(list, fn); }
   function all(sel) { return document.querySelectorAll(sel); }
@@ -1578,22 +1726,28 @@ SITE_JS = r"""// U-23W杯 共有サイトの画面の動き。build_site.py が�
     filt();
   }
 
-  // ---- 次の日本戦。開いた時刻で「あと○日」「今日 09:30（日本時間）」「試合中」「終了」を出し分ける
+  // ---- 次の日本戦。開いた時刻で「あと4時間」「あと2日5時間」「試合中」「終了」を出し分ける。
+  // 「今日／明日」は日本と現地で日付がずれる（現地の朝は日本の夜）ので使わず、残り時間で出す。
+  // 日時そのものは、すぐ下に日本時間と現地の両方が出ている
+  function left(ms) {
+    var m = Math.max(1, Math.ceil(ms / 60000));
+    var d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
+    if (d >= 3) return "あと" + d + "日";
+    if (d >= 1) return "あと" + d + "日" + (h ? h + "時間" : "");
+    if (h >= 1) return "あと" + h + "時間" + (mm ? mm + "分" : "");
+    return "あと" + mm + "分";
+  }
   var hero = $("next-jp"), list = $("jp-games");
-  if (hero && list) {
+  function heroAt(now) {
     var games = JSON.parse(list.textContent).filter(function (g) { return !g.done; });
     var pick = null;
     for (var i = 0; i < games.length && !pick; i++) {
-      if (NOW < Date.parse(games[i].t) + 4 * H) pick = games[i];
+      if (now < Date.parse(games[i].t) + 4 * H) pick = games[i];
     }
     var g = pick || games[games.length - 1], t = Date.parse(g.t), when;
     if (!pick) when = "終了（結果は次の更新で入ります）";
-    else if (NOW >= t) when = "試合中";
-    else {
-      var n = gap(JAPAN, dayAt(t, 9));
-      when = n === 0 ? "今日 " + hhmm(t, 9) + "（日本時間）"
-        : n === 1 ? "明日 " + hhmm(t, 9) + "（日本時間）" : "あと" + n + "日";
-    }
+    else if (now >= t) when = "試合中";
+    else when = left(t - now);
     hero.href = g.href;
     hero.setAttribute("data-start", g.t);
     hero.querySelector(".opp").textContent = "日本 vs " + g.opp;
@@ -1602,6 +1756,10 @@ SITE_JS = r"""// U-23W杯 共有サイトの画面の動き。build_site.py が�
     hero.querySelector(".venue").textContent = g.venue;
     $("next-when").textContent = when;
     hero.classList.toggle("on", when === "試合中");
+  }
+  if (hero && list) {
+    heroAt(NOW);
+    if (FIXED === null) setInterval(function () { heroAt(Date.now()); }, 60000);  // 開いたままでも進める
   }
 
   // ---- 今日の試合（現地の日付で選ぶ）
