@@ -39,7 +39,7 @@ from pathlib import Path
 NAME = "U-23W杯 2026"
 SHORT = "U-23W杯"
 # ページの地の色。build_site.py の TEMPLATE の --bg に合わせる
-THEME = {"dark": "#0f1115", "light": "#f6f7f9"}
+THEME = {"dark": "#0a0f1c", "light": "#0a0f1c"}
 RED = (200, 16, 46)
 WHITE = (255, 255, 255)
 ICONS = {"icon-192.png": 192, "icon-512.png": 512, "icon-180.png": 180}
