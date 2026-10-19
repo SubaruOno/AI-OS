@@ -135,6 +135,7 @@ Current plan: check status for remaining balance.
 - Always quote URLs in bash — `?` and `&` are shell special characters that break unquoted URLs
 - `firecrawl-cli` requires Node >=22. Current system has v20 — warnings appear but it still works
 - `search --scrape` fetches full content already — don't run a separate scrape on those same URLs
+- On 2026-10-19 the `firecrawl` command was not installed on this Mac (`command not found`); check `which firecrawl` first and fall back to WebSearch/WebFetch
 
 ### Improvement Backlog
 
