@@ -675,3 +675,4 @@
 - 2026-10-20 14:53 · subaru · seminar/build · めっき因果連鎖図をGraphvizでPDFとSVGに書き出し（日本語フォント指定、灰色を濃く）。~/河本ゼミ/秋_JX金属/めっき因果連鎖_案_1020.pdf・.svg
 - 2026-10-20 15:04 · subaru · workspace/build · causal-chain.com（全5ページ）と著者のnote記事8本を読み、因果連鎖分析をスキル化（.claude/skills/causal-chain）。CLAUDE.md/AGENTS.mdに「原因や打ち手は因果連鎖で考える」を追加
 - 2026-10-20 15:10 · subaru · u23/build · U-23日本代表の投手8人の投球図レポート（表紙＋1人1枚のPDF、球種の表・初球と追い込みの球種・対右/対左の球種別投球図）をBASSの1球データから作成。表はExcelの40行と一致させ、別の担当2つで集計ロジック（打者の左右・内外角・結果の分け方）とページの見た目を点検して指摘を反映。[帯同メモ](../private/u23-wbsc-2026.md)
+- 2026-10-20 16:14 · subaru · seminar/build · めっき因果連鎖図にデータ存在確認の色分けと介入点・観測点（介入①〜③）を追加し、PDF・SVGを作り直し。描き方をcausal-chainスキルに追記
