@@ -61,6 +61,11 @@ prime.
 - Do not paste raw error dumps into the conversation. State what failed, why it
   matters, and the next useful action.
 - Follow `reference/writing-style.md` for all prose.
+- When asked why something happens, what causes a problem, or what to do
+  about it, think in causal chains rather than a single line: trace causes
+  both ways, look for missing steps, conditions, other routes and side
+  effects, and keep facts apart from guesses. The causal-chain skill holds
+  the method and the diagram rules.
 - Never ask a person to paste a password, token, or API key into chat. Use
   `python scripts/set_secret.py KEY_NAME` (`python3` also works) so the secret is
   entered locally and hidden from the conversation.
@@ -109,6 +114,7 @@ scripts/        cross-platform setup and verification helpers
 
 ## Tool routing
 
+- 因果連鎖図、要因解析、原因と打ち手の整理: use the causal-chain skill.
 - Writing: follow `reference/writing-style.md`.
 - Web research and scraping: use Firecrawl when configured.
 - Video and YouTube: use Supadata. Large multi-platform research:

@@ -673,3 +673,4 @@
 - 2026-10-20 14:09 · subaru · seminar/build · 第3回演習「ラーメンの要因解析」の因果連鎖図の全部入り案を作成しviz-js.comに入力（~/河本ゼミ/秋_JX金属/配布資料_1020/ラーメン因果連鎖_全部入り案.txt）
 - 2026-10-20 14:51 · subaru · seminar/build · JX金属のめっき不良の因果連鎖図（案）を作成しviz-js.comに入力。実線＝データで確認、点線＝推測、灰色＝関係なしで区別（~/河本ゼミ/秋_JX金属/めっき因果連鎖_案_1020.txt）
 - 2026-10-20 14:53 · subaru · seminar/build · めっき因果連鎖図をGraphvizでPDFとSVGに書き出し（日本語フォント指定、灰色を濃く）。~/河本ゼミ/秋_JX金属/めっき因果連鎖_案_1020.pdf・.svg
+- 2026-10-20 15:04 · subaru · workspace/build · causal-chain.com（全5ページ）と著者のnote記事8本を読み、因果連鎖分析をスキル化（.claude/skills/causal-chain）。CLAUDE.md/AGENTS.mdに「原因や打ち手は因果連鎖で考える」を追加
