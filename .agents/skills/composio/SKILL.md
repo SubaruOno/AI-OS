@@ -67,6 +67,8 @@ Free tier is 20,000 tool calls a month with unlimited connected accounts.
 - Toolkit slugs aren't always the obvious name (`googlecalendar`, not `google-calendar`). `composio search` returns the correct one, so use what it gives you rather than guessing.
 - Connections are per user account. Each person on the team links their own, which is what you want: nobody is reading anyone else's inbox by accident.
 - If a tool's action exists but the shape of the data is wrong, `composio tools info <slug>` shows the exact parameters. Faster than guessing at the payload.
+- `--file` attaches only one file. For a Gmail draft with several attachments, build the MIME message yourself (Python `email.message.EmailMessage`, base64url) and POST `{message: {raw}}` to `https://gmail.googleapis.com/gmail/v1/users/me/drafts` through `composio run`. Change it later with PUT `/drafts/<id>` and send it with `GMAIL_SEND_DRAFT`.
+- In `composio run`, `proxy(toolkit)` returns a Promise (`const f = await proxy("gmail")`). Pass the JSON body as an object, not a string, or Gmail answers 400 "Missing draft message". The result is a `Response`, so print `res.status` and `await res.text()`. Otherwise a failed request looks like `{}`.
 
 ## Keep this skill improving
 
@@ -75,3 +77,4 @@ Found a gotcha, a slug that surprised you, or a better pattern? Add it above bef
 ### Changelog
 
 - **2026-07-28.** Skill created. Workflow and command reference taken from Composio's own CLI documentation, which is written as agent instructions.
+- **2026-10-20.** Added the multi-attachment Gmail draft route and the `proxy` gotchas (found while sending the U-23 pitcher report).
