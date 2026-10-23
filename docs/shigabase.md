@@ -1,8 +1,10 @@
 # SHIGABASE
 
 すばるが個人開発している大学野球部向けアプリ。コードはこのワークスペースの外、
-`~/Projects/TerakoyaAI/ShigabaseiOS` にある(GitHub: `SubaruOno/ShigabaseiOS`、
-privateリポジトリ、originに設定済み)。このドキュメントはAI-OS側で作業する際に
+`~/Projects/TerakoyaAI/ShigabaseiOS` にある(GitHub: `petacot/ShigabaseiOS`、
+privateリポジトリ、originに設定済み)。以前は `SubaruOno/ShigabaseiOS` にあり、Petacotの組織へ
+移ったことを2026-10-24に確かめて、originも直した。手元に保存済みのGitHubのログインのままで送れることも、同じ日に確かめた。
+このドキュメントはAI-OS側で作業する際に
 参照する構成メモで、実装そのものはSHIGABASE側のリポジトリで行う。
 
 ## 何をするアプリか
