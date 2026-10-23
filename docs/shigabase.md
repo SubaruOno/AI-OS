@@ -52,15 +52,27 @@ react-native-gifted-charts・react-native-svgで投球コース図やスプレ�
 2. `app/reset-password.tsx` の画面でコードと新しいパスワード(8文字以上)を入れる。コードを確かめた時点でログイン状態になり、そのままホームへ進む
 
 - メールにはリンクを入れず、コードだけを載せる。大学のメール(Microsoft 365)のように受信時にリンクを先回りして開くところでは、開かれた時点でコードも使えなくなるため。文面の正本は `supabase/templates/recovery.html` で、手元の練習用Supabaseは `supabase/config.toml` 経由でこれを読む
-- 管理画面の一括登録で作ったアカウント(`player[背番号]@shiga-baseball.internal`)は実在しないアドレスなので、メールは届かない。アプリはこの宛先には送らず、管理者に聞くよう案内する。管理者が代わりにパスワードを決め直す機能はまだない
+- 管理画面の一括登録で作ったアカウント(`player[背番号]@shiga-baseball.internal`)は実在しないアドレスなので、メールは届かない。アプリはこの宛先には送らず、管理者に聞くよう案内する
 - 判定とエラーの言い方は `lib/password-reset.ts`、テストは `lib/__tests__/password-reset.test.ts`
-- 作業ブランチは SHIGABASE側の `fix/password-reset`。iPhone 17 ProとiPad Pro 13インチのシミュレーターで、手元の練習用Supabaseを相手に送信からログインまで通しで確かめた
 
-本番で使うには、Supabaseの管理画面で次の作業が要る。2026-10-23時点では本番の設定を読めておらず、今どうなっているかは確かめていない。
+## パスワードの変更と管理者の再発行(2026-10-23に追加)
+
+メールが届かない一括登録の部員も、パスワードを変えられるようにした。
+
+- メニューの「パスワードを変更する」(`app/change-password.tsx`)。今のパスワードでログインし直して確かめてから、新しいパスワードに変える
+- 管理者はロール管理タブの「パスワードを再発行」で、部員のパスワードを仮のものに決め直せる。仮のパスワードは12字(4字ずつ「-」で区切る)で、画面を閉じると二度と表示しない。管理者は自分の行には出ない。処理はEdge Function `admin-reset-password` で、呼んだ人が管理者かをデータベースで確かめる
+- 仮のパスワードには印(`user_metadata.must_change_password`)が付く。その人がログインすると、ホームではなく変更の画面が開く。「あとで変える」も選べ、そのあいだはメニューに注意が出る。本人が変えると印が外れる
+- 一括登録の初期パスワード(`shiga`＋背番号)でログインしたときも、同じように変更の画面が開く。背番号を知っていれば誰でもログインできてしまうため。初期パスワードかどうかはログインの時に入力された値と比べるだけで、どこにも残さない
+- 仮のパスワードを作る処理は `supabase/functions/_shared/temporary-password.ts`、テストは `lib/__tests__/temporary-password.test.ts`
+
+## 本番で使うまでに要る作業
+
+ここまでの変更は SHIGABASE側の `fix/password-reset` ブランチにある(2026-10-23時点で未コミット)。iPhone 17 ProとiPad Pro 13インチのシミュレーターで、手元の練習用Supabaseを相手に一通り確かめた。管理者でない人の再発行が断られることも、仕組みの側で確かめてある。本番の設定は読めておらず、今どうなっているかは確かめていない。
 
 - Authentication → Emails → Templates の Reset Password を、`supabase/templates/recovery.html` と同じ件名・本文にする
 - Authentication → Emails → SMTP Settings で、独自のメール送信(Custom SMTP)が有効かを見る。Supabase標準の送信のままだと、組織のメンバー以外のアドレスには届かず、送れる数もごく少ない
-- この2つを済ませてから、新しいビルドを配る
+- Edge Function `admin-reset-password` を本番に反映する(`supabase functions deploy admin-reset-password --project-ref qmbqywqtkstwswslgnvo`)。反映するまでは、再発行のボタンを押すとエラーになる
+- これらを済ませてから、新しいビルドを配る
 
 ## 投球コースの座標(試合データ共通)
 
