@@ -67,7 +67,7 @@ react-native-gifted-charts・react-native-svgで投球コース図やスプレ�
 
 ## 本番で使うまでに要る作業
 
-ここまでの変更は SHIGABASE側の `fix/password-reset` ブランチにある(2026-10-23時点で未コミット)。iPhone 17 ProとiPad Pro 13インチのシミュレーターで、手元の練習用Supabaseを相手に一通り確かめた。管理者でない人の再発行が断られることも、仕組みの側で確かめてある。本番の設定は読めておらず、今どうなっているかは確かめていない。
+ここまでの変更は SHIGABASE側の `fix/password-reset` ブランチに1つのコミット(`7c6d9c2`)としてある。2026-10-23時点でGitHubには送っておらず、`main` にも取り込んでいない。iPhone 17 ProとiPad Pro 13インチのシミュレーターで、手元の練習用Supabaseを相手に一通り確かめた。管理者でない人の再発行が断られることも、仕組みの側で確かめてある。本番の設定は読めておらず、今どうなっているかは確かめていない。
 
 - Authentication → Emails → Templates の Reset Password を、`supabase/templates/recovery.html` と同じ件名・本文にする
 - Authentication → Emails → SMTP Settings で、独自のメール送信(Custom SMTP)が有効かを見る。Supabase標準の送信のままだと、組織のメンバー以外のアドレスには届かず、送れる数もごく少ない

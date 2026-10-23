@@ -699,3 +699,4 @@
 - 2026-10-23 11:36 · subaru · shiga/decision · 明治医療の築地 陽良の表記を築地に決定（名簿の筑地は誤り）。名前対応表を筑地→築地に直し、26秋の直したデータを作り直した
 - 2026-10-23 11:40 · subaru · shiga/note · 26秋で足りない3試合（2-2-1・6-1-2・最終週-1-2、いずれも京府大）はデータがないとすばるが確認。26秋の直したデータは27試合で確定
 - 2026-10-23 11:59 · subaru · shigabase/build · メールが届かない部員向けに、メニューのパスワード変更画面と、管理者が仮のパスワードを再発行する仕組み（Edge Function admin-reset-password）を追加。仮のパスワードや初期パスワード（shiga＋背番号）でログインすると変更の画面が開く。iPhone・iPadのシミュレーターと手元のSupabaseで確認し、管理者以外の再発行が断られることも確かめた。テスト261件通過。fix/password-reset、未コミット。本番は関数の反映が必要（[shigabase](../docs/shigabase.md)）
+- 2026-10-23 12:14 · subaru · shigabase/note · パスワードの再設定・変更・再発行の変更を fix/password-reset に1つにまとめてコミット（7c6d9c2、14ファイル）。CLIの版数を控えるだけの supabase/.temp/cli-latest は入れていない。GitHubへの送信・mainへの取り込み・本番への反映はまだ
