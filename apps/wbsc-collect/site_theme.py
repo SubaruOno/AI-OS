@@ -303,6 +303,7 @@ border-radius:8px;background:var(--chip)}
 .pcard .kv i{font-style:normal;color:var(--dim);font-size:11px;font-weight:600;line-height:1.35}
 .pcard .kv em{font-style:normal;font-size:17px;line-height:1.25;font-weight:800;font-variant-numeric:tabular-nums}
 .pcard .badges{flex:0 0 100%;display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}
+.pcard .badge{white-space:normal;max-width:100%}
 
 /* ---- カット集（奪三振集・被安打集など） */
 .clips{display:grid;gap:8px;margin-top:10px}

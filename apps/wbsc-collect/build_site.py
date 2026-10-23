@@ -953,7 +953,7 @@ def roster_block(d: dict, team: str, info: dict, root: str) -> str:
     # （韓国は9/3発表を9/7の記事で確かめた）
     published = meta.get("published") or first.get("published")
     head = (f'<p><span class="badge">{esc(label)}</span> {len(rows)}人・'
-            f'発表 {iso_md(published)}・{sources(first.get("source"))}・'
+            f'発表 {iso_md(published)}・{sources(meta.get("source") or first.get("source"))}・'
             f'{iso_md(first.get("checked"))}確認</p><p class="note">状態: {esc(main)}</p>')
     # 名簿の CSV の notes 列は作業のメモなので出さない。見せる文は相手国.json の roster.note だけ
     return head + note + roster_table(d, code, rows, main, root)
@@ -1135,6 +1135,8 @@ def person_card(d: dict, key: str, kind: str, root: str, code: str, npb: set,
     marks = []
     if key in d["roster_of"]:
         marks.append(("roster", "名簿"))
+    if "離脱" in ((roster_row or {}).get("status") or ""):
+        marks.append(("warn", "離脱報道"))
     if key in npb:
         marks.append(("npb", "日本の球団"))
     if event == CURRENT:
@@ -1153,7 +1155,8 @@ def roster_only_card(d: dict, row: dict, code: str, warn: bool = False) -> str:
                                 club if len(club) <= SHORT_ENOUGH else "") if x)
     reading = (extra.get("reading") or "").strip()
     yomi = f'<small class="yomi">{esc(reading)}</small>' if reading else ""
-    marks = [("roster", "名簿")] + ([("warn", "記録の生年が年齢超過")] if warn else [])
+    marks = ([("roster", "名簿")] + ([("warn", "離脱報道")] if "離脱" in (row.get("status") or "") else [])
+             + ([("warn", "記録の生年が年齢超過")] if warn else []))
     return (f'<div class="pcard"><b class="nm">{esc(row.get("name"))}</b>{yomi}'
             f'<small class="sub">{esc(sub)}</small>{kv("WBSCの記録", "なし")}{badges(marks)}</div>')
 
