@@ -67,7 +67,17 @@ react-native-gifted-charts・react-native-svgで投球コース図やスプレ�
 
 ## 本番で使うまでに要る作業
 
-ここまでの変更は SHIGABASE側の `fix/password-reset` ブランチに1つのコミット(`7c6d9c2`)としてある。2026-10-23時点でGitHubには送っておらず、`main` にも取り込んでいない。iPhone 17 ProとiPad Pro 13インチのシミュレーターで、手元の練習用Supabaseを相手に一通り確かめた。管理者でない人の再発行が断られることも、仕組みの側で確かめてある。本番の設定は読めておらず、今どうなっているかは確かめていない。
+ここまでの変更は SHIGABASE側の `fix/password-reset` ブランチに1つのコミット(`7c6d9c2`)としてある。2026-10-23時点でGitHubには送っておらず、`main` にも取り込んでいない。iPhone 17 ProとiPad Pro 13インチのシミュレーターで、手元の練習用Supabaseを相手に一通り確かめた。管理者でない人の再発行が断られることも、仕組みの側で確かめてある。
+
+2026-10-23に本番の管理画面で読んだ設定(変更はしていない)は次のとおり。
+
+- メール送信はSupabase組み込みのまま(Custom SMTPはオフ)。組み込みの送信は組織のメンバーのアドレスにしか送らず、ほかは「Email address not authorized」になる。送れるのはプロジェクト全体で1時間に2通まで。部員が再設定を頼んでも届かなかった直接の原因
+- Reset Passwordは初期の文面のまま(件名「Reset Your Password」、英語でリンクだけ)
+- サイトURLは初期値の `http://localhost:3000` のまま。古いアプリは行き先を指定していなかったので、メールのリンクはここに飛んでいた
+- コードは6桁・有効1時間で、アプリの作りと合っている。パスワードは6文字以上で、文字の種類の条件はない
+- 「Require current password when updating」はオフ。アプリは今のパスワードを送らずに変える作りなので、オンにするとパスワードの変更が通らなくなる。オフのままにする
+- 登録は76人。アドレスが「player」で始まる19人は、一括登録のアカウントとみられる(末尾までは見ていない)
+- Edge Functionは15個あり、`admin-reset-password` はまだない
 
 - Authentication → Emails → Templates の Reset Password を、`supabase/templates/recovery.html` と同じ件名・本文にする
 - Authentication → Emails → SMTP Settings で、独自のメール送信(Custom SMTP)が有効かを見る。Supabase標準の送信のままだと、組織のメンバー以外のアドレスには届かず、送れる数もごく少ない
