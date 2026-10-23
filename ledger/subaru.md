@@ -700,3 +700,4 @@
 - 2026-10-23 11:40 · subaru · shiga/note · 26秋で足りない3試合（2-2-1・6-1-2・最終週-1-2、いずれも京府大）はデータがないとすばるが確認。26秋の直したデータは27試合で確定
 - 2026-10-23 11:59 · subaru · shigabase/build · メールが届かない部員向けに、メニューのパスワード変更画面と、管理者が仮のパスワードを再発行する仕組み（Edge Function admin-reset-password）を追加。仮のパスワードや初期パスワード（shiga＋背番号）でログインすると変更の画面が開く。iPhone・iPadのシミュレーターと手元のSupabaseで確認し、管理者以外の再発行が断られることも確かめた。テスト261件通過。fix/password-reset、未コミット。本番は関数の反映が必要（[shigabase](../docs/shigabase.md)）
 - 2026-10-23 12:14 · subaru · shigabase/note · パスワードの再設定・変更・再発行の変更を fix/password-reset に1つにまとめてコミット（7c6d9c2、14ファイル）。CLIの版数を控えるだけの supabase/.temp/cli-latest は入れていない。GitHubへの送信・mainへの取り込み・本番への反映はまだ
+- 2026-10-23 12:28 · subaru · shiga/build · 26秋の球種と球速を点検して直した（付け違い10球・入力ミスの球速3球・試合ごとに呼び方が違った3投手33球）。足川のフォークは10/7の判断を変えてフォークのまま。彦根は伏見より直球が平均3km/h速く出ることを確認（直さない）。手順は[shiga-taisaku](../docs/shiga-taisaku.md)
