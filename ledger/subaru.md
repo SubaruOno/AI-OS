@@ -704,3 +704,4 @@
 - 2026-10-23 23:22 · subaru · shiga/build · 京外大・滋県大・明医大の履歴設定.yamlを、片付けで消えたダウンロードのパスから、26秋の直したデータと移した後の25秋ファイルに向け直した（元は.bak_20261023）。道具と同じ読み方で全部読めることを確認
 - 2026-10-23 23:59 · subaru · shigabase/research · 本番Supabaseの認証設定を管理画面で読んだ（変更なし）。Custom SMTPはオフで組み込みの送信のまま（組織のメンバー以外には送らず、1時間2通まで）、Reset Passwordは初期のリンクだけの文面、サイトURLはlocalhost:3000。コード6桁・1時間はアプリと一致。admin-reset-passwordは未反映。内容は[shigabase](../docs/shigabase.md)
 - 2026-10-24 00:06 · subaru · shigabase/ship · すばるの了承のうえで本番を変更。Reset Passwordの件名・本文をコードだけの文面に差し替え（保存後にファイルと一致を確認）、Edge Function admin-reset-password を7c6d9c2の内容で反映（--use-api、16個に、ログインなしは401）。残りはCustom SMTPの設定、mainへの取り込み、新しいビルド（[shigabase](../docs/shigabase.md)）
+- 2026-10-24 00:14 · subaru · shigabase/ship · fix/auth-auto-refresh と fix/password-reset を main に取り込み（競合なし、テスト261件通過、型エラー0）、GitHubに送った（main 77c4b2d）。GitHubから「リポジトリは petacot/ShigabaseiOS に移動した」と案内あり。手元の送り先は古い場所のまま（転送で届いた）。ビルドはまだ

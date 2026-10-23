@@ -67,7 +67,7 @@ react-native-gifted-charts・react-native-svgで投球コース図やスプレ�
 
 ## 本番で使うまでに要る作業
 
-ここまでの変更は SHIGABASE側の `fix/password-reset` ブランチに1つのコミット(`7c6d9c2`)としてある。2026-10-23時点でGitHubには送っておらず、`main` にも取り込んでいない。iPhone 17 ProとiPad Pro 13インチのシミュレーターで、手元の練習用Supabaseを相手に一通り確かめた。管理者でない人の再発行が断られることも、仕組みの側で確かめてある。
+ここまでの変更は SHIGABASE側の `fix/password-reset` ブランチの1つのコミット(`7c6d9c2`)で、2026-10-24に `fix/auth-auto-refresh` とあわせて `main` に取り込み、GitHubに送った(`main` は `77c4b2d`)。iPhone 17 ProとiPad Pro 13インチのシミュレーターで、手元の練習用Supabaseを相手に一通り確かめた。管理者でない人の再発行が断られることも、仕組みの側で確かめてある。
 
 2026-10-23に本番の管理画面で読んだ設定(変更はしていない)は次のとおり。
 
@@ -87,7 +87,6 @@ react-native-gifted-charts・react-native-svgで投球コース図やスプレ�
 残っている作業:
 
 - 独自のメール送信(Custom SMTP)を設定する。部のGoogleアカウントのGmail(アプリパスワード)か、メール配信サービスを使う。設定するまでは、部員が自分で再設定を頼んでもメールは届かないので、管理者の再発行で対応する
-- `fix/password-reset` と `fix/auth-auto-refresh` を `main` に取り込み、GitHubに送る
 - 新しいビルドを配る。古いアプリは再発行も再設定の続きの画面も持たないので、ここまでは部員の手元では何も変わらない
 
 ## 投球コースの座標(試合データ共通)
