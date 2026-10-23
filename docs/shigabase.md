@@ -72,17 +72,23 @@ react-native-gifted-charts・react-native-svgで投球コース図やスプレ�
 2026-10-23に本番の管理画面で読んだ設定(変更はしていない)は次のとおり。
 
 - メール送信はSupabase組み込みのまま(Custom SMTPはオフ)。組み込みの送信は組織のメンバーのアドレスにしか送らず、ほかは「Email address not authorized」になる。送れるのはプロジェクト全体で1時間に2通まで。部員が再設定を頼んでも届かなかった直接の原因
-- Reset Passwordは初期の文面のまま(件名「Reset Your Password」、英語でリンクだけ)
+- Reset Passwordは初期の文面だった(件名「Reset Your Password」、英語でリンクだけ)。2026-10-24に差し替えた(下記)
 - サイトURLは初期値の `http://localhost:3000` のまま。古いアプリは行き先を指定していなかったので、メールのリンクはここに飛んでいた
 - コードは6桁・有効1時間で、アプリの作りと合っている。パスワードは6文字以上で、文字の種類の条件はない
 - 「Require current password when updating」はオフ。アプリは今のパスワードを送らずに変える作りなので、オンにするとパスワードの変更が通らなくなる。オフのままにする
 - 登録は76人。アドレスが「player」で始まる19人は、一括登録のアカウントとみられる(末尾までは見ていない)
-- Edge Functionは15個あり、`admin-reset-password` はまだない
+- Edge Functionは15個あり、`admin-reset-password` はまだなかった。2026-10-24に反映した(下記)
 
-- Authentication → Emails → Templates の Reset Password を、`supabase/templates/recovery.html` と同じ件名・本文にする
-- Authentication → Emails → SMTP Settings で、独自のメール送信(Custom SMTP)が有効かを見る。Supabase標準の送信のままだと、組織のメンバー以外のアドレスには届かず、送れる数もごく少ない
-- Edge Function `admin-reset-password` を本番に反映する(`supabase functions deploy admin-reset-password --project-ref qmbqywqtkstwswslgnvo`)。反映するまでは、再発行のボタンを押すとエラーになる
-- これらを済ませてから、新しいビルドを配る
+2026-10-24に本番で済ませたこと(すばるの了承のうえで実施):
+
+- Reset Passwordの件名と本文を、`supabase/templates/recovery.html` と同じものに差し替えた。保存後に読み直して、ファイルと1文字違わないことを確かめた。初期の文面には、管理画面の「Reset template」で戻せる
+- Edge Function `admin-reset-password` を `fix/password-reset`(`7c6d9c2`)の内容で反映した。コマンドは `supabase functions deploy admin-reset-password --project-ref qmbqywqtkstwswslgnvo --use-api` で、`--use-api` ならDockerなしで反映できる。`--prune` は本番にしかない関数を消すので使わない。反映後は16個になり、ログインなしの呼び出しは401で断られることを確かめた
+
+残っている作業:
+
+- 独自のメール送信(Custom SMTP)を設定する。部のGoogleアカウントのGmail(アプリパスワード)か、メール配信サービスを使う。設定するまでは、部員が自分で再設定を頼んでもメールは届かないので、管理者の再発行で対応する
+- `fix/password-reset` と `fix/auth-auto-refresh` を `main` に取り込み、GitHubに送る
+- 新しいビルドを配る。古いアプリは再発行も再設定の続きの画面も持たないので、ここまでは部員の手元では何も変わらない
 
 ## 投球コースの座標(試合データ共通)
 
