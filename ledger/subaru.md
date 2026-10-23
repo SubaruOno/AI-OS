@@ -706,3 +706,4 @@
 - 2026-10-24 00:06 · subaru · shigabase/ship · すばるの了承のうえで本番を変更。Reset Passwordの件名・本文をコードだけの文面に差し替え（保存後にファイルと一致を確認）、Edge Function admin-reset-password を7c6d9c2の内容で反映（--use-api、16個に、ログインなしは401）。残りはCustom SMTPの設定、mainへの取り込み、新しいビルド（[shigabase](../docs/shigabase.md)）
 - 2026-10-24 00:14 · subaru · shigabase/ship · fix/auth-auto-refresh と fix/password-reset を main に取り込み（競合なし、テスト261件通過、型エラー0）、GitHubに送った（main 77c4b2d）。GitHubから「リポジトリは petacot/ShigabaseiOS に移動した」と案内あり。手元の送り先は古い場所のまま（転送で届いた）。ビルドはまだ
 - 2026-10-24 00:17 · subaru · shigabase/note · SHIGABASEのoriginを petacot/ShigabaseiOS に直し、新しい場所から読めてmainが一致（77c4b2d）することを確認。[shigabase](../docs/shigabase.md)のGitHubの場所も直した。context/tech-stack.md と9月の計画書には古い場所が残っている
+- 2026-10-24 00:21 · subaru · shiga/build · 滋賀大の26秋（8勝2敗・2位）をチームと個人のいろいろな角度から見るHTMLを作成（概要・打撃・投手陣と守備・打者・投手・相手と試合）。打者の成績は既存の変換の道具と一致を確認、道具は~/野球の自チーム分析フォルダ、手順は[shiga-taisaku](../docs/shiga-taisaku.md)
