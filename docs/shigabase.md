@@ -42,6 +42,25 @@ react-native-gifted-charts・react-native-svgで投球コース図やスプレ�
 - bundle id `com.subaruono.shigabaseios`、EAS project `732321f9-86fe-4f12-bb36-312c6907839e`
 - 直近のコミットはiOS 26でのクラッシュ対応が中心。`react-native-reanimated`/`worklets`のバージョン不整合と、`messages.tsx`のフック順序違反によるスプラッシュ画面ハングを修正しているが、最新コミット(`8c28f2d`)がデバッグログ追加なので完全解決の確認はまだ途中と見られる
 - GitHubリモートは既に設定済み・private。[context/tech-stack.md](../context/tech-stack.md)のインテグレーションキューにあった「GitHub連携待ち」は解消済み
+- (2026-10-23確認)ブラウザ版(`npx expo start --web`)は、起動直後に止まる。`app/_layout.tsx` の `Notifications.useLastNotificationResponse` がWebでは使えないため。画面の確認はiOSシミュレーターで行う
+
+## パスワードの再設定(2026-10-23に作り直し)
+
+それまでのアプリは再設定のメールを送るだけで、届いたあとに新しいパスワードを決める画面がなく、最後まで進めなかった。今は次の流れで動く。
+
+1. ログイン画面の「パスワードをお忘れですか？」でメールアドレスを入れると、6桁のコードがメールで届く
+2. `app/reset-password.tsx` の画面でコードと新しいパスワード(8文字以上)を入れる。コードを確かめた時点でログイン状態になり、そのままホームへ進む
+
+- メールにはリンクを入れず、コードだけを載せる。大学のメール(Microsoft 365)のように受信時にリンクを先回りして開くところでは、開かれた時点でコードも使えなくなるため。文面の正本は `supabase/templates/recovery.html` で、手元の練習用Supabaseは `supabase/config.toml` 経由でこれを読む
+- 管理画面の一括登録で作ったアカウント(`player[背番号]@shiga-baseball.internal`)は実在しないアドレスなので、メールは届かない。アプリはこの宛先には送らず、管理者に聞くよう案内する。管理者が代わりにパスワードを決め直す機能はまだない
+- 判定とエラーの言い方は `lib/password-reset.ts`、テストは `lib/__tests__/password-reset.test.ts`
+- 作業ブランチは SHIGABASE側の `fix/password-reset`。iPhone 17 ProとiPad Pro 13インチのシミュレーターで、手元の練習用Supabaseを相手に送信からログインまで通しで確かめた
+
+本番で使うには、Supabaseの管理画面で次の作業が要る。2026-10-23時点では本番の設定を読めておらず、今どうなっているかは確かめていない。
+
+- Authentication → Emails → Templates の Reset Password を、`supabase/templates/recovery.html` と同じ件名・本文にする
+- Authentication → Emails → SMTP Settings で、独自のメール送信(Custom SMTP)が有効かを見る。Supabase標準の送信のままだと、組織のメンバー以外のアドレスには届かず、送れる数もごく少ない
+- この2つを済ませてから、新しいビルドを配る
 
 ## 投球コースの座標(試合データ共通)
 

@@ -25,7 +25,7 @@
 
 | When you're working on... | Doc | What it covers |
 |---|---|---|
-| SHIGABASE(大学野球部アプリ) | [shigabase.md](shigabase.md) | 構成・技術スタック・ディレクトリ、既知の課題(バージョン不一致、iOS 26クラッシュ対応) |
+| SHIGABASE(大学野球部アプリ) | [shigabase.md](shigabase.md) | 構成・技術スタック・ディレクトリ、既知の課題(バージョン不一致、iOS 26クラッシュ対応、ブラウザ版の起動時エラー)、パスワード再設定の流れと本番で要る設定 |
 | てくてくまち(散歩で街を作るアプリ) | [walk-town.md](walk-town.md) | 構成・技術スタック・主なファイル・現状と未確認の項目 |
 | Poitto(紙くず投げゲーム) | [poitto.md](poitto.md) | 構成・ステージ定義・確かめ方・TestFlight配布の状況 |
 | ケタ感(数字を幅で当てる日替わりゲーム、iPhone) | [keta.md](keta.md) | iOS版とブラウザ版の構成、採点の仕組み、問題の足し方、未確認の項目 |
