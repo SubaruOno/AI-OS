@@ -304,6 +304,23 @@ border-radius:8px;background:var(--chip)}
 .pcard .kv em{font-style:normal;font-size:17px;line-height:1.25;font-weight:800;font-variant-numeric:tabular-nums}
 .pcard .badges{flex:0 0 100%;display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}
 .pcard .badge{white-space:normal;max-width:100%}
+/* 読みが長いと名前が1文字ずつ縦に折れるので、読みのある名前は名前の幅を先に取り、読みを次の行へ回す */
+.pcard .nm:has(+.yomi){flex-basis:auto}
+.pcard .ev{flex:0 0 100%;color:var(--dim);font-size:11.5px;line-height:1.4}
+.pcard.out{opacity:.62}
+@media (hover:hover){a.pcard.out:hover{opacity:1}}
+/* 選手カードのまとまり（今大会のメンバー・候補・名簿は未発表など）。見出しの下に人数と発表日 */
+.pgroup>h3{margin:14px 0 0}
+.pgroup>.note{margin:0 0 2px}
+.seg-panel>.pgroup:first-child>h3,.nopos+.pgroup>h3{margin-top:8px}
+.nopos{margin:10px 0 0;font-weight:700}
+details.others{margin-top:18px}
+details.others>summary{padding:8px 0;line-height:1.45}
+details.others>summary small{margin-left:2px}
+details.others>.note{margin:0 0 4px}
+details.others h4{margin:12px 0 4px}
+details.others .pcard{background:var(--bg)}
+@media (max-width:600px){details.others{padding:0 8px}}
 
 /* ---- カット集（奪三振集・被安打集など） */
 .clips{display:grid;gap:8px;margin-top:10px}

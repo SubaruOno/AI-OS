@@ -399,7 +399,10 @@ def analyze(d: dict) -> None:
         for event, name in srcs:
             add_event(d, team, event, name)
     merge_people(d)
-    d["paged"] = {key for key, person in d["people"].items() if eligible(person["year"])}
+    # 選手ページを作る人: 年齢で今大会に出られる選手と、今大会の記録がある選手（記録の生年が
+    # 食い違っていても、出場したのなら相手国ページのメンバー側に載せるため）
+    d["paged"] = {key for key, person in d["people"].items() if eligible(person["year"])
+                  or any(event == CURRENT for _, event, _ in person["blocks"])}
     link_roster(d)
     d["starters"] = starters(d["events"][CURRENT]["pitching"])
     pitching = d["events"][CURRENT]["pitching"]
@@ -1107,58 +1110,90 @@ def short_event(event) -> str:
 
 
 def japan_league_keys(d: dict, info: dict) -> set:
-    """注目選手のうち、日本の球団にいる選手の鍵。"""
-    return {d["pid_key"].get(str(item.get("playerid") or "")) for item in info.get("notable") or []
-            if item.get("japan_league")} - {None}
+    """注目選手のうち、日本の球団にいる選手の鍵と、名前の照合用の形（記録のない名簿の選手のため）。"""
+    items = [item for item in info.get("notable") or [] if item.get("japan_league")]
+    keys = {d["pid_key"].get(str(item.get("playerid") or "")) for item in items} - {None}
+    return keys | {("name", name_key(item.get("name"))) for item in items if item.get("name")}
+
+
+def in_japan_league(npb: set, key, row: dict | None) -> bool:
+    """選手の鍵か、名簿の名前が、日本の球団にいる注目選手のものか。"""
+    return key in npb or bool(row and ("name", name_key(row.get("name"))) in npb)
+
+
+def card_kind(d: dict, key: str, position=None) -> str:
+    """カードに出す数字の種類（投手 pit・打者 bat）。
+
+    名簿の守備があればそれで決める。なければ記録から: 投球か打撃の片方だけならそれ、両方あれば
+    WBSCの登録の守備（捕手・内野手・外野手なら打者）、それも分からなければ投手。
+    """
+    if position:
+        return "pit" if position == "P" else "bat"
+    person = d["people"][key]
+    kinds = {blk[0] for blk in person["blocks"]}
+    if len(kinds) == 1:
+        return next(iter(kinds))
+    registered = d["info"].get(person["pid"], {}).get("position") or ""
+    return "bat" if registered in ("C", "IF", "OF") else "pit"
+
+
+def card_sub(hand, pos: str, club: str) -> str:
+    """カードの上の行の小さな文字（投打・守備・所属）。長い所属名は省く。"""
+    return "・".join(x for x in (hand, pos, club if len(club) <= SHORT_ENOUGH else "") if x)
 
 
 def person_card(d: dict, key: str, kind: str, root: str, code: str, npb: set,
                 roster_row: dict | None = None) -> str:
-    """過去の記録のある選手のカード。選手ページへのリンク。"""
+    """記録のある選手のカード。選手ページへのリンク。
+
+    数字2つの下に、どの大会の数字かを小さく書く。札は「離脱報道」「日本の球団」だけ。
+    """
     person = d["people"][key]
+    row = roster_row or {}
     event, line = newest_block(person, kind)
     if line is None:  # 名簿では投手でも、記録は打撃だけ（またはその逆）
         kind = "bat" if kind == "pit" else "pit"
         event, line = newest_block(person, kind)
     meta = d["info"].get(person["pid"], {})
     hand = HAND.get(meta.get("throws") if kind == "pit" else meta.get("bats"))
-    pos = POS_JA.get((roster_row or {}).get("position") or meta.get("position"), "")
-    extra = reading_of(d, code, (roster_row or {}).get("name") or person["name"])
-    club = (extra.get("club_ja") or "").strip() or ((roster_row or {}).get("club") or "").strip()
-    sub = "・".join(x for x in ((f"{hand}{'投' if kind == 'pit' else '打'}" if hand else ""), pos,
-                                club if len(club) <= SHORT_ENOUGH else "") if x)
-    sub = "｜".join(x for x in (sub, f"{short_event(event)}の記録" if event else "") if x)
+    pos = POS_JA.get(row.get("position") or meta.get("position"), "")
+    extra = reading_of(d, code, row.get("name") or person["name"])
+    club = (extra.get("club_ja") or "").strip() or (row.get("club") or "").strip()
+    sub = card_sub(f"{hand}{'投' if kind == 'pit' else '打'}" if hand else "", pos, club)
     reading = (extra.get("reading") or "").strip()
     yomi = f'<small class="yomi">{esc(reading)}</small>' if reading else ""
     pairs = ("防御率", "奪三振率") if kind == "pit" else ("打率", "出塁率")
     stats = "".join(kv(k, (line or {}).get(k)) for k in pairs)
-    marks = []
-    if key in d["roster_of"]:
-        marks.append(("roster", "名簿"))
-    if "離脱" in ((roster_row or {}).get("status") or ""):
-        marks.append(("warn", "離脱報道"))
-    if key in npb:
-        marks.append(("npb", "日本の球団"))
-    if event == CURRENT:
-        marks.append(("ok", "今大会に出場"))
-    elif key not in d["roster_of"] and person["year"]:
-        marks.append(("ok", "出場できる年齢"))
-    return (f'<a class="pcard" href="{root}p/{key}/"><b class="nm">{esc(person["name"])}</b>{yomi}'
-            f'<small class="sub">{esc(sub)}</small>{stats}{badges(marks)}</a>')
+    # 狭いカードで「の記 / 録」と切れないよう、折り返すなら「の記録」の前で
+    source = (f'<small class="ev">{esc(short_event(event))} <span class="nw">の記録</span></small>'
+              if event else "")
+    out = "離脱" in (row.get("status") or "")
+    marks = [("warn", "離脱報道" if out else ""),
+             ("npb", "日本の球団" if in_japan_league(npb, key, roster_row) else "")]
+    return (f'<a class="pcard{" out" if out else ""}" href="{root}p/{key}/"><b class="nm">'
+            f'{esc(person["name"])}</b>{yomi}<small class="sub">{esc(sub)}</small>{stats}{source}'
+            f"{badges(marks)}</a>")
 
 
-def roster_only_card(d: dict, row: dict, code: str, warn: bool = False) -> str:
-    """名簿にいるが、記録（選手ページ）のない選手のカード。リンクにしない。"""
+def roster_only_card(d: dict, row: dict, code: str, warn: bool = False,
+                     npb: set | None = None) -> str:
+    """名簿にいるが、記録（選手ページ）のない選手のカード。リンクにしない。
+
+    warn は、名簿の選手と結んだ記録の生年が年齢超過で、選手ページを作っていないとき。
+    npb は japan_league_keys の戻り値（日本の球団にいる注目選手と名前で照らす）。
+    """
     extra = reading_of(d, code, row.get("name"))
     club = (extra.get("club_ja") or "").strip() or (row.get("club") or "").strip()
-    sub = "・".join(x for x in (POS_JA.get(row.get("position"), ""),
-                                club if len(club) <= SHORT_ENOUGH else "") if x)
+    sub = card_sub("", POS_JA.get(row.get("position"), ""), club)
     reading = (extra.get("reading") or "").strip()
     yomi = f'<small class="yomi">{esc(reading)}</small>' if reading else ""
-    marks = ([("roster", "名簿")] + ([("warn", "離脱報道")] if "離脱" in (row.get("status") or "") else [])
-             + ([("warn", "記録の生年が年齢超過")] if warn else []))
-    return (f'<div class="pcard"><b class="nm">{esc(row.get("name"))}</b>{yomi}'
-            f'<small class="sub">{esc(sub)}</small>{kv("WBSCの記録", "なし")}{badges(marks)}</div>')
+    out = "離脱" in (row.get("status") or "")
+    marks = [("warn", "離脱報道" if out else ""),
+             ("npb", "日本の球団" if in_japan_league(npb or set(), None, row) else ""),
+             ("warn", "記録の生年が年齢超過" if warn else "")]
+    norec = "" if warn else '<small class="ev">国際大会の記録なし</small>'
+    return (f'<div class="pcard{" out" if out else ""}"><b class="nm">{esc(row.get("name"))}</b>{yomi}'
+            f'<small class="sub">{esc(sub)}</small>{norec}{badges(marks)}</div>')
 
 
 def volume(person: dict, kind: str) -> float:
@@ -1168,59 +1203,137 @@ def volume(person: dict, kind: str) -> float:
     return br.number(line.get("投球回" if kind == "pit" else "打席"))
 
 
+def roster_heading(info: dict, rows: list[dict]) -> tuple[str, str, bool]:
+    """名簿のまとまりの見出し（HTML）・その下の小さな文・最終（または代表）発表か。
+
+    相手国.json の roster.label に「候補」が入っていれば候補（最終の24人は未発表）、
+    ほか（最終メンバー発表・代表発表・連盟サイトの名簿）は今大会のメンバー。
+    """
+    meta = info.get("roster") or {}
+    main = Counter(r.get("status") or "" for r in rows).most_common(1)[0][0]
+    label = meta.get("label") or main.split("・")[0]
+    final = "候補" not in label
+    # 発表日は相手国.json を先に見る（roster_block と同じ。CSV には記事の日付が入っていることがある）
+    published = meta.get("published") or next(
+        (r.get("published") for r in rows if (r.get("status") or "") == main and r.get("published")), "")
+    title = "今大会のメンバー" if final else "今大会の候補<small>最終の24人は未発表</small>"
+    count = f"{len(rows)}人" + (f"・{iso_md(published)}発表" if published else "")
+    return title, count, final
+
+
+def group_html(title: str, note: str, cards: list[str]) -> str:
+    """見出し・小さな説明・カードの並びを1つのまとまりに。"""
+    grid = (f'<div class="pgrid">{"".join(cards)}</div>' if cards
+            else '<p class="empty">該当する選手はいません。</p>')
+    return (f'<div class="pgroup"><h3>{title}</h3>'
+            + (f'<p class="note">{note}</p>' if note else "") + f"{grid}</div>")
+
+
 def player_grid(d: dict, team: str, info: dict, root: str) -> str:
-    """投手・野手の切り替えと、選手カードの並び。今大会の名簿の選手を先に。"""
+    """選手カードの並び。札ではなく見出しでまとまりに分け、投手・野手で切り替える。
+
+    名簿があるチーム: 「今大会のメンバー」（または「今大会の候補」）に名簿の選手全員と、
+    今大会の記録がある選手（名簿と名前を結べなくても）。離脱の報道がある選手はまとまりの最後。
+    名簿にいない過去の大会の選手は、節の下の閉じた欄にまとめる。
+    名簿がないチーム: 「今大会に出場した選手」（大会が始まってから）と「名簿は未発表です」
+    （過去の大会に出ていて、年齢では出られる選手）。
+    名簿に守備位置が1人も書かれていない（投手がいない）チームは、切り替えずに1つの並びにする。
+    """
     code = TEAM_CODE.get(team, "")
     npb = japan_league_keys(d, info)
     order = {event: i for t, srcs in team_sources() if t == team
              for i, (event, _) in enumerate(srcs)}
-    # 並び: 0 今大会の記録がある選手（多く出た順）→ 1 名簿の選手で過去の記録あり（名簿の順）
-    # → 2 名簿の選手で記録なし → 3 過去の記録だけで、今大会に出られる年齢の選手（新しい大会・多く出た順）
-    found = {"p": [], "b": []}
+    rows = [r for r in d["roster"] if r.get("team") == code]
+    split = not rows or any(r.get("position") == "P" for r in rows)
+    sides = ("p", "b") if split else ("a",)
+
+    def side_of(kind: str) -> str:
+        return ("p" if kind == "pit" else "b") if split else "a"
+
+    def played_now(person: dict) -> bool:
+        return any(event == CURRENT for _, event, _ in person["blocks"])
+
+    # 並びの順（小さいほど先）: 0 今大会の記録がある選手（多く出た順）→ 1 名簿の選手で過去の記録あり
+    # （名簿の順）→ 2 名簿の選手で記録なし → 3 離脱の報道がある選手。閉じた欄と目安の選手は新しい大会・
+    # 多く出た順
+    top = {s: [] for s in sides}      # 名簿のまとまり（名簿がなければ今大会に出場した選手）
+    hint = {s: [] for s in sides}     # 名簿がないチームの目安の選手
+    extra = {"p": [], "b": []}        # 閉じた欄（名簿にいない過去の大会の選手）。中は投手・野手に分ける
     used = set()
-    for i, row in enumerate(r for r in d["roster"] if r.get("team") == code):
-        side = "p" if row.get("position") == "P" else "b"
-        kind = "pit" if side == "p" else "bat"
+    for i, row in enumerate(rows):
         key = d["match_by_name"].get((code, row.get("name")))
+        gone = "離脱" in (row.get("status") or "")
         if key in d["paged"] and key not in used:
             used.add(key)
             person = d["people"][key]
-            now = person["blocks"][0][1] == CURRENT
-            found[side].append(((0, -volume(person, kind), i) if now else (1, i, 0),
-                                person_card(d, key, kind, root, code, npb, row)))
+            kind = card_kind(d, key, row.get("position"))
+            rank = (3, i, 0) if gone else (0, -volume(person, kind), i) if played_now(person) else (1, i, 0)
+            top[side_of(kind)].append((rank, person_card(d, key, kind, root, code, npb, row)))
         else:
-            found[side].append(((2, i, 0), roster_only_card(
-                d, row, code, warn=bool(key) and key not in d["paged"])))
-    rest = [k for k, person in d["people"].items()
-            if person["team"] == team and k in d["paged"] and k not in used]
-    for side, kind in (("p", "pit"), ("b", "bat")):
-        for k in rest:
-            person = d["people"][k]
-            pit = any(blk[0] == "pit" for blk in person["blocks"])
-            if (kind == "pit") != pit:
-                continue
-            event, _ = newest_block(person, kind)
-            if event is None:
-                continue
-            rank = (0, -volume(person, kind), 0) if event == CURRENT else \
-                (3, order.get(event, 99), -volume(person, kind))
-            found[side].append((rank, person_card(d, k, kind, root, code, npb)))
-    cards = {side: [html_ for _, html_ in sorted(items, key=lambda x: x[0])]
-             for side, items in found.items()}
-    if not cards["p"] and not cards["b"]:
+            kind = "pit" if row.get("position") == "P" else "bat"
+            top[side_of(kind)].append(((3 if gone else 2, i, 0), roster_only_card(
+                d, row, code, warn=bool(key) and key not in d["paged"], npb=npb)))
+    for k, person in d["people"].items():
+        if person["team"] != team or k not in d["paged"] or k in used:
+            continue
+        kind = card_kind(d, k)
+        event, _ = newest_block(person, kind)
+        card = person_card(d, k, kind, root, code, npb)
+        if played_now(person):
+            top[side_of(kind)].append(((0, -volume(person, kind), 0), card))
+        else:
+            rank = (order.get(event, 99), -volume(person, kind), 0)
+            (extra["p" if kind == "pit" else "b"] if rows else hint[side_of(kind)]).append((rank, card))
+
+    def ordered(items: list) -> list[str]:
+        return [html_ for _, html_ in sorted(items, key=lambda x: x[0])]
+
+    if not any(top.values()) and not any(hint.values()) and not any(extra.values()):
         return '<p class="empty">名簿も過去の記録もまだありません。</p>'
-    tabs = "".join(
-        f'<button type="button" role="tab" aria-selected="{"true" if side == "p" else "false"}" '
-        f'data-seg="{side}">{label} <span class="cnt">{len(cards[side])}</span></button>'
-        for side, label in (("p", "投手"), ("b", "野手")))
-    panels = "".join(
-        f'<div class="seg-panel" role="tabpanel" data-seg="{side}"{"" if side == "p" else " hidden"}>'
-        + (f'<div class="pgrid">{"".join(cards[side])}</div>' if cards[side]
-           else '<p class="empty">該当する選手はいません。</p>') + "</div>"
-        for side in ("p", "b"))
-    lead = ('<p class="note">今大会の記録がある選手を先に、続いて今大会の名簿の選手、過去の大会の記録があり'
-            "今大会に出られる年齢の選手の順。数字は一番新しい大会の記録です。</p>")
-    return f'<div class="seg" role="tablist" aria-label="投手と野手">{tabs}</div>{lead}{panels}'
+    title, count, final = roster_heading(info, rows) if rows else ("", "", True)
+    first = ""  # 下にまだ別のまとまりがあるときだけ「先に並べています」と書く
+    if rows and (extra["p"] or extra["b"]):
+        first = f'{"今大会のメンバー" if final else "今大会の候補"}を先に並べています。'
+    elif not rows and any(top.values()):
+        first = "今大会に出場した選手を先に並べています。"
+    lead = (f'<p class="note">{first}数字は国際大会（WBSC）の記録で、どの大会の数字かはカードに'
+            "書いています。</p>")
+    panels, counts = {}, {}
+    for s in sides:
+        if rows:
+            groups = [group_html(title, count, ordered(top[s]))]
+        else:
+            groups = [group_html("今大会に出場した選手", "", ordered(top[s]))] if top[s] else []
+            groups.append(group_html(
+                "名簿は未発表です", "過去の大会に出ていて、年齢では今大会に出られる選手です。"
+                "候補の目安としてご覧ください。", ordered(hint[s])))
+        panels[s] = "".join(groups)
+        counts[s] = len(top[s]) + len(hint[s])
+    if split:
+        tabs = "".join(
+            f'<button type="button" role="tab" aria-selected="{"true" if s == "p" else "false"}" '
+            f'data-seg="{s}">{label} <span class="cnt">{counts[s]}</span></button>'
+            for s, label in (("p", "投手"), ("b", "野手")))
+        body = (f'<div class="seg" role="tablist" aria-label="投手と野手">{tabs}</div>'
+                + "".join(f'<div class="seg-panel" role="tabpanel" data-seg="{s}"'
+                          f'{"" if s == "p" else " hidden"}>{panels[s]}</div>' for s in sides))
+    else:
+        body = f'<p class="note nopos">守備位置の発表はありません。</p>{panels["a"]}'
+    return lead + body + others_block(extra, final, ordered)
+
+
+def others_block(extra: dict, final: bool, ordered) -> str:
+    """名簿にいないが、過去の大会に出ていて年齢では出られる選手の、閉じた欄。いなければ空。"""
+    total = len(extra["p"]) + len(extra["b"])
+    if not total:
+        return ""
+    where = "今回のメンバー" if final else "今の候補名簿"
+    parts = [f"<h4>{label}</h4>" + f'<div class="pgrid">{"".join(ordered(extra[s]))}</div>'
+             for s, label in (("p", "投手"), ("b", "野手")) if extra[s]]
+    # 見出しと（人数…）は1つの span に入れ、狭い画面でも文として折り返す
+    return (f'<details class="others"><summary><span>今回の名簿にいない選手<small>（{total}人・過去の大会の'
+            f"記録・参考）</small></span></summary><p class=\"note\">過去の大会に出ていて年齢では出られますが、"
+            f"{where}には入っていません。</p>{''.join(parts)}</details>")
 
 
 def team_tiles(d: dict, team: str, info: dict) -> str:
@@ -1777,8 +1890,8 @@ def next_opponent_block(d: dict, japan: list[dict]) -> str:
         sub = "・".join(x for x in (POS_JA.get(item.get("pos"), item.get("pos") or ""),
                                     item.get("club") or "") if x)
         fact = public((item.get("facts") or [""])[0])
-        marks = badges([("npb", "日本の球団" if item.get("japan_league") else ""),
-                        ("roster", "名簿" if key in d["rostered"] else "")])
+        # 札は相手国ページの選手カードと同じ決まり（「名簿」などの札は出さない）
+        marks = badges([("npb", "日本の球団" if item.get("japan_league") else "")])
         inner = (f'<b class="nm">{esc(item.get("name"))}</b>{yomi}<small class="sub">{esc(sub)}</small>'
                  + (f'<small class="sub">{fact}</small>' if fact else "") + marks)
         href = f"p/{key}/" if key in d["paged"] else f"team/{slug(rival)}/#notable"
