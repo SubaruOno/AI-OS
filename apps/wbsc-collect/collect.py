@@ -28,6 +28,15 @@ raw を使い回すのは、終わった試合（gamestatustext が F で始ま�
     - 終わった試合を、WBSCが 404 や 5xx（やり直したあと）で返した（--skip-missing で通す）
 試合中の試合が取れなかったときは、注意を出して次へ進む（その試合の途中の成績は入らない）。
 CSV の行が0件になったときは、前回の CSV をゴミ箱へ送る（古い成績が残って読まれないように）。
+
+登録名簿（Teams & Rosters）は試合とは別に取る。
+    python3 collect.py --event u23-wc-2026 --rosters
+Teams & Rosters の各チームのページは Inertia ではなく普通のHTMLなので、表を読む。
+    rosters.csv       登録された選手（playerid・背番号・ローマ字の名前・守備・投打・生年）
+    coaches.csv       首脳陣（背番号・名前・役職）
+playerid は、同じ大会のボックススコアの playerid と同じ。WBSCが名簿をまだ出していない
+（「Team rosters are not available yet」）ときは何も書かずに終わる。名簿が出ているチームが
+前回の rosters.csv より減ったときは、何も書かずに止まる（--allow-fewer で通す）。
 """
 
 from __future__ import annotations
@@ -37,13 +46,14 @@ import csv
 import html
 import http.client
 import json
+import re
 import shutil
 import subprocess
 import sys
 import time
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"
@@ -86,8 +96,8 @@ EVENTS = {
 }
 
 
-def fetch_page_props(url: str, attempts: int = 4) -> dict:
-    """Inertiaの data-page に入っているJSONを取り出す。
+def fetch_html(url: str, attempts: int = 4) -> str:
+    """ページのHTMLを取る。
 
     1試合1MB前後あり、回線しだいで読み込みが途中で切れる。
     間隔を空けて数回やり直す。
@@ -111,6 +121,12 @@ def fetch_page_props(url: str, attempts: int = 4) -> dict:
                 raise
             print(f"    やり直し {attempt}/{attempts - 1}（{error}）")
             time.sleep(3 * attempt)
+    return body
+
+
+def fetch_page_props(url: str, attempts: int = 4) -> dict:
+    """Inertiaの data-page に入っているJSONを取り出す。"""
+    body = fetch_html(url, attempts)
     marker = 'data-page="'
     start = body.index(marker) + len(marker)
     end = body.index('"', start)
@@ -423,6 +439,160 @@ def collect(key: str, out_root: Path, allow_fewer: bool = False,
     print(f"  出力先 {out_dir}")
 
 
+# ---------------------------------------------------------------- 登録名簿（Teams & Rosters）
+
+JST = timezone(timedelta(hours=9))
+# 一覧の1行: <tr onClick="...teams/40774'"><td><p><img src=".../flags/ioc/AUS.svg"> Australia</p>
+TEAM_ROW = re.compile(r"/teams/(\d+)'\"\s*>\s*<td[^>]*>\s*<p>\s*<img[^>]*?/ioc/([A-Za-z]+)\.svg[^>]*>"
+                      r"\s*([^<]*?)\s*</p>", re.S)
+
+
+def strip_tags(text: str) -> str:
+    """HTMLの断片から文字だけを取り出し、空白をならす。"""
+    return " ".join(html.unescape(re.sub(r"<[^>]+>", " ", text)).split())
+
+
+def team_list(page: str) -> list[dict]:
+    """Teams & Rosters の一覧から、チームID・略号（国旗の IOC コード）・英語のチーム名を出す。
+
+    一覧は名簿が出る前から並んでいる。同じチームが2度出たら最初の1つだけ残す。
+    """
+    teams, seen = [], set()
+    for team_id, ioc, name in TEAM_ROW.findall(page):
+        if team_id not in seen:
+            seen.add(team_id)
+            teams.append({"teamid": team_id, "ioc": ioc.upper(), "team": strip_tags(name)})
+    return teams
+
+
+def html_tables(page: str) -> list[tuple[list[str], list[list[str]]]]:
+    """ページの表ごとに、(見出しの列, 行ごとのセルのHTML) を返す。"""
+    out = []
+    for table in re.findall(r"<table.*?</table>", page, re.S):
+        heads = [strip_tags(h) for h in re.findall(r"<th[^>]*>(.*?)</th>", table, re.S)]
+        body = table.split("</thead>", 1)[-1]
+        rows = [re.findall(r"<td[^>]*>(.*?)</td>", tr, re.S)
+                for tr in re.findall(r"<tr[^>]*>(.*?)</tr>", body, re.S)]
+        out.append((heads, [cells for cells in rows if cells]))
+    return out
+
+
+def pick(cells: list[str], col: dict, name: str, text: bool = True) -> str:
+    """見出しの名前で列を選ぶ。text が偽ならタグを残したまま返す。"""
+    i = col.get(name)
+    if i is None or i >= len(cells):
+        return ""
+    return strip_tags(cells[i]) if text else cells[i]
+
+
+def split_name(cell: str) -> tuple[str, str]:
+    """「<strong>CHEN</strong> Chiu-Teng」を（姓, 名）にする。太字の部分が姓。"""
+    strong = re.search(r"<strong>(.*?)</strong>", cell, re.S)
+    if not strong:
+        return strip_tags(cell), ""
+    return strip_tags(strong.group(1)), strip_tags(cell[strong.end():])
+
+
+def parse_roster(page: str) -> dict | None:
+    """チームのページから登録名簿を読む。名簿がまだ出ていなければ None。
+
+    選手の表は見出しが「# / Player / POS / B/T / YOB」、首脳陣の表は「# / Name / POS」。
+    列は見出しの名前で探す（並びが変わっても読めるように）。B/T は「打/投」の順。
+    """
+    players, coaches = [], []
+    for heads, rows in html_tables(page):
+        col = {head.upper(): i for i, head in enumerate(heads)}
+        if "PLAYER" in col:
+            for cells in rows:
+                cell = pick(cells, col, "PLAYER", text=False)
+                link = re.search(r"/players/(\d+)", cell)
+                last, first = split_name(cell)
+                hands = (pick(cells, col, "B/T").upper().split("/") + ["", ""])[:2]
+                players.append({
+                    "playerid": link.group(1) if link else "",
+                    "uniform": pick(cells, col, "#"),
+                    "lastname": last,
+                    "firstname": first,
+                    "position": pick(cells, col, "POS").upper(),
+                    "bats": hands[0].strip(),
+                    "throws": hands[1].strip(),
+                    "yob": pick(cells, col, "YOB"),
+                })
+        elif "NAME" in col:
+            for cells in rows:
+                last, first = split_name(pick(cells, col, "NAME", text=False))
+                coaches.append({"uniform": pick(cells, col, "#"), "lastname": last,
+                                "firstname": first, "role": pick(cells, col, "POS")})
+    if not players:
+        return None
+    return {"players": players, "coaches": coaches}
+
+
+def fetch_rosters(key: str) -> tuple[list[dict], list[dict], list[dict]]:
+    """1大会の全チームの登録名簿を取る。(チームの一覧, 選手の行, 首脳陣の行)。
+
+    チームの一覧の各行には players（読めた選手の人数。名簿がなければ0）が付く。
+    """
+    domain, slug, _ = EVENTS[key]
+    teams = team_list(fetch_html(event_url(domain, slug, "teams")))
+    fetched = datetime.now(JST).strftime("%Y-%m-%d %H:%M")
+    players: list[dict] = []
+    coaches: list[dict] = []
+    for team in teams:
+        time.sleep(SLEEP_SECONDS)
+        roster = parse_roster(fetch_html(event_url(domain, slug, f"teams/{team['teamid']}")))
+        team["players"] = len(roster["players"]) if roster else 0
+        if not roster:
+            continue
+        base = {"event": key, "teamid": team["teamid"], "team": team["team"], "ioc": team["ioc"]}
+        players += [{**base, **row, "fetched": fetched} for row in roster["players"]]
+        coaches += [{**base, **row, "fetched": fetched} for row in roster["coaches"]]
+    return teams, players, coaches
+
+
+def roster_teams(path: Path) -> set[str]:
+    """前回の rosters.csv に名簿があったチームの略号。なければ空。"""
+    if not path.exists():
+        return set()
+    with path.open(encoding="utf-8-sig") as handle:
+        return {row.get("ioc") or "" for row in csv.DictReader(handle)} - {""}
+
+
+def collect_rosters(key: str, out_root: Path, allow_fewer: bool = False) -> None:
+    """1大会の登録名簿を rosters.csv と coaches.csv に書く。止めるときは何も書かずに Refused。"""
+    note = EVENTS[key][2]
+    out_dir = out_root / key
+    print(f"\n{key} の登録名簿 — {note}")
+    try:
+        teams, players, coaches = fetch_rosters(key)
+    except (OSError, http.client.HTTPException) as error:
+        raise Refused(f"登録名簿のページを読み込めませんでした（{error}）。"
+                      "前回の rosters.csv はそのままです。") from error
+    if not teams:
+        raise Refused("Teams & Rosters にチームが1つもありませんでした。WBSCのページの形が"
+                      "変わった可能性があります。前回の rosters.csv はそのままです。")
+    for team in teams:
+        count = f"{team['players']}人" if team["players"] else "名簿なし"
+        print(f"  {team['ioc']} {team['team']}: {count}")
+    if not players:
+        print("  登録名簿はまだ出ていません（WBSCの表示は「Team rosters are not available yet」）。"
+              "何も書きません")
+        return
+    lost = roster_teams(out_dir / "rosters.csv") - {row["ioc"] for row in players}
+    if lost and not allow_fewer:
+        raise Refused(f"前回は名簿があったチーム（{', '.join(sorted(lost))}）の名簿が読めませんでした。"
+                      "前回の rosters.csv はそのままです。意図したものなら --allow-fewer を付けてください。")
+    unlinked = [row for row in players if not row["playerid"]]
+    if unlinked:
+        names = ", ".join(f"{row['ioc']} {row['lastname']} {row['firstname']}" for row in unlinked)
+        print(f"  注意: 選手ページへのリンクがなく playerid が空の選手がいます（{names}）")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    write_csv(out_dir / "rosters.csv", players)
+    if coaches:
+        write_csv(out_dir / "coaches.csv", coaches)
+    print(f"  出力先 {out_dir}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--event", action="append", help="大会キー")
@@ -433,6 +603,8 @@ def main() -> int:
                         help="日程の試合が前回より減っても書き出す（意図して減ったとき）")
     parser.add_argument("--skip-missing", action="store_true",
                         help="終わった試合が404や5xxで取れなくても、その試合の成績を入れずに書き出す")
+    parser.add_argument("--rosters", action="store_true",
+                        help="試合ではなく登録名簿（Teams & Rosters）を rosters.csv と coaches.csv に取る")
     args = parser.parse_args()
 
     if args.list:
@@ -450,7 +622,10 @@ def main() -> int:
             print(f"知らない大会キーです: {key}", file=sys.stderr)
             return 1
         try:
-            collect(key, args.out, args.allow_fewer, args.skip_missing)
+            if args.rosters:
+                collect_rosters(key, args.out, args.allow_fewer)
+            else:
+                collect(key, args.out, args.allow_fewer, args.skip_missing)
         except Refused as error:
             print(f"  止めました: {error}", file=sys.stderr)
             return 1
