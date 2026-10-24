@@ -105,7 +105,7 @@ TOWN = {"Managua": "マナグア", "Masaya": "マサヤ", "León": "レオン", 
 ROUND_TAG = (("Opening Round", "1次R", "op"), ("Super Round", "SR", "sup"),
              ("Placement Round", "順位決定", "pl"), ("Bronze", "3位決定", "md"),
              ("Final", "決勝", "md"))
-POS_JA = {"P": "投手", "C": "捕手", "IF": "内野手", "OF": "外野手"}
+POS_JA = {"P": "投手", "C": "捕手", "IF": "内野手", "OF": "外野手", "UTL": "ユーティリティ"}
 POS_ORDER = ("投手", "捕手", "内野手", "外野手")
 HAND = {"R": "右", "L": "左", "S": "両"}
 
@@ -962,6 +962,12 @@ def roster_block(d: dict, team: str, info: dict, root: str) -> str:
     return head + note + roster_table(d, code, rows, main, root)
 
 
+def left_team(d: dict, code: str, name) -> bool:
+    """名簿の status に離脱の報道があるか（注目選手の札に使う）。"""
+    return any(r.get("team") == code and r.get("name") == name and "離脱" in (r.get("status") or "")
+               for r in d["roster"])
+
+
 def notable_card(d: dict, item: dict, root: str, code: str = "") -> str:
     key = d["pid_key"].get(str(item.get("playerid") or ""))
     reading = (reading_of(d, code, item.get("name")).get("reading") or "").strip()
@@ -969,7 +975,9 @@ def notable_card(d: dict, item: dict, root: str, code: str = "") -> str:
     record = f'<a href="{root}p/{key}/">WBSCの記録</a>' if key in d["paged"] else ""
     sub = "・".join(x for x in (POS_JA.get(item.get("pos"), item.get("pos") or ""),
                                 item.get("club") or "") if x)
-    japan = '<span class="badge jpl">日本の球団</span>' if item.get("japan_league") else ""
+    japan = ('<span class="badge npb jpl">日本の球団</span>' if item.get("japan_league") else "")
+    if left_team(d, code, item.get("name")):
+        japan += '<span class="badge warn jpl">離脱報道</span>'
     facts = "".join(f"<li>{public(f)}</li>" for f in item.get("facts") or [])
     links = " ".join(x for x in (record, sources(item.get("source"))) if x)
     return (f'<div class="card nb"><h3>{esc(item.get("name"))}{yomi}<small>{esc(sub)}</small>{japan}</h3>'
@@ -1170,8 +1178,11 @@ def person_card(d: dict, key: str, kind: str, root: str, code: str, npb: set,
     out = "離脱" in (row.get("status") or "")
     marks = [("warn", "離脱報道" if out else ""),
              ("npb", "日本の球団" if in_japan_league(npb, key, roster_row) else "")]
-    return (f'<a class="pcard{" out" if out else ""}" href="{root}p/{key}/"><b class="nm">'
-            f'{esc(person["name"])}</b>{yomi}<small class="sub">{esc(sub)}</small>{stats}{source}'
+    native = row.get("name") if row.get("name") and code in ("KOR", "TPE") else ""
+    name = native or person["name"]
+    title = f' title="{esc(person["name"])}"' if native else ""
+    return (f'<a class="pcard{" out" if out else ""}" href="{root}p/{key}/"><b class="nm"{title}>'
+            f'{esc(name)}</b>{yomi}<small class="sub">{esc(sub)}</small>{stats}{source}'
             f"{badges(marks)}</a>")
 
 
@@ -1260,7 +1271,11 @@ def player_grid(d: dict, team: str, info: dict, root: str) -> str:
     hint = {s: [] for s in sides}     # 名簿がないチームの目安の選手
     extra = {"p": [], "b": []}        # 閉じた欄（名簿にいない過去の大会の選手）。中は投手・野手に分ける
     used = set()
+    # 守備の発表がある国で、守備が空の選手はユーティリティとして野手の側に置く（チェコの名簿の UTL）
+    has_pos = any(r.get("position") for r in rows)
     for i, row in enumerate(rows):
+        if has_pos and not row.get("position"):
+            row = dict(row, position="UTL")
         key = d["match_by_name"].get((code, row.get("name")))
         gone = "離脱" in (row.get("status") or "")
         if key in d["paged"] and key not in used:
@@ -1891,7 +1906,8 @@ def next_opponent_block(d: dict, japan: list[dict]) -> str:
                                     item.get("club") or "") if x)
         fact = public((item.get("facts") or [""])[0])
         # 札は相手国ページの選手カードと同じ決まり（「名簿」などの札は出さない）
-        marks = badges([("npb", "日本の球団" if item.get("japan_league") else "")])
+        marks = badges([("warn", "離脱報道" if left_team(d, code, item.get("name")) else ""),
+                        ("npb", "日本の球団" if item.get("japan_league") else "")])
         inner = (f'<b class="nm">{esc(item.get("name"))}</b>{yomi}<small class="sub">{esc(sub)}</small>'
                  + (f'<small class="sub">{fact}</small>' if fact else "") + marks)
         href = f"p/{key}/" if key in d["paged"] else f"team/{slug(rival)}/#notable"
