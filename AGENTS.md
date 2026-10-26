@@ -202,6 +202,23 @@ rules apply only when transcribing. The monthly report procedure lives in
   holds the first big cleanup, and
   [tidy-inbox-log.tsv](private/tidy-inbox-log.tsv) everything after it.
 
+## Chat names
+
+Every AI-OS chat is named `DD-MM-YYYY-<分野>-<内容>`, matching the
+`DD-MM-YYYY-<内容>` style already used in the Petacot workspace and adding one
+area word because this workspace covers many areas.
+
+- The date is the day the chat started (JST), not the day of the last message.
+- The area is one of: 大ガス, U23, 就活, ゼミ, 授業, SHIGABASE, アプリ (other
+  apps such as walk-town or Poitto), 事業, 滋賀大野球, オケ, 予定, メール, 整理,
+  AI-OS, その他. Add a new word here before using it.
+- The content is a short phrase saying what the chat does, such as
+  `26-10-2026-大ガス-ヤマハ・王子・NTT東の対策資料`. Never paste message text
+  or a greeting as the name.
+- At the start of a chat, once its purpose is clear, the assistant renames the
+  chat to this format itself. Rename again when the purpose clearly changes.
+- Petacot chats keep their own rule and are renamed only from a Petacot session.
+
 ## Images for review
 
 Images the assistant makes for すばる to look at (previews, comparisons,
