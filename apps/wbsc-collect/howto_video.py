@@ -86,8 +86,8 @@ VIDEOS = {
             {"kind": "shot", "img": "3-03_player", "cap": "打席ごとの動画です\n見出しは回と結果", "box": (80, 1527, 480, 1600)},
             {"kind": "shot", "img": "3-04_before5", "cap": "下のボタンは1球ごと\n「5球目」を押すと…", "box": (81, 1892, 367, 2023),
              "blur": [(470, 2480, 736, 2584)]},
-            {"kind": "clip", "rec": "3-chip5.mp4", "from": 1.2, "to": 6.9, "cap": "その球の投げる前から\n流れます", "focus_y": 1500,
-             "tap": (224, 1957, 0.95), "blur": [(470, 2480, 736, 2584)]},
+            {"kind": "clip", "rec": "3-chip5.mp4", "from": 0.6, "to": 7.2, "cap": "その球の投げる前から\n流れます", "focus_y": 1500,
+             "tap": (224, 1957, 1.6), "blur": [(470, 2480, 736, 2584)]},
             {"kind": "shot", "img": "3-03_player", "cap": "灰色の点線のボタンは、映像の時刻が\n分からない球（打席の動画には入っています）", "box": (934, 2282, 1086, 2412)},
             {"kind": "shot", "img": "3-05_filter", "cap": "上のボタンで、安打・凡打・\n三振と四死球に絞れます", "box": (275, 1218, 441, 1343)},
             {"kind": "card", "text": "動画は端末に保存されません", "sub": "見るときは電波のある所で", "sec": 3.5},
@@ -227,8 +227,11 @@ def draw_card(label: str, step: str, sc: dict) -> Image.Image:
 def clip_frames(sc: dict, tmp: Path) -> list[Path]:
     out = tmp / "clip"
     out.mkdir(exist_ok=True)
-    subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{sc['from']:.2f}", "-i", str(RECS / sc["rec"]),
-                    "-t", f"{sc['to'] - sc['from']:.2f}", "-vf", f"fps={FPS}", str(out / "f_%04d.png")], check=True)
+    # シミュレーターの録画は画面が変わったときだけコマがある。頭から一定のコマにしてから切る（先に飛ばすと、
+    # 止まっていた所のコマが落ちて、押す前の場面が詰まる）
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(RECS / sc["rec"]), "-vf",
+                    f"fps={FPS},trim=start={sc['from']:.2f}:end={sc['to']:.2f},setpts=PTS-STARTPTS",
+                    str(out / "f_%04d.png")], check=True)
     return sorted(out.glob("f_*.png"))
 
 
