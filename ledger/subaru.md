@@ -756,3 +756,4 @@
 - 2026-10-26 16:05 · subaru · poitto/ship · Poittoの署名がrick-terakoya/maji-certificates（fastlane match）に頼っていないことを確認。実際はXcode自動署名（個人チーム7QD9M2757S）で、PoittoRK 1.0(3)のApp Store署名つきipaを書き出せた（未アップロード）。fastlane/.envのmatch行を止め、docs/poitto.mdに署名の手順を追記
 - 2026-10-26 16:07 · subaru · poitto/ship · 使っていなかったPoittoのfastlaneフォルダ（.envを含む）をゴミ箱へ移し、Poittoのrealitykit-spikeにコミット（未push）。docs/poitto.mdを更新
 - 2026-10-26 16:09 · subaru · u23/note · 崎坂さんのメール3通の写真7枚（メンバー表3枚・スコアブック等4枚）を ~/野球/U23ワールドカップ2026/04_対戦国/台湾/20261026_メンバー表_崎坂さん経由/ に試合日と中身の分かる名前で保存
+- 2026-10-26 16:40 · subaru · u23/research · 崎坂さんから届いた西部ガス戦のスコアPDF（ono1のGmail）を保存して読み、西部ガスの守備を確定。台湾遠征5試合の両チームの打順・守備・背番号がそろった
