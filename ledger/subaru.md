@@ -754,3 +754,4 @@
 - 2026-10-26 15:56 · subaru · account/ship · terakoyaのFigma（Make 4件・デザイン1件、空の2件は除外）を.fig/.makeで保存し、ono15のドライブ「terakoya（2026-10退避）/figma」へ（サイズ一致）。お金の確認：terakoyaのメールで直近の請求はSupabaseだけ。Claude Max 5x（$100/月）は2026-01で終了、AWSは2025-08作成で請求なし、OpenAIはTier1到達の通知のみ。AWSとOpenAIの管理画面は本人ログインが必要で未確認
 - 2026-10-26 16:05 · subaru · u23/research · 崎坂さん（日本野球連盟）から届いた台湾遠征3試合のメンバー表・スコアブック（ono1のGmail）を読み、日産九州戦と宮崎梅田学園戦の守備を両チームとも確定、日本製鉄九州戦はスコアボードと一致を確認。Honda熊本戦・西部ガス戦の分は未着。U-23の連絡がono1に届くことをCLAUDE.md/AGENTS.mdに追記
 - 2026-10-26 16:05 · subaru · poitto/ship · Poittoの署名がrick-terakoya/maji-certificates（fastlane match）に頼っていないことを確認。実際はXcode自動署名（個人チーム7QD9M2757S）で、PoittoRK 1.0(3)のApp Store署名つきipaを書き出せた（未アップロード）。fastlane/.envのmatch行を止め、docs/poitto.mdに署名の手順を追記
+- 2026-10-26 16:07 · subaru · poitto/ship · 使っていなかったPoittoのfastlaneフォルダ（.envを含む）をゴミ箱へ移し、Poittoのrealitykit-spikeにコミット（未push）。docs/poitto.mdを更新

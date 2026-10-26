@@ -27,7 +27,7 @@
 - 2026-09-16 に TestFlight の内部テストへ 1.0(1) を配布。すばるの実機で動作確認済み。
 - API キーは `~/.appstoreconnect/private_keys/`。ビルドは Release アーカイブ → `xcodebuild -exportArchive` → `xcrun altool --upload-app`。
 - 署名は Xcode の自動署名で、チームはすばる個人の `7QD9M2757S`。配布用の証明書と App Store 用のプロファイルは Apple 側が持ち、`-allowProvisioningUpdates` を付ければ書き出し時に取ってくる。App Store 用はスキーム `PoittoRK`（`Poitto` は旧版の `com.subaruono.PoittoLegacy`）。書き出しの設定は `build/ExportOptions.plist`（app-store-connect、automatic）。
-- `fastlane/` は別プロジェクトのひな形の残りで動かない（共通の Fastfile が無く、fastlane も未インストール）。match の証明書リポジトリ（木村さんの `rick-terakoya/maji-certificates`）は 2026-10-26 に見えなくなったので `.env` の該当行を止めた。この状態で PoittoRK 1.0(3) の App Store 署名つき ipa が書き出せることを確認済み（未アップロード）。
+- 以前あった `fastlane/` は別プロジェクトのひな形の残りで、一度も動いていなかった。match の証明書リポジトリ（木村さんの `rick-terakoya/maji-certificates`）が 2026-10-26 に見えなくなったのを機に、フォルダごとゴミ箱へ移した。その後も PoittoRK 1.0(3) の App Store 署名つき ipa が書き出せることを確認済み（未アップロード）。
 - App Store 提出用の説明文・スクリーンショット・プライバシーポリシーは未作成。
 
 ## 経緯
