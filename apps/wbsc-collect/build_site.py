@@ -12,12 +12,15 @@ collect.py が集めたデータと、手で整えた今大会の情報（07_出
     python3 build_site.py --data-root DIR    # 収集データの場所を変える（試し用のダミーなど）
     python3 build_site.py --new-token        # 合言葉を作り直す（リンクが漏れたとき）
 
-手で整えたデータのうち、次の2つはあれば使い、なくても動く。
+手で整えたデータのうち、次の3つはあれば使い、なくても動く。
     サイト用/同一人物.csv   team,keep_playerid,merge_playerid,evidence
                             merge_playerid の選手を keep_playerid と同じ人として1つの選手ページに
                             まとめる（名前と生年で作る鍵 site_logic.person_key より優先）
     サイト用/名簿_読み.csv  team,roster_name,reading,club_ja,note
                             相手国ページの今大会の名簿と注目選手に、読み（カタカナ）と所属の日本語名を添える
+    サイト用/背番号.csv     team,roster_name,number,source,checked,note
+                            相手国ページの今大会の名簿に背番号を出す（source は「日本遠征の名簿」など、
+                            どの名簿の番号か。表の上の注記に出す）
 
 合言葉はリポジトリに入らない private/u23-site-token に保存する。
 URL はフォルダ形式（team/cuba/ → team/cuba/index.html）。Cloudflare Pages は .html を
@@ -363,6 +366,7 @@ def load() -> dict:
         "japan": br.read_csv(SITE_INFO / "日本代表_公式発表.csv"),
         "same": br.read_csv(SITE_INFO / "同一人物.csv"),
         "reading": readings(br.read_csv(SITE_INFO / "名簿_読み.csv")),
+        "numbers": numbers(br.read_csv(SITE_INFO / "背番号.csv")),
         "outs": sl.load_outs(br.DATA_ROOT / CURRENT / "raw"),
         "tables": {}, "people": {}, "pid_key": {},
     }
@@ -380,6 +384,27 @@ def readings(rows: list[dict]) -> dict[tuple[str, str], dict]:
 
 def reading_of(d: dict, code: str, name) -> dict:
     return d["reading"].get((code, name_key(name))) or {}
+
+
+def numbers(rows: list[dict]) -> dict[tuple[str, str], dict]:
+    """背番号.csv を {(略号, 名前の照合用の形): 行} にする。番号が空の行は使わない。ファイルがなければ空。"""
+    out: dict[tuple[str, str], dict] = {}
+    for row in rows:
+        code, name = team_code(row.get("team")), name_key(row.get("roster_name"))
+        if code and name and (row.get("number") or "").strip():
+            out.setdefault((code, name), row)
+    return out
+
+
+def number_hint(found: list[dict], total: int) -> str:
+    """名簿の表の上に出す、背番号がどの名簿の番号かの1文。"""
+    if not found:
+        return ""
+    source = (found[0].get("source") or "").strip() or "手元の名簿"
+    checked = (found[0].get("checked") or "").strip()
+    day = f"（{iso_md(checked)}確認）" if checked else ""
+    blank = "載っていない選手は空欄です。" if len(found) < total else ""
+    return f"背番号は{esc(source)}の番号です{day}。大会の登録で変わることがあります。{blank}"
 
 
 def player_infos(events: dict) -> dict[str, dict]:
@@ -903,7 +928,12 @@ def roster_record(d: dict, code: str, name: str, root: str) -> str:
 def roster_table(d: dict, code: str, rows: list[dict], main: str, root: str) -> str:
     """名簿の表。所属や過去の記録が1人も埋まっていなければ、その列は出さない。"""
     order = {p: i for i, p in enumerate(("P", "C", "IF", "OF"))}
-    rows = sorted(rows, key=lambda r: order.get(r.get("position"), 9))
+    numbered = {id(r): d["numbers"].get((code, name_key(r.get("name")))) for r in rows}
+    # 守備ごとに背番号順（番号のない選手はその守備の最後）。試合中に番号から探せるように
+    rows = sorted(rows, key=lambda r: (order.get(r.get("position"), 9),
+                                       int(br.number(numbered[id(r)]["number"])) if numbered[id(r)]
+                                       else 999))
+    shown = [n for n in numbered.values() if n]
     yomi = {id(r): reading_of(d, code, r.get("name")) for r in rows}
     clubs = any((r.get("club") or "").strip() or (yomi[id(r)].get("club_ja") or "").strip()
                 for r in rows)
@@ -920,6 +950,8 @@ def roster_table(d: dict, code: str, rows: list[dict], main: str, root: str) -> 
         reading = (extra.get("reading") or "").strip()
         if reading:
             name += f'<small class="yomi">{esc(reading)}</small>'
+        if shown:  # 番号のない選手も空の枠を置き、名前の頭をそろえる
+            name = f'<span class="no">{esc((numbered[id(r)] or {}).get("number", "").strip())}</span>{name}'
         body.append(f'<tr><td>{esc(POS_JA.get(r.get("position"), "-"))}</td>'
                     f'<td class="nm">{name}{badge}</td>'
                     + (club_cell(r.get("club"), extra.get("club_ja")) if clubs else "")
@@ -928,8 +960,9 @@ def roster_table(d: dict, code: str, rows: list[dict], main: str, root: str) -> 
                     + "</tr>")
     head = ("<th>守備</th><th>氏名</th>" + ("<th>発表時の所属</th>" if clubs else "")
             + ("<th>過去の記録</th>" if records else ""))
-    hint = ('<p class="note">読みは目安です。</p>'
-            if any((yomi[id(r)].get("reading") or "").strip() for r in rows) else "")
+    hint = ("読みは目安です。" if any((yomi[id(r)].get("reading") or "").strip() for r in rows)
+            else "") + number_hint(shown, len(rows))
+    hint = f'<p class="note">{hint}</p>' if hint else ""
     return (f'{hint}<div class="scroll"><table class="plain roster"><thead><tr>{head}</tr></thead>'
             f'<tbody>{"".join(body)}</tbody></table></div>')
 
