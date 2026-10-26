@@ -950,8 +950,9 @@ def roster_table(d: dict, code: str, rows: list[dict], main: str, root: str) -> 
         reading = (extra.get("reading") or "").strip()
         if reading:
             name += f'<small class="yomi">{esc(reading)}</small>'
-        if shown:  # 番号のない選手も空の枠を置き、名前の頭をそろえる
-            name = f'<span class="no">{esc((numbered[id(r)] or {}).get("number", "").strip())}</span>{name}'
+        if shown:  # 番号のない選手も空の枠を置き、名前の頭をそろえる。読みは名前の下にそろえる
+            name = (f'<span class="no">{esc((numbered[id(r)] or {}).get("number", "").strip())}</span>'
+                    f'<span class="nmw">{name}</span>')
         body.append(f'<tr><td>{esc(POS_JA.get(r.get("position"), "-"))}</td>'
                     f'<td class="nm">{name}{badge}</td>'
                     + (club_cell(r.get("club"), extra.get("club_ja")) if clubs else "")
@@ -2246,6 +2247,7 @@ td.nm{white-space:normal;min-width:7.5em;max-width:10em;line-height:1.35}
 @media (min-width:768px){td.nm{min-width:160px;max-width:200px}}
 .yomi{display:block;margin-top:1px;color:var(--dim);font-size:11.5px;font-weight:400;line-height:1.3}
 h3 .yomi{display:inline;margin-left:.5em;font-size:13px}
+.nmw{display:inline-block;max-width:calc(100% - 2.2em);vertical-align:top}
 .tbd{color:var(--dim)}
 td.cl,td.ev{white-space:normal;min-width:7em}
 table.jpt{table-layout:fixed;min-width:47.5em}

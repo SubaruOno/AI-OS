@@ -130,6 +130,7 @@ td.nm{white-space:normal;min-width:7.5em;max-width:10em;line-height:1.35}
 @media (min-width:768px){td.nm{min-width:160px;max-width:200px}}
 .yomi{display:block;margin-top:1px;color:var(--dim);font-size:11.5px;font-weight:400;line-height:1.3}
 h3 .yomi{display:inline;margin-left:.5em;font-size:13px}
+.nmw{display:inline-block;max-width:calc(100% - 2.2em);vertical-align:top}
 .tbd{color:var(--dim)}
 td.cl,td.ev{white-space:normal;min-width:7em}
 table.jpt{table-layout:fixed;min-width:47.5em}
