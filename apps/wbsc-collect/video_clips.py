@@ -5,6 +5,7 @@
 ~/野球/U23ワールドカップ2026/08_映像切り抜き/ に置く（選手の映像なのでリポジトリに入れない）。
 
     python3 video_clips.py prep [--game ID] [--force]   # 実況の文字起こしとカメラの切り替わり
+    python3 video_clips.py prep --dtw [--game ID]       # 1球ごとの時刻用の文字起こし（時刻合わせつき、遅い）
     python3 video_clips.py segment [--game ID]          # 打席の区切り → <試合>/打席_自動.csv
     python3 video_clips.py score                        # 西部ガス戦の正解と照らす（決まりを変えたら流す）
     python3 video_clips.py review [--port 8783]         # 確認用の画面（127.0.0.1 だけ）→ <試合>/打席.csv
@@ -106,6 +107,30 @@ def prompt_of(game: dict) -> str:
             names.append(f"{i}番、{kana or name}")
         parts.append(f"{label}。" + "。".join(names))
     return "。".join(parts) + "。147ストライク、1ボール2ストライク。打って、セカンドゴロ、ワンアウト。空振り三振。"
+
+
+def prep_dtw(game: dict, force: bool) -> None:
+    """1球ごとの時刻用の文字起こし（words_dtw.json）。
+
+    ふつうの文字起こしは、30秒の窓ごとの区切りの時刻が数秒〜10秒ずれることがある（西部ガス戦の3打席目で7秒早い）。
+    DTW（音声と言葉の細かい対応づけ）を付けると、実況の球速の言葉が投球の0〜2秒後にそろう。
+    DTW は flash attention と一緒に使えないので -nfa を付ける（そのぶん遅い）。打席の区切りは words.json のまま使う。
+    """
+    out = game_dir(game)
+    target = out / "words_dtw.json"
+    if target.is_file() and not force:
+        return
+    with tempfile.TemporaryDirectory() as tmp:
+        wav = Path(tmp) / "a.wav"
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(video_path(game)), "-vn", "-af",
+                        "highpass=f=150,lowpass=f=4000,dynaudnorm", "-ar", "16000", "-ac", "1", str(wav)],
+                       check=True)
+        stem = Path(tmp) / "w"
+        subprocess.run(["whisper-cli", "-m", str(MODEL), "-l", "ja", "-mc", "0", "-bs", "5", "-nfa",
+                        "-dtw", "large.v3.turbo", "-ojf", "-of", str(stem), "--prompt", prompt_of(game), str(wav)],
+                       check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        shutil.move(str(stem) + ".json", target)
+    print(f"{game['id']}: 1球ごとの時刻用の文字起こし → {target}")
 
 
 def prep(game: dict, force: bool) -> None:
@@ -380,6 +405,12 @@ def segment(game: dict) -> list[dict]:
     for a, b in zip(pas, pas[1:]):
         same = (a["inning"], a["half"]) == (b["inning"], b["half"])
         a["end"] = min(a["end"] + 0.5, b["start"]) if same else a["end"] + 0.5
+    dtw = out / "words_dtw.json"
+    if dtw.is_file():  # 1球ごとの時刻は DTW つきの文字起こしから取り直す（区切りはそのまま）
+        d_text, d_times = load_chars(dtw)
+        calls = [(t, v) for t, kind, v, _ in events(d_text, d_times) if kind == "pitch"]
+        for p in pas:
+            p["pitches"] = [(round(t, 1), v) for t, v in calls if p["start"] <= t < p["end"]]
     rows = []
     for i, p in enumerate(pas, 1):
         rows.append({
@@ -905,6 +936,7 @@ def main() -> None:
     p = sub.add_parser("prep", help="文字起こしとカメラの切り替わり")
     p.add_argument("--game")
     p.add_argument("--force", action="store_true")
+    p.add_argument("--dtw", action="store_true", help="1球ごとの時刻用の文字起こし（words_dtw.json）だけ作る")
     p = sub.add_parser("segment", help="打席の区切り")
     p.add_argument("--game")
     sub.add_parser("score", help="西部ガス戦の正解と照らす")
@@ -920,7 +952,7 @@ def main() -> None:
 
     if args.cmd == "prep":
         for g in pick(args.game):
-            prep(g, args.force)
+            (prep_dtw if args.dtw else prep)(g, args.force)
     elif args.cmd == "segment":
         for g in pick(args.game):
             if not (DATA / g["id"] / "words.json").is_file():

@@ -110,15 +110,29 @@ def headline(row: dict) -> tuple[str, str, bool]:
     return "結果は確認中", "etc", True
 
 
-def chips(row: dict, start: float) -> str:
-    out = []
-    for i, item in enumerate([p for p in (row.get("pitches") or "").split(";") if "|" in p], 1):
+LEAD = 3.5  # 実況が球速を言うのは投球の0〜2秒後（DTW つきで確かめた）。その3.5秒前から流す
+
+
+def chips(row: dict, start: float, numbered: bool) -> str:
+    """1球ごとのボタン。押すと、その球の実況の3.5秒前（ただし1つ前の球の実況より後）から流す。
+
+    numbered が偽（見出しが仮）のときは「2球目」のような番号を付けない。実況の言葉を拾い落とすと
+    番号がずれるため（西部ガス戦の3打席目は5球のうち2球の言葉が抜けた）。
+    """
+    calls = []
+    for item in [p for p in (row.get("pitches") or "").split(";") if "|" in p]:
         t, label = item.split("|", 1)
         try:
-            at = max(0.0, float(t) - start - 4)
+            calls.append((float(t), label))
         except ValueError:
             continue
-        out.append(f'<button type="button" data-t="{at:.1f}">{i}球目<small>{esc(label)}</small></button>')
+    out, prev = [], None
+    for i, (t, label) in enumerate(calls, 1):
+        at = max(start, t - LEAD, prev + 0.3 if prev is not None else start)
+        prev = t
+        head = f"{i}球目" if numbered else esc(label.split(" ")[0] or label)
+        sub = esc(label) if numbered else esc(" ".join(label.split(" ")[1:]))
+        out.append(f'<button type="button" data-t="{at - start:.1f}">{head}<small>{sub}</small></button>')
     return f'<div class="vchips">{"".join(out)}</div>' if out else ""
 
 
@@ -156,7 +170,7 @@ def card(item: dict, root: str) -> str:
             f'<h3>{esc(row["inning"])}回{half}　{esc(text)}{mark}</h3>'
             f'<p class="vmeta">{esc(md(game["date"]))} {esc(game["short"])}戦　{vs}　{count}{secs:.0f}秒</p>'
             f'<video controls playsinline preload="none" poster="{esc(poster)}" src="{esc(src)}"></video>'
-            f'{chips(row, start)}</article>')
+            f'{chips(row, start, not tentative)}</article>')
 
 
 STYLE = """<style>
@@ -231,6 +245,8 @@ def player_page(name: str, page_fn) -> str:
             f'<p class="meta">{esc(sub)}　日本遠征（10/16〜21）の{len(items)}打席</p></div>')
     notes = ['<p class="note">打席ごとの動画です。押すと再生します（電波が要ります。動画は端末に保存されません）。'
              '下のボタンで、その球の少し前から再生します。</p>']
+    if tentative:
+        notes.append('<p class="note">1球ごとのボタンは、実況が球速や結果を言った球だけです。言葉を拾えなかった球はボタンがありません。</p>')
     if tentative:
         notes.append('<p class="note"><span class="vtent">仮</span> の見出しと1球ごとのボタンの言葉は、実況から自動で付けたものです。'
                      '聞き違いがあります。BASSの記録が入ったら正確なものに差し替えます。</p>')
