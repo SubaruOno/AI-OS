@@ -156,8 +156,9 @@ holds the number instead, because numbers go stale first.
 接続されているGmailのツールから見えるのは後者だけなので、大学や部活のメールを
 探すときはChromeでOutlook（`outlook.office.com`）を開く。Gmailを検索して
 見つからないことは、そのメールが存在しないことを意味しない。
-監督の小倉先生（`kei-ogura@biwako.shiga-u.ac.jp`）とのやりとりは、3つ目の
-Gmail `subaru.ono1@gmail.com` を使う。接続済みのツールからは見えないので、
+監督の小倉先生（`kei-ogura@biwako.shiga-u.ac.jp`）とのやりとりと、U-23日本代表の
+連絡（日本野球連盟の崎坂さんなど）は、3つ目の
+Gmail `subaru.ono1@gmail.com` に届く。接続済みのツールからは見えないので、
 ChromeのGmail（`mail.google.com/mail/u/1/`）で開く。
 
 Petacot is a separate workspace, not a folder of this one. The company's
