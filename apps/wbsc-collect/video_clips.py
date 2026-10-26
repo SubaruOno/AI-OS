@@ -4,7 +4,7 @@
 試合の定義（試合.json・選手.csv）と、試合ごとの途中のファイル・動画は
 ~/野球/U23ワールドカップ2026/08_映像切り抜き/ に置く（選手の映像なのでリポジトリに入れない）。
 
-    python3 video_clips.py prep [--game ID] [--force]   # 実況の文字起こしとカメラの切り替わり
+    python3 video_clips.py prep [--game ID] [--force]   # 実況の文字起こし・カメラの切り替わり・音声の時刻の対応表
     python3 video_clips.py prep --dtw [--game ID]       # 1球ごとの時刻用の文字起こし（時刻合わせつき、遅い）
     python3 video_clips.py segment [--game ID]          # 打席の区切り → <試合>/打席_自動.csv
     python3 video_clips.py score                        # 西部ガス戦の正解と照らす（決まりを変えたら流す。78打席中77）
@@ -22,6 +22,7 @@
 from __future__ import annotations
 
 import argparse
+import bisect
 import csv
 import hashlib
 import json
@@ -41,6 +42,7 @@ TAIWAN = "台湾"
 OPP = "相手"
 
 AUTO = "打席_自動.csv"
+CLOCK = "音声の時刻.json"  # 文字起こしの時刻（音声の長さで数えた秒）→ 映像の秒
 CHECKED = "打席.csv"
 FIELDS = ["no", "inning", "half", "order", "bat_team", "batter", "pit_team", "pitcher",
           "start", "end", "n_pitch", "pitches", "results", "headline", "seq", "result", "note", "ctx", "source"]
@@ -134,6 +136,47 @@ def prep_dtw(game: dict, force: bool) -> None:
     print(f"{game['id']}: 1球ごとの時刻用の文字起こし → {target}")
 
 
+def make_clock(game: dict, force: bool = False) -> None:
+    """文字起こしの時刻を映像の時刻に直す対応表（<試合>/音声の時刻.json）を作る。
+
+    映像によっては、音声のコマの記録上の時刻が重なっている（日本製鉄九州戦は512か所で、試合の終わりで9秒）。
+    再生は記録上の時刻で音と絵を合わせるが、文字起こしは音声を頭から並べた長さで時刻を数えるので、
+    重なりのぶんだけ映像より遅く付く。重なりのある所だけを [音声の長さで数えた秒, 映像の秒] の折れ目として残す。
+    """
+    target = game_dir(game) / CLOCK
+    if target.is_file() and not force:
+        return
+    probe = lambda entries: subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries", entries, "-of", "csv=p=0",
+         str(video_path(game))], check=True, capture_output=True, text=True).stdout.split()
+    rate = int(probe("stream=sample_rate")[0])
+    points, samples = [], 0
+    for line in probe("frame=pts_time,nb_samples"):
+        pts, n = line.split(",")[:2]
+        sec, at = samples / rate, float(pts)
+        if not points or abs(points[-1][1] + (sec - points[-1][0]) - at) > 0.002:
+            points.append((round(sec, 4), round(at, 4)))
+        samples += int(n)
+    end = samples / rate
+    drift = end - (points[-1][1] + (end - points[-1][0]))
+    target.write_text(json.dumps({"points": points, "drift_at_end": round(drift, 2)}), encoding="utf-8")
+    print(f"{game['id']}: 音声の時刻の対応表 → {target}（折れ目{len(points) - 1}、終わりで{drift:.1f}秒）")
+
+
+def load_clock(folder: Path):
+    """音声の長さで数えた秒を映像の秒に直す関数。対応表がなければそのまま返す。"""
+    f = folder / CLOCK
+    if not f.is_file():
+        return lambda sec: sec
+    points = json.loads(f.read_text(encoding="utf-8"))["points"]
+    keys = [p[0] for p in points]
+
+    def to_video(sec: float) -> float:
+        s, v = points[max(0, bisect.bisect_right(keys, sec) - 1)]
+        return v + (sec - s)
+    return to_video
+
+
 def prep(game: dict, force: bool) -> None:
     out = game_dir(game)
     words, scenes = out / "words.json", out / "scenes.txt"
@@ -164,6 +207,7 @@ def prep(game: dict, force: bool) -> None:
             raise SystemExit(f"{game['id']}: カメラの切り替わりの検出に失敗しました")
         (out / "scenes.txt.part").replace(scenes)
         print(f"{game['id']}: カメラの切り替わり → {scenes}")
+    make_clock(game, force)
 
 
 # ---------------------------------------------------------------- segment
@@ -208,10 +252,16 @@ def num(s: str):
 
 
 def load_chars(path: Path) -> tuple[str, list[float]]:
-    """全文と、1文字ごとの時刻（秒）。whisper-cli -ojf のトークンの時刻を使う。"""
+    """全文と、1文字ごとの時刻（映像の秒）。whisper-cli -ojf のトークンの時刻を、音声の時刻の対応表で直して使う。"""
     data = json.loads(path.read_text(encoding="utf-8"))
+    to_video = load_clock(path.parent)
     text, times = [], []
+    last = None
     for seg in data["transcription"]:
+        said = seg.get("text", "").strip()
+        if len(said) >= 6 and said == last:
+            continue  # 文字起こしの空回り（日本製鉄九州戦の4回裏は「5-1まっすぐ打ってライト前」が8回続いた）
+        last = said
         for tok in seg.get("tokens", []):
             t = tok.get("text", "")
             if not t or t.startswith("[_"):
@@ -220,9 +270,9 @@ def load_chars(path: Path) -> tuple[str, list[float]]:
             sec = dtw / 100 if dtw is not None and dtw >= 0 else tok["offsets"]["from"] / 1000
             for ch in t:
                 text.append(ch)
-                times.append(sec)
+                times.append(to_video(sec))
         text.append("。")
-        times.append(seg["offsets"]["to"] / 1000)
+        times.append(to_video(seg["offsets"]["to"] / 1000))
     return "".join(text), times
 
 
@@ -288,19 +338,22 @@ def events(text: str, times: list[float]) -> list[tuple]:
         word = m.group(0)
         if not re.search(r"ボール|ストライク|スト|ファ|打|空振り|見逃し|バント", word):
             # 「表示なし、変化、ボール」のように、種類が後ろに来る言い方
-            more = re.match(r"[、 ]*(ボール|ストライク|ファウル|ファール|打って|空振り|見逃し|バント)", text[m.end():m.end() + 8])
+            more = re.match(r"[、 と]*(ボール|ストライク|ファウル|ファール|打って|空振り|見逃し|バント)", text[m.end():m.end() + 8])
             if more:
                 word += more.group(1)
         ev.append((times[m.start()], "pitch", pitch_label(word), text[m.start():m.end() + 10]))
     # 球速の数字がない言い方（「まっすぐ、ボール」「変化、打ってファウル」）。数字つきの実況と文の中で重なる・
     # すぐ続くものは同じ球なので足さない（文字起こしが1つの言葉を離れた時刻に割ることがあるため、時刻では見分けない）
-    for m in re.finditer(r"(まっすぐ|真っ直ぐ|ストレート|変化|スライダー|カーブ|フォーク|チェンジアップ)[、 ]*"
+    for m in re.finditer(r"(まっすぐ|真っ直ぐ|ストレート|変化|スライダー|カーブ|フォーク|チェンジアップ)[、 と]*"
                          r"(ボール|ストライク|ファウル|ファール|打って|空振り|見逃し)", text):
         if any(a - 1 <= m.start() <= b + 3 for a, b in spans):
             continue
         if re.search(r"\d[\s、。\-ー−]*$", text[max(0, m.start() - 4):m.start()]):
             continue  # 「3-5、まっすぐ」のように球速が前にある（数字つきの形で拾えなかった言い方）
-        ev.append((times[m.start()], "pitch", pitch_label(m.group(0)), text[m.start():m.end() + 10]))
+        # 文の頭に聞き取れなかった球速があるとき（「インオー変化とファウル」）は、言い始めの時刻を使う
+        head = text.rfind("。", 0, m.start()) + 1
+        at = times[head] if 0 < m.start() - head <= 5 else times[m.start()]
+        ev.append((at, "pitch", pitch_label(m.group(0)), text[m.start():m.end() + 10]))
     for m in RESULT.finditer(text):
         ev.append((times[m.start()], "result", m.group(0), text[max(0, m.start() - 6):m.end() + 4]))
     for m in SUB.finditer(text):
@@ -657,7 +710,7 @@ def apply_scorebook(game: dict) -> None:
     if dtw.is_file():
         d_text, d_times = load_chars(dtw)
         d_events = events(d_text, d_times)
-        calls = [(round(t, 1), v) for t, kind, v, _ in d_events if kind == "pitch"]
+        calls = [(round(t, 1), v) for t, kind, v, _ in drop_restated(d_events) if kind == "pitch"]
         report["頭を合わせ直した"] = refine_starts(rows, d_events, cuts)
     else:
         for a in auto:
@@ -693,15 +746,37 @@ def apply_scorebook(game: dict) -> None:
         for key_h in dict.fromkeys((r["inning"], r["half"]) for r in rows):
             moved += place_half([r for r in rows if (r["inning"], r["half"]) == key_h], calls, d_events, cuts)
         report["境目を置き直した"] = moved
+        report["頭を広げた"] = widen_starts(rows)
     for i, r in enumerate(rows, 1):
         r["no"] = i
     write_rows(out / CHECKED, rows)
     print(f"{game['id']}: スコアの打席{len(score)}、映像の区切り{len(auto)} → 対応{report['対応']}・"
           f"区切りを当てた{report['区切りを当てた']}・つないだ{report['つないだ']}・"
           f"頭を合わせ直した{report.get('頭を合わせ直した', 0)}・境目を置き直した{report.get('境目を置き直した', 0)}・"
+          f"頭を広げた{report.get('頭を広げた', 0)}・"
           f"要確認{len(report['要確認'])} → {CHECKED}")
     for line in report["要確認"]:
         print("  要確認:", line)
+
+
+def drop_restated(d_events: list[tuple], window: float = 5.0) -> list[tuple]:
+    """同じ打球を言い直した1球の実況（「4-1まっすぐ打ってライト前」のすぐあとの「5-1まっすぐ打ってライト前」）を落とす。
+
+    打球が前に飛ぶのは打席に1回だけなので、window 秒以内に同じ打球の言葉が続けば後ろは同じ球の言い直しとみる。
+    ほかの言葉は落とさない（4.5秒未満で続く本物の実況が、西部ガス戦にも20組ある）。
+    """
+    def play(ctx: str) -> str:
+        m = re.search(r"打って[、 ]*([^。、 ]{1,6})", ctx)
+        return "" if not m or m.group(1).startswith(("ファ", "フォ")) else m.group(1)
+    out, prev = [], None
+    for e in sorted(d_events, key=lambda e: e[0]):
+        if e[1] == "pitch":
+            p = play(e[3])
+            if p and prev and prev[1] == p and e[0] - prev[0] <= window:
+                continue
+            prev = (e[0], p)
+        out.append(e)
+    return out
 
 
 def refine_starts(rows: list[dict], d_events: list[tuple], cuts: list[float], window: float = 20.0) -> int:
@@ -806,6 +881,29 @@ def place_chunk(rows_h: list[dict], calls: list, d_events: list[tuple], cuts: li
     for ri, r in enumerate(rows_h):
         lo_r, hi_r = float(r["start"]) - 1, float(r["end"])
         r["pitches"] = pitches_text(r, [h for h in got.get(ri, []) if lo_r <= h[1] < hi_r])  # 範囲の外は時刻なしに
+    return moved
+
+
+def widen_starts(rows: list[dict], before: float = 6.0) -> int:
+    """打席の頭が最初の実況の before 秒前より遅いとき、前の打席の最後の実況の0.5秒後まで早める。
+
+    打者の紹介が初球のあとになることがあり（日本製鉄九州戦の8回裏6番は、紹介の1秒前の頭が初球の0.2秒前だった）、
+    紹介で決めた頭のままでは初球の投球動作が切れる。前の打席の終わりも一緒に動かす。早めた打席の数を返す。
+    """
+    timed = lambda r: [float(p.split("|")[0]) for p in (r.get("pitches") or "").split(";") if p.split("|")[0]]
+    moved = 0
+    for i, r in enumerate(rows):
+        calls = timed(r)
+        if not calls or float(r["start"]) <= calls[0] - before:
+            continue
+        prev = rows[i - 1] if i else None
+        floor = max(timed(prev), default=float(prev["start"]) + 4) + 0.5 if prev else 0.0
+        new = max(floor, calls[0] - before)
+        if new < float(r["start"]) - 0.4:
+            r["start"] = f"{new:.1f}"
+            if prev and float(prev["end"]) > new:
+                prev["end"] = r["start"]
+            moved += 1
     return moved
 
 
