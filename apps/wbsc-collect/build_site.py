@@ -29,6 +29,7 @@ URL はフォルダ形式（team/cuba/ → team/cuba/index.html）。Cloudflare 
     site_theme.py   見た目（CSS の文字列）
     site_clips.py   選手ページの映像のカット集（奪三振集・被安打集など）
     site_japan.py   日本代表のページ（japan/・japan/pitching/・japan/p/<背番号>/）
+    site_video.py   台湾の日本遠征の打席ごとの映像（team/chinese-taipei/v/<背番号>/ と media/）
 URL に ?now=2026-11-08T12:00:00-06:00 を付けると「今」を差し替えて試せる。
 """
 
@@ -39,6 +40,7 @@ import ast
 import hashlib
 import html
 import json
+import os
 import re
 import secrets
 import shutil
@@ -62,6 +64,11 @@ try:  # 映像のカット集（別の部品）。なければ選手ページに
 except Exception as _error:
     print(f"注意: site_clips.py が読めないので、カット集は出しません（{_error}）", file=sys.stderr)
     site_clips = None
+try:  # 台湾の日本遠征の映像ページ（別の部品）。なければ映像を出さないだけ
+    import site_video
+except Exception as _error:
+    print(f"注意: site_video.py が読めないので、映像ページは出しません（{_error}）", file=sys.stderr)
+    site_video = None
 try:  # 日本代表のページ（別の部品）。なければ今の japan_page を使う
     import site_japan
 except Exception as _error:
@@ -1383,12 +1390,24 @@ def team_page(d: dict, label: str, team: str, group: str) -> str:
         page_head([f'<a href="{root}teams/">相手国</a>', esc(label)], esc(label), meta),
         team_tiles(d, team, info), notes_block(info),
         section("players", "選手", player_grid(d, team, info, root)),
+        video_section(team, root),
         section("notable", "注目選手", notable_block(d, info, root, TEAM_CODE.get(team, ""))),
         section("vsjapan", "日本との対戦<small>参考値</small>", vs_japan_block(info)),
         section("now", "今大会の試合", current_block(d, team, root)),
         details,
     ])
     return page(label, body, f"team/{slug(team)}/", "teams", "fe")
+
+
+def video_section(team: str, root: str) -> str:
+    """台湾の相手国ページだけに、日本遠征の映像の入口（site_video.py）。失敗しても止めない。"""
+    if site_video is None or team != "Chinese Taipei":
+        return ""
+    try:
+        return site_video.team_section(root)
+    except Exception as error:
+        print(f"注意: 映像の入口を作れませんでした（{error!r}）", file=sys.stderr)
+        return ""
 
 
 # ---------------------------------------------------------------- 選手ページ
@@ -1952,9 +1971,39 @@ def build() -> tuple[dict[str, str], list[dict]]:
         pages[f"team/{slug(team)}/"] = team_page(d, label, team, group)
     for key in sorted(d["paged"]):
         pages[f"p/{key}/"] = player_page(d, key, d["people"][key])
+    pages.update(video_pages())
     size = sum(len(p.encode("utf-8")) for p in pages.values()) / 1024 / 1024
     pages[""] = index_page(d, len(pages) + 1, size + 0.05)
     return pages, d["games"]
+
+
+def video_pages() -> dict[str, str]:
+    """台湾の選手ごとの映像ページ（site_video.py）。読めない・失敗したときは出さない。"""
+    if site_video is None:
+        return {}
+    try:
+        return site_video.pages(page)
+    except Exception as error:
+        print(f"注意: 映像ページを作れませんでした（{error!r}）", file=sys.stderr)
+        return {}
+
+
+def place_media(site: Path) -> None:
+    """動画とサムネイルを書き出し先に置く。ハードリンクにして、作り直しのたびの複製とゴミ箱を増やさない。"""
+    if site_video is None:
+        return
+    try:
+        files = site_video.media()
+    except Exception as error:
+        print(f"注意: 映像のファイルの一覧を作れませんでした（{error!r}）", file=sys.stderr)
+        return
+    for src, rel in files:
+        target = site / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            os.link(src, target)
+        except OSError:  # 別のディスクなどでリンクできなければ複写
+            shutil.copy2(src, target)
 
 
 def japan_pages(d: dict) -> dict[str, str]:
@@ -2039,6 +2088,7 @@ def write_site(out: Path, token: str, pages: dict[str, str], games: list[dict]) 
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
     (site / "site.js").write_text(SITE_JS, encoding="utf-8")
+    place_media(site)
     version = version_of(pages)
     core = [u for u in pages if u in CORE or u.startswith("team/")] + ["site.js"]
     so.write_assets(site, core, list(pages) + ["site.js"], version,

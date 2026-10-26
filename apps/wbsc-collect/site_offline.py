@@ -617,6 +617,7 @@ self.addEventListener("fetch", e => {
   if (q.method !== "GET" || !q.url.startsWith(BASE)) return;
   const key = keyOf(q.url);
   if (key === abs("sw.js")) return;
+  if (/\.mp4$/i.test(new URL(q.url).pathname)) return;  // 動画は横取りしない（部分読み込みのまま、保存もしない）
   if (q.headers.get("x-u23-save")) { e.respondWith(save(e, key)); return; }
   e.respondWith(handle(e, key, ALWAYS_NET.indexOf(key) >= 0 ? { cache: "no-cache" } : null));
 });
@@ -692,6 +693,7 @@ def selftest() -> None:
         assert json.loads((site / "manifest.webmanifest").read_text())["start_url"] == "./"
         sw = (site / "sw.js").read_text()
         assert '"t1"' in sw and '["", "team/cuba/"]' in sw and "__" not in sw
+        assert r"/\.mp4$/i.test(" in sw  # 動画は横取りしない（iOS の部分読み込みと容量のため）
         for name, size in ICONS.items():
             data = (site / "icons" / name).read_bytes()
             assert png_size(data) == (size, size), name
