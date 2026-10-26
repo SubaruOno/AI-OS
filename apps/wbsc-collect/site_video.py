@@ -126,19 +126,18 @@ def headline(row: dict) -> tuple[str, str, bool]:
 
 
 # ボタンの始まり。この球の投球は「1つ前の球の実況」と「この球の実況」のあいだにある。
-# 実況が言うのは投球の0.4〜4.5秒後（西部ガス戦は0.4〜2秒、日本製鉄九州戦は1.9〜4.5秒）なので、
-# 実況の LEAD 秒前と、1つ前の球の実況の0.5秒後の、遅いほうから流す。1つ前の球に時刻がないときは、
-# その球が入らないよう LEAD_GAP 秒前にとどめる。
-LEAD = 6.5
-LEAD_GAP = 4.5
+# 実況者が言うまでの遅れは試合で違う（西部ガス戦は0.4〜2秒、日本製鉄九州戦は0.1〜6.6秒）ので、
+# 試合.json の call_lead（なければ LEAD）秒前と、1つ前の球の実況の0.5秒後の、遅いほうから流す。
+# 1つ前の球に時刻がないときも縮めない。少し早く始まって待つほうが、投球を見逃すよりよい。
+LEAD = 7.5
 
 
 def tentative_row(row: dict) -> bool:
     return headline(row)[2]
 
 
-def chips(row: dict, start: float, numbered: bool) -> str:
-    """1球ごとのボタン。押すと、その球の実況の LEAD 秒前（ただし1つ前の球の実況の0.5秒後より後）から流す。
+def chips(row: dict, start: float, numbered: bool, lead: float = LEAD) -> str:
+    """1球ごとのボタン。押すと、その球の実況の lead 秒前（ただし1つ前の球の実況の0.5秒後より後）から流す。
 
     numbered が偽（見出しが仮）のときは「2球目」のような番号を付けない。実況の言葉を拾い落とすと
     番号がずれるため（西部ガス戦の3打席目は5球のうち2球の言葉が抜けた）。
@@ -151,7 +150,7 @@ def chips(row: dict, start: float, numbered: bool) -> str:
         except ValueError:
             continue
         calls.append((t, parts[1], int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else None))
-    out, prev, prev_timed = [], None, True
+    out, prev = [], None
     for i, (t, label, k) in enumerate(calls, 1):
         if numbered:
             head, sub = f"{k or i}球目", esc(label)
@@ -159,11 +158,9 @@ def chips(row: dict, start: float, numbered: bool) -> str:
             head, sub = esc(label.split(" ")[0] or label), esc(" ".join(label.split(" ")[1:]))
         if t is None:  # スコアにはあるが、実況の言葉がなく時刻の分からない球
             out.append(f'<button type="button" disabled title="映像の時刻が分からない球">{head}<small>{sub}</small></button>')
-            prev_timed = False
             continue
-        lead = LEAD if prev_timed else LEAD_GAP
         at = max(start, t - lead, prev + 0.5 if prev is not None else start)
-        prev, prev_timed = t, True
+        prev = t
         out.append(f'<button type="button" data-t="{at - start:.1f}">{head}<small>{sub}</small></button>')
     return f'<div class="vchips">{"".join(out)}</div>' if out else ""
 
@@ -202,7 +199,7 @@ def card(item: dict, root: str) -> str:
             f'<h3>{esc(row["inning"])}回{half}　{esc(text)}{mark}</h3>'
             f'<p class="vmeta">{esc(md(game["date"]))} {esc(game["short"])}戦　{vs}　{count}{secs:.0f}秒</p>'
             f'<video controls playsinline preload="none" poster="{esc(poster)}" src="{esc(src)}"></video>'
-            f'{chips(row, start, not tentative)}</article>')
+            f'{chips(row, start, not tentative, float(game.get("call_lead") or LEAD))}</article>')
 
 
 STYLE = """<style>

@@ -282,7 +282,9 @@ def events(text: str, times: list[float]) -> list[tuple]:
             ev.append((times[m.start()], "batter", 0, m.group(0)))
     for m in THIRD.finditer(text):
         ev.append((times[m.start()], "third_out", m.group(0), text[max(0, m.start() - 8):m.end() + 6]))
+    spans = []  # 数字つきで拾った1球の実況の、文の中の位置
     for m in PITCH.finditer(text):
+        spans.append((m.start(), m.end()))
         word = m.group(0)
         if not re.search(r"ボール|ストライク|スト|ファ|打|空振り|見逃し|バント", word):
             # 「表示なし、変化、ボール」のように、種類が後ろに来る言い方
@@ -290,6 +292,15 @@ def events(text: str, times: list[float]) -> list[tuple]:
             if more:
                 word += more.group(1)
         ev.append((times[m.start()], "pitch", pitch_label(word), text[m.start():m.end() + 10]))
+    # 球速の数字がない言い方（「まっすぐ、ボール」「変化、打ってファウル」）。数字つきの実況と文の中で重なる・
+    # すぐ続くものは同じ球なので足さない（文字起こしが1つの言葉を離れた時刻に割ることがあるため、時刻では見分けない）
+    for m in re.finditer(r"(まっすぐ|真っ直ぐ|ストレート|変化|スライダー|カーブ|フォーク|チェンジアップ)[、 ]*"
+                         r"(ボール|ストライク|ファウル|ファール|打って|空振り|見逃し)", text):
+        if any(a - 1 <= m.start() <= b + 3 for a, b in spans):
+            continue
+        if re.search(r"\d[\s、。\-ー−]*$", text[max(0, m.start() - 4):m.start()]):
+            continue  # 「3-5、まっすぐ」のように球速が前にある（数字つきの形で拾えなかった言い方）
+        ev.append((times[m.start()], "pitch", pitch_label(m.group(0)), text[m.start():m.end() + 10]))
     for m in RESULT.finditer(text):
         ev.append((times[m.start()], "result", m.group(0), text[max(0, m.start() - 6):m.end() + 4]))
     for m in SUB.finditer(text):
@@ -720,6 +731,7 @@ def refine_starts(rows: list[dict], d_events: list[tuple], cuts: list[float], wi
         if abs(new - old) >= 0.5:
             moved += 1
         r["start"] = f"{new:.1f}"
+        r["_anchored"] = True  # 実況の「N番」で決めた頭。place_half は動かさず、当てはめもまたがない
         if prev and (prev["inning"], prev["half"]) == (r["inning"], r["half"]):
             prev["end"] = r["start"]
         elif prev and float(prev["end"]) > new:
@@ -728,6 +740,19 @@ def refine_starts(rows: list[dict], d_events: list[tuple], cuts: list[float], wi
 
 
 def place_half(rows_h: list[dict], calls: list, d_events: list[tuple], cuts: list[float]) -> int:
+    """「N番」で頭を決めた打席の前で区切り、かたまりごとに place_chunk を流す。"""
+    moved, chunk = 0, []
+    for r in rows_h:
+        if r.get("_anchored") and chunk:
+            moved += place_chunk(chunk, calls, d_events, cuts)
+            chunk = []
+        chunk.append(r)
+    if chunk:
+        moved += place_chunk(chunk, calls, d_events, cuts)
+    return moved
+
+
+def place_chunk(rows_h: list[dict], calls: list, d_events: list[tuple], cuts: list[float]) -> int:
     """1回の表（または裏）の打席をまとめて、実況の1球の言葉を当てはめ、打席の境目も置き直す。
 
     スコアの全打席の1球の並びをつなげ、その回の実況の言葉の並びと一度に対応づける。続く2打席の境目は、
@@ -735,8 +760,9 @@ def place_half(rows_h: list[dict], calls: list, d_events: list[tuple], cuts: lis
     「N番」があればその1秒前、なければカメラの切り替わり（次の打席の最初の実況の5秒前に近いもの）、
     それもなければ前の実況の4秒後。動かした境目の数を返す。
     """
-    lo = float(rows_h[0]["start"]) - 5
-    hi = float(rows_h[-1]["end"]) + 5
+    # かたまりの両端が「N番」で決めた境目なら、そこはまたがない
+    lo = float(rows_h[0]["start"]) - (0 if rows_h[0].get("_anchored") else 5)
+    hi = float(rows_h[-1]["end"])
     cs = [c for c in calls if lo <= c[0] < hi]
     items = []  # (打席の番号, 何球目, 種類)
     for ri, r in enumerate(rows_h):
