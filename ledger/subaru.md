@@ -751,3 +751,4 @@
 - 2026-10-26 15:39 · subaru · baseball/build · 台湾U23データを台湾U23_データまとめ.mdに全部書き起こし、BASSの仮背番号101〜124と名簿の背番号の対応表とBASS取り込み用JSON（23人分）を作った
 - 2026-10-26 15:45 · subaru · baseball/ship · U23のBASSで台湾23人の背番号を日本遠征の名簿の番号に書き換えた（JSONインポートの上書き）。背番号と備考欄以外が変わっていないことを23人とも照合し、サーバーへの送信と一覧の表示も確認。林柏佑は101のまま、変更前はprivate/u23-bass/に控えた
 - 2026-10-26 15:46 · subaru · workspace/decision · チャット名を「日-月-年-分野-内容」に統一するルールをCLAUDE.md/AGENTS.mdに追加し、AI-OSのチャット117件を改名
+- 2026-10-26 15:56 · subaru · account/ship · terakoyaのFigma（Make 4件・デザイン1件、空の2件は除外）を.fig/.makeで保存し、ono15のドライブ「terakoya（2026-10退避）/figma」へ（サイズ一致）。お金の確認：terakoyaのメールで直近の請求はSupabaseだけ。Claude Max 5x（$100/月）は2026-01で終了、AWSは2025-08作成で請求なし、OpenAIはTier1到達の通知のみ。AWSとOpenAIの管理画面は本人ログインが必要で未確認
