@@ -739,3 +739,4 @@
 - 2026-10-26 14:22 · subaru · account/ship · subaru@terakoya.ai の廃止に合わせて移行。GitHub(SubaruOno)のメイン・通知を subaru.ono15+github@gmail.com に（ono15本体は別アカウントSubaruDSが使用中）、Expoとsupabaseのアカウント・請求先をono15に変更、Macのgitのメールも切り替え。ドライブ・カレンダー・連絡先はTakeoutで書き出し依頼中。Vercelは空、Lovableは解約済み、FigmaはGoogle管理でメール変更不可。Poittoの証明書リポジトリ(rick-terakoya/maji-certificates)はすでに見えない。就活サイトは対象外
 - 2026-10-26 14:43 · subaru · seminar/build · 10/27の太田さんへの質問を先生の条件（因果連鎖図を画面共有し3つの型で聞く）に合わせて作り直し：質問用の図（レイヤー5段・番号・Q印）と台本Q1〜Q10（PDF）。聞き方の型をcausal-chainスキルに追記
 - 2026-10-26 14:46 · subaru · u23/note · JTB長谷川さんから返信。10/29米原→東京の新幹線を最終便で手配し、時刻は自分で乗車変更する
+- 2026-10-26 14:48 · subaru · account/ship · terakoyaのドライブとカレンダーをTakeoutで書き出し、ono15のドライブ「terakoyaから移したもの」へ移した（194項目、件数一致、大中小3ファイルのサイズ一致）。手元の控えとzipは ~/Documents/terakoya-ai-退避-20261026
