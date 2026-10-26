@@ -677,12 +677,18 @@ def apply_scorebook(game: dict) -> None:
         else:
             report["要確認"].append(f"{r['inning']}回{r['half']} {r['order']}番 {r['batter']}: 映像の区切りがない")
     rows = [r for r in rows if not r.get("_split")]
+    if dtw.is_file():  # 回ごとにまとめて当てはめ、境目も置き直す
+        moved = 0
+        for key_h in dict.fromkeys((r["inning"], r["half"]) for r in rows):
+            moved += place_half([r for r in rows if (r["inning"], r["half"]) == key_h], calls, d_events, cuts)
+        report["境目を置き直した"] = moved
     for i, r in enumerate(rows, 1):
         r["no"] = i
     write_rows(out / CHECKED, rows)
     print(f"{game['id']}: スコアの打席{len(score)}、映像の区切り{len(auto)} → 対応{report['対応']}・"
           f"区切りを当てた{report['区切りを当てた']}・つないだ{report['つないだ']}・"
-          f"頭を合わせ直した{report.get('頭を合わせ直した', 0)}・要確認{len(report['要確認'])} → {CHECKED}")
+          f"頭を合わせ直した{report.get('頭を合わせ直した', 0)}・境目を置き直した{report.get('境目を置き直した', 0)}・"
+          f"要確認{len(report['要確認'])} → {CHECKED}")
     for line in report["要確認"]:
         print("  要確認:", line)
 
@@ -719,6 +725,75 @@ def refine_starts(rows: list[dict], d_events: list[tuple], cuts: list[float], wi
         elif prev and float(prev["end"]) > new:
             prev["end"] = r["start"]
     return moved
+
+
+def place_half(rows_h: list[dict], calls: list, d_events: list[tuple], cuts: list[float]) -> int:
+    """1回の表（または裏）の打席をまとめて、実況の1球の言葉を当てはめ、打席の境目も置き直す。
+
+    スコアの全打席の1球の並びをつなげ、その回の実況の言葉の並びと一度に対応づける。続く2打席の境目は、
+    前の打席で最後に当たった実況と、次の打席で最初に当たった実況のあいだに置く。そのあいだに時刻合わせつきの
+    「N番」があればその1秒前、なければカメラの切り替わり（次の打席の最初の実況の5秒前に近いもの）、
+    それもなければ前の実況の4秒後。動かした境目の数を返す。
+    """
+    lo = float(rows_h[0]["start"]) - 5
+    hi = float(rows_h[-1]["end"]) + 5
+    cs = [c for c in calls if lo <= c[0] < hi]
+    items = []  # (打席の番号, 何球目, 種類)
+    for ri, r in enumerate(rows_h):
+        seq = list(r.get("seq") or "") + [final_type(r.get("result") or "")]
+        items += [(ri, k, t) for k, t in enumerate(seq, 1)]
+    if not cs or not items:
+        return 0
+    span = max(1.0, hi - lo)
+
+    def fit(item, c):
+        if item[2] not in call_types(c[1]):
+            return -1.0
+        return 2.0 - 0.5 * abs((items.index(item) + 0.5) / len(items) - (c[0] - lo) / span)
+
+    pairs = align(items, cs, fit, gap_a=0.0, gap_b=-0.5, miss=-1.0)
+    got = {}  # 打席の番号 → [(何球目, 時刻, 言葉)]
+    for i, j in pairs:
+        if i is not None and j is not None:
+            ri, k, _ = items[i]
+            got.setdefault(ri, []).append((k, cs[j][0], cs[j][1]))
+    batters = {t: v for t, kind, v, _ in d_events if kind == "batter"}
+    moved = 0
+    for ri in range(len(rows_h) - 1):
+        a, b = rows_h[ri], rows_h[ri + 1]
+        if not got.get(ri) or not got.get(ri + 1):
+            continue
+        ta, tb = max(t for _, t, _ in got[ri]), min(t for _, t, _ in got[ri + 1])
+        if tb - ta < 3:
+            continue
+        ann = [t for t, v in batters.items() if ta < t < tb and v in (0, int(b["order"]))]
+        if ann:
+            cut = ann[0] - 1.0
+        else:
+            inside = [c for c in cuts if ta + 2 <= c <= tb - 2]
+            cut = min(inside, key=lambda c: abs(c - (tb - 5))) if inside else min(ta + 4, tb - 1)
+        if abs(cut - float(b["start"])) >= 0.5:
+            moved += 1
+        a["end"] = b["start"] = f"{cut:.1f}"
+    for ri, r in enumerate(rows_h):
+        r["pitches"] = pitches_text(r, got.get(ri, []))
+    return moved
+
+
+def pitches_text(r: dict, hits: list) -> str:
+    """「時刻|球速 種類|何球目」を全球ぶん並べる（実況の当たらない球は時刻なし）。"""
+    seq = list(r.get("seq") or "") + [final_type(r.get("result") or "")]
+    labels = [TYPE_JA.get(t, "") for t in seq[:-1]] + [r.get("headline") or ""]
+    at = {k: (t, c) for k, t, c in hits}
+    out = []
+    for k, label in enumerate(labels, 1):
+        if k in at:
+            t, c = at[k]
+            speed = c.split(" ")[0] if c.split(" ")[0].isdigit() else ""
+            out.append(f"{t}|{(speed + ' ' + label).strip()}|{k}")
+        else:
+            out.append(f"|{label}|{k}")
+    return ";".join(out)
 
 
 def scored_row(game: dict, s: dict, a: dict, note: str) -> dict:
