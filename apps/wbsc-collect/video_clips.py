@@ -772,11 +772,14 @@ def place_half(rows_h: list[dict], calls: list, d_events: list[tuple], cuts: lis
         else:
             inside = [c for c in cuts if ta + 2 <= c <= tb - 2]
             cut = min(inside, key=lambda c: abs(c - (tb - 5))) if inside else min(ta + 4, tb - 1)
+        if not (float(a["start"]) + 4 <= cut <= float(b["end"]) - 4):
+            continue  # 前後の打席が4秒より短くなる置き方はしない（実況の時刻が詰まっている所がある）
         if abs(cut - float(b["start"])) >= 0.5:
             moved += 1
         a["end"] = b["start"] = f"{cut:.1f}"
     for ri, r in enumerate(rows_h):
-        r["pitches"] = pitches_text(r, got.get(ri, []))
+        lo_r, hi_r = float(r["start"]) - 1, float(r["end"])
+        r["pitches"] = pitches_text(r, [h for h in got.get(ri, []) if lo_r <= h[1] < hi_r])  # 範囲の外は時刻なしに
     return moved
 
 
