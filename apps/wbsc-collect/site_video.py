@@ -11,8 +11,8 @@ video_clips.py が作った打席の一覧（各試合の 打席.csv、なけれ
     player_link(name)     その選手の映像ページの URL（根元から）。なければ空
 
 動画は Service Worker に保存させない（site_offline.py の sw.js が .mp4 を素通しにする）。
-見出しは、行の headline（BASSと突き合わせたもの・確認用の画面で直したもの）があればそれ、
-なければ実況の結果の言葉から仮に作り、ページに「仮」と出す。
+見出しは、行の headline（スコア・BASSと突き合わせたもの・確認用の画面で直したもの）があればそれ、
+なければ実況の結果の言葉から仮に作り、ページに「仮」と出す。CONFIRMED_ONLY が真のあいだは、仮の打席は載せない。
 """
 
 from __future__ import annotations
@@ -24,6 +24,9 @@ from pathlib import Path
 
 DATA = Path.home() / "野球" / "U23ワールドカップ2026" / "08_映像切り抜き"
 TEAM_URL = "team/chinese-taipei/"
+# 確かな見出し（スコア・BASS・確認用の画面で付けたもの）のある打席だけを載せる。
+# 仮の見出し（実況から自動）の打席は、確かになるまで載せない（10/26 すばるの判断）
+CONFIRMED_ONLY = True
 MEDIA = "media/tpe/"
 POS = {"P": "投手", "C": "捕手", "IF": "内野手", "OF": "外野手"}
 
@@ -73,6 +76,8 @@ def load() -> dict | None:
         for row in rows:
             got = made.get(str(row["no"]))
             if not got:
+                continue
+            if CONFIRMED_ONLY and not (row.get("headline") or "").strip():
                 continue
             tw_bat = row["bat_team"] == "台湾"
             who = row["batter"] if tw_bat else row["pitcher"]
