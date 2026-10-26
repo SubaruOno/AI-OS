@@ -736,3 +736,4 @@
 - 2026-10-26 13:52 · subaru · seminar/research · サーバーでT1〜T7を検証（K・Sの蓄積と手入れで戻るのは確認、Clは蓄積の動きをしない、悪循環は否定、80は下限の階級）。見直し文書の④・質問リストを更新しPDF化、因果連鎖図v3（PDF・SVG）を作成
 - 2026-10-26 13:57 · subaru · u23/ship · 10/29の彦根→東京の移動をJTB（川島さん宛て、Cc﨑坂さん）にsubaru.ono1からメールで依頼した。11/18の帰りは未依頼
 - 2026-10-26 14:25 · subaru · shiga/build · 選手本人の依頼で、打者1人の打撃を深く見る資料（A4横9枚）を作った。3シーズンの打席を同じ左右の打者のリーグ全体と比べ、見極め・相手の攻め方・コース・球種・打球・場面ごとにまとめる。batter_report.py を追加（資料と数字は野球フォルダの中）。あわせて、今日と昨日の記録から選手の名前と成績を外した（選手データはリポジトリに入れない決まり）
+- 2026-10-26 14:22 · subaru · account/ship · subaru@terakoya.ai の廃止に合わせて移行。GitHub(SubaruOno)のメイン・通知を subaru.ono15+github@gmail.com に（ono15本体は別アカウントSubaruDSが使用中）、Expoとsupabaseのアカウント・請求先をono15に変更、Macのgitのメールも切り替え。ドライブ・カレンダー・連絡先はTakeoutで書き出し依頼中。Vercelは空、Lovableは解約済み、FigmaはGoogle管理でメール変更不可。Poittoの証明書リポジトリ(rick-terakoya/maji-certificates)はすでに見えない。就活サイトは対象外
