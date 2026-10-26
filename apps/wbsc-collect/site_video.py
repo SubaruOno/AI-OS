@@ -97,12 +97,22 @@ def data() -> dict | None:
 # ---------------------------------------------------------------- 見出し
 
 
+def kind_of(text: str) -> str:
+    """確かな見出し（スコア・BASS・手で直したもの）の区分。"""
+    if "安" in text or "塁打" in text:
+        return "hit"
+    if any(w in text for w in ("三振", "四球", "死球")):
+        return "k"
+    if "失" in text:
+        return "etc"
+    return "out"
+
+
 def headline(row: dict) -> tuple[str, str, bool]:
     """(見出し, 区分, 仮か)。行に headline があればそれを使う。"""
     if (row.get("headline") or "").strip():
         text = row["headline"].strip()
-        kind = next((KIND_OF[w] for w in KIND_OF if w in text), "etc")
-        return text, kind, False
+        return text, kind_of(text), False
     words = row.get("results") or ""
     for keys, label, kind in RESULT_WORDS:
         if any(k in words for k in keys):
@@ -113,25 +123,35 @@ def headline(row: dict) -> tuple[str, str, bool]:
 LEAD = 3.5  # 実況が球速を言うのは投球の0〜2秒後（DTW つきで確かめた）。その3.5秒前から流す
 
 
+def tentative_row(row: dict) -> bool:
+    return headline(row)[2]
+
+
 def chips(row: dict, start: float, numbered: bool) -> str:
     """1球ごとのボタン。押すと、その球の実況の3.5秒前（ただし1つ前の球の実況より後）から流す。
 
     numbered が偽（見出しが仮）のときは「2球目」のような番号を付けない。実況の言葉を拾い落とすと
     番号がずれるため（西部ガス戦の3打席目は5球のうち2球の言葉が抜けた）。
     """
-    calls = []
+    calls = []  # (時刻か None, 言葉, 何球目か None)
     for item in [p for p in (row.get("pitches") or "").split(";") if "|" in p]:
-        t, label = item.split("|", 1)
+        parts = item.split("|")
         try:
-            calls.append((float(t), label))
+            t = float(parts[0]) if parts[0] else None
         except ValueError:
             continue
+        calls.append((t, parts[1], int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else None))
     out, prev = [], None
-    for i, (t, label) in enumerate(calls, 1):
+    for i, (t, label, k) in enumerate(calls, 1):
+        if numbered:
+            head, sub = f"{k or i}球目", esc(label)
+        else:
+            head, sub = esc(label.split(" ")[0] or label), esc(" ".join(label.split(" ")[1:]))
+        if t is None:  # スコアにはあるが、実況の言葉がなく時刻の分からない球
+            out.append(f'<button type="button" disabled title="映像の時刻が分からない球">{head}<small>{sub}</small></button>')
+            continue
         at = max(start, t - LEAD, prev + 0.3 if prev is not None else start)
         prev = t
-        head = f"{i}球目" if numbered else esc(label.split(" ")[0] or label)
-        sub = esc(label) if numbered else esc(" ".join(label.split(" ")[1:]))
         out.append(f'<button type="button" data-t="{at - start:.1f}">{head}<small>{sub}</small></button>')
     return f'<div class="vchips">{"".join(out)}</div>' if out else ""
 
@@ -184,6 +204,7 @@ STYLE = """<style>
 .vchips button{min-height:44px;padding:4px 9px;border:1px solid var(--line);border-radius:8px;background:var(--chip);
 color:var(--text);font:inherit;font-size:12px;line-height:1.3;cursor:pointer}
 .vchips small{display:block;color:var(--dim);font-size:11px}
+.vchips button:disabled{opacity:.45;cursor:default;border-style:dashed}
 .vtent{display:inline-block;margin-left:6px;padding:0 6px;border-radius:6px;background:var(--t-amber-bg);
 color:var(--t-amber);font-size:11px;font-weight:700;vertical-align:2px}
 .vgame{margin:18px 0 4px;font-size:15px}
@@ -247,6 +268,9 @@ def player_page(name: str, page_fn) -> str:
              '下のボタンで、その球の少し前から再生します。</p>']
     if tentative:
         notes.append('<p class="note">1球ごとのボタンは、実況が球速や結果を言った球だけです。言葉を拾えなかった球はボタンがありません。</p>')
+    if any(not tentative_row(i["row"]) for i in items):
+        notes.append('<p class="note">見出しと1球ごとの種類（ボール・ストライク・ファウル）は、試合のスコアから付けています。'
+                     '点線の灰色のボタンは、実況の言葉がなく映像の時刻が分からない球です（打席の動画には入っています）。</p>')
     if tentative:
         notes.append('<p class="note"><span class="vtent">仮</span> の見出しと1球ごとのボタンの言葉は、実況から自動で付けたものです。'
                      '聞き違いがあります。BASSの記録が入ったら正確なものに差し替えます。</p>')

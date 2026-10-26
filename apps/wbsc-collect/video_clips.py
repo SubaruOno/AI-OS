@@ -7,13 +7,14 @@
     python3 video_clips.py prep [--game ID] [--force]   # 実況の文字起こしとカメラの切り替わり
     python3 video_clips.py prep --dtw [--game ID]       # 1球ごとの時刻用の文字起こし（時刻合わせつき、遅い）
     python3 video_clips.py segment [--game ID]          # 打席の区切り → <試合>/打席_自動.csv
-    python3 video_clips.py score                        # 西部ガス戦の正解と照らす（決まりを変えたら流す）
+    python3 video_clips.py score                        # 西部ガス戦の正解と照らす（決まりを変えたら流す。78打席中77）
+    python3 video_clips.py scorebook --game ID          # スコア.csv（印刷のスコアを読み取ったもの）を当てて 打席.csv を書く
     python3 video_clips.py review [--port 8783]         # 確認用の画面（127.0.0.1 だけ）→ <試合>/打席.csv
     python3 video_clips.py export [--game ID]           # 打席ごとの動画とサムネイル → clips/<試合>/
     python3 video_clips.py serve DIR [--port 8783]      # 組み立てたサイトを、動画の部分読み込みに応じて配る
 
 区切りは、実況の言葉（「4番、ファースト、ソン・ボーハン」「147、ボール」「3アウト」「2回の表」）と、
-カメラの切り替わり（ffmpeg の scene）から出す。決まりは西部ガス戦で79打席中78を当てたもので、
+カメラの切り替わり（ffmpeg の scene）から出す。決まりは西部ガス戦で78打席中77を当てたもので（スコアで確かめた正解）、
 試合ごとのくせに合わせ込む決まり（回の終わりのまとめで回を付け直す、など）は入れていない。
 打席_自動.csv は segment のたびに作り直す。確かめて直したものは 打席.csv で、segment は触らない。
 """
@@ -42,7 +43,7 @@ OPP = "相手"
 AUTO = "打席_自動.csv"
 CHECKED = "打席.csv"
 FIELDS = ["no", "inning", "half", "order", "bat_team", "batter", "pit_team", "pitcher",
-          "start", "end", "n_pitch", "pitches", "results", "headline", "note", "ctx", "source"]
+          "start", "end", "n_pitch", "pitches", "results", "headline", "seq", "result", "note", "ctx", "source"]
 
 
 # ---------------------------------------------------------------- 試合の定義
@@ -186,10 +187,10 @@ SUB = re.compile(r"(ピッチャー|投手)[^。]{0,25}?(代|変|かわ)わ?り?
 KATA = re.compile(r"[ァ-ヴー・ 　]+")
 POSITIONS = ("キャッチャー", "ファースト", "セカンド", "サード", "ショート", "レフト", "センター", "ライト",
              "指名打者", "ピッチャー")
-# 西部ガス戦の正解（崎坂さん経由のスコアと打順のつながりで確かめたもの）。決まりを変えたら score で照らす
+# 西部ガス戦の正解（崎坂さん経由の印刷のスコアで確かめたもの。9回表は4打席）。決まりを変えたら score で照らす
 TRUTH_SEIBU = {
     "表": {1: [1, 2, 3], 2: [4, 5, 6, 7], 3: [8, 9, 1], 4: [2, 3, 4, 5, 6, 7], 5: [8, 9, 1, 2, 3, 4, 5],
-          6: [6, 7, 8, 9], 7: [1, 2, 3], 8: [4, 5, 6, 7, 8], 9: [9, 1, 2, 3, 4]},
+          6: [6, 7, 8, 9], 7: [1, 2, 3], 8: [4, 5, 6, 7, 8], 9: [9, 1, 2, 3]},
     "裏": {1: [1, 2, 3], 2: [4, 5, 6, 7], 3: [8, 9, 1], 4: [2, 3, 4, 5, 6, 7], 5: [8, 9, 1, 2, 3, 4, 5, 6],
           6: [7, 8, 9, 1], 7: [2, 3, 4, 5, 6, 7, 8], 8: [9, 1, 2, 3]},
 }
@@ -282,7 +283,13 @@ def events(text: str, times: list[float]) -> list[tuple]:
     for m in THIRD.finditer(text):
         ev.append((times[m.start()], "third_out", m.group(0), text[max(0, m.start() - 8):m.end() + 6]))
     for m in PITCH.finditer(text):
-        ev.append((times[m.start()], "pitch", pitch_label(m.group(0)), text[m.start():m.end() + 10]))
+        word = m.group(0)
+        if not re.search(r"ボール|ストライク|スト|ファ|打|空振り|見逃し|バント", word):
+            # 「表示なし、変化、ボール」のように、種類が後ろに来る言い方
+            more = re.match(r"[、 ]*(ボール|ストライク|ファウル|ファール|打って|空振り|見逃し|バント)", text[m.end():m.end() + 8])
+            if more:
+                word += more.group(1)
+        ev.append((times[m.start()], "pitch", pitch_label(word), text[m.start():m.end() + 10]))
     for m in RESULT.finditer(text):
         ev.append((times[m.start()], "result", m.group(0), text[max(0, m.start() - 6):m.end() + 4]))
     for m in SUB.finditer(text):
@@ -528,6 +535,227 @@ def score() -> None:
     hit = {g for g in got if g in truth}
     print(f"西部ガス戦: 正解{len(truth)}打席、出た行{len(rows)}、当たり{len(hit)}、"
           f"余計{len([g for g in got if g not in truth])}、取りこぼし{sorted(truth - set(got))}")
+
+
+# ---------------------------------------------------------------- scorebook
+
+SCORE = "スコア.csv"  # 印刷のスコアを読み取ったもの。inning,half,order,batter,pitcher,seq,result,result_ja
+TYPE_JA = {"B": "ボール", "S": "ストライク", "F": "ファウル"}
+
+
+def call_types(label: str) -> set[str]:
+    """実況の1球の言葉から、ありうる球の種類（B・S・F・X=打球・H=死球）。分からなければ全部。"""
+    if "デッドボール" in label:
+        return {"H"}
+    out = set()
+    if "ボール" in label:
+        out.add("B")
+    if any(w in label for w in ("ストライク", "スト", "見逃し", "空振り", "カラブリ")):
+        out.add("S")
+    if any(w in label for w in ("ファウル", "ファール", "ファイル")):
+        out.add("F")
+    if any(w in label for w in ("打って", "打つ", "バント")):
+        out |= {"X", "F"}
+    return out or {"B", "S", "F", "X", "H"}
+
+
+def final_type(result: str) -> str:
+    if result in ("K", "Ks"):
+        return "S"
+    if result in ("B", "IB"):  # IB（申告敬遠）は最後のボールに当てる。4球目は投げていない
+        return "B"
+    if result in ("HBP", "HP"):
+        return "H"
+    return "X"
+
+
+def align(a: list, b: list, same, gap_a: float = -1.0, gap_b: float = -1.0, miss: float = -3.0):
+    """順番を保った対応づけ（ずれを許す）。戻り値は [(i, j)]。i か j が None なら相手なし。"""
+    n, m = len(a), len(b)
+    score = [[0.0] * (m + 1) for _ in range(n + 1)]
+    back = [[None] * (m + 1) for _ in range(n + 1)]
+    for i in range(1, n + 1):
+        score[i][0], back[i][0] = score[i - 1][0] + gap_a, "a"
+    for j in range(1, m + 1):
+        score[0][j], back[0][j] = score[0][j - 1] + gap_b, "b"
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            s = same(a[i - 1], b[j - 1])
+            options = [(score[i - 1][j - 1] + (s if s is not None else miss), "ab"),
+                       (score[i - 1][j] + gap_a, "a"), (score[i][j - 1] + gap_b, "b")]
+            score[i][j], back[i][j] = max(options, key=lambda x: x[0])
+    out, i, j = [], n, m
+    while i or j:
+        step = back[i][j]
+        if step == "ab":
+            out.append((i - 1, j - 1)); i -= 1; j -= 1
+        elif step == "a":
+            out.append((i - 1, None)); i -= 1
+        else:
+            out.append((None, j - 1)); j -= 1
+    return out[::-1]
+
+
+def apply_scorebook(game: dict) -> None:
+    """スコア.csv の打席を、映像の区切り（打席_自動.csv）に当てて 打席.csv を書く。
+
+    打席の対応は（回・表裏・打順）の並びで取る。映像の区切りがないスコアの打席は前後の区切りの間を当て、
+    スコアにない区切りは同じ回の前の打席につなぐ。1球ごとは、実況の言葉（words_dtw.json から取った時刻つき）を
+    スコアの1球の並び（B・S・F と最後の結果）に当てはめ、何球目かを決める。言葉のない球は時刻なしで残す。
+    """
+    out = DATA / game["id"]
+    score = read_rows(out / SCORE)
+    auto = read_rows(out / AUTO)
+    key = lambda r: (int(r["inning"]), r["half"], int(r["order"]))
+    # 回・表裏・打順がそろえば強く、打順だけ違う（実況の聞き違い）ときは弱く結ぶ
+    same = lambda s, a: 2.0 if key(s) == key(a) else (0.5 if key(s)[:2] == key(a)[:2] else None)
+    pairs = align(score, auto, same, gap_a=-1.0, gap_b=-1.0)
+    rows, report = [], {"対応": 0, "区切りを当てた": 0, "つないだ": 0, "要確認": []}
+    pending = []  # 映像の区切りがまだないスコアの打席
+    for si, ai in pairs:
+        if si is not None and ai is not None:
+            for s in pending:  # 前の区切りの終わりからこの区切りの頭までを当てる
+                prev_end = float(rows[-1]["end"]) if rows else 0.0
+                start = float(auto[ai]["start"])
+                if start - prev_end >= 8:
+                    rows.append(scored_row(game, s, {"start": f"{prev_end:.1f}", "end": f"{start:.1f}", "pitches": ""},
+                                           "映像の区切りがなかったので、前後の区切りの間を当てた"))
+                    report["区切りを当てた"] += 1
+                else:  # 間がない: あとで前の打席を、その最後の1球の実況のあとで割る
+                    rows.append(dict(scored_row(game, s, {"start": "", "end": ""}, ""), _split=True))
+            pending = []
+            note = "" if key(score[si]) == key(auto[ai]) else f"映像の区切りは{auto[ai]['order']}番として出ていた（スコアに合わせた）"
+            rows.append(scored_row(game, score[si], auto[ai], note))
+            report["対応"] += 1
+        elif si is not None:
+            pending.append(score[si])
+        else:  # スコアにない区切り: 同じ回の前の打席につなぐ
+            a = auto[ai]
+            if rows and (rows[-1]["inning"], rows[-1]["half"]) == (str(a["inning"]), a["half"]):
+                rows[-1]["end"] = a["end"]
+                rows[-1]["note"] = (rows[-1]["note"] + " 次の区切りをつないだ").strip()
+                report["つないだ"] += 1
+            else:
+                report["要確認"].append(f"{a['inning']}回{a['half']} {a['order']}番の区切り（{a['start']}秒〜）: スコアにない")
+    for s in pending:
+        rows.append(dict(scored_row(game, s, {"start": "", "end": ""}, ""), _split=True))
+    # 1球ごとは、つないだ・当てた後の範囲で、実況の言葉を文字起こし全体から拾い直す
+    calls = []
+    dtw = out / "words_dtw.json"
+    cuts = load_cuts(out / "scenes.txt")
+    if dtw.is_file():
+        d_text, d_times = load_chars(dtw)
+        d_events = events(d_text, d_times)
+        calls = [(round(t, 1), v) for t, kind, v, _ in d_events if kind == "pitch"]
+        report["頭を合わせ直した"] = refine_starts(rows, d_events, cuts)
+    else:
+        for a in auto:
+            calls += [(float(x.split("|")[0]), x.split("|")[1]) for x in (a.get("pitches") or "").split(";") if "|" in x]
+    within = lambda r: [c for c in calls if float(r["start"]) <= c[0] < float(r["end"])]
+    for r in rows:
+        if not r.get("_split"):
+            r["pitches"] = place_pitches(r, within(r))
+    for i, r in enumerate(rows):
+        if not r.get("_split"):
+            continue
+        prev = next((rows[j] for j in range(i - 1, -1, -1) if not rows[j].get("_split")), None)
+        last = None
+        if prev and (prev["inning"], prev["half"]) == (r["inning"], r["half"]):
+            last = next((p.split("|")[0] for p in prev["pitches"].split(";")
+                         if p.split("|")[2] == str(prev["n_pitch"]) and p.split("|")[0]), None)
+        if last and float(prev["end"]) - float(last) > 8:
+            t = float(last)
+            after = [c for c in cuts if t <= c <= t + 12]
+            cut = after[0] if after else t + 4
+            r["start"], r["end"] = f"{cut:.1f}", prev["end"]
+            prev["end"] = f"{cut:.1f}"
+            r["note"] = "映像の区切りがなかったので、前の打席の最後の1球の実況のあとで割った"
+            prev["pitches"] = place_pitches(prev, within(prev))
+            r["pitches"] = place_pitches(r, within(r))
+            r.pop("_split")
+            report["区切りを当てた"] += 1
+        else:
+            report["要確認"].append(f"{r['inning']}回{r['half']} {r['order']}番 {r['batter']}: 映像の区切りがない")
+    rows = [r for r in rows if not r.get("_split")]
+    for i, r in enumerate(rows, 1):
+        r["no"] = i
+    write_rows(out / CHECKED, rows)
+    print(f"{game['id']}: スコアの打席{len(score)}、映像の区切り{len(auto)} → 対応{report['対応']}・"
+          f"区切りを当てた{report['区切りを当てた']}・つないだ{report['つないだ']}・"
+          f"頭を合わせ直した{report.get('頭を合わせ直した', 0)}・要確認{len(report['要確認'])} → {CHECKED}")
+    for line in report["要確認"]:
+        print("  要確認:", line)
+
+
+def refine_starts(rows: list[dict], d_events: list[tuple], cuts: list[float], window: float = 20.0) -> int:
+    """打席の頭を、時刻合わせつきの文字起こしの「N番」の時刻に合わせ直す。同じ回の前の打席の終わりもそろえる。
+
+    古い文字起こしの時刻は数秒〜10秒ずれることがある（日本製鉄九州戦の2回表7番は、頭が6〜8秒早かった）。
+    古い頭の前後 window 秒以内に、同じ打順の「N番」が時刻合わせつきの側にあれば、その1秒前（直前8秒以内に
+    カメラの切り替わりがあればそこ）を新しい頭にする。見つからない打席はそのまま。
+    """
+    batters = [(t, v) for t, kind, v, _ in d_events if kind == "batter" and v]
+    used, moved = set(), 0
+    for i, r in enumerate(rows):
+        if r.get("_split") or not r.get("start"):
+            continue
+        old = float(r["start"])
+        near = [(abs(t - old), k, t) for k, (t, v) in enumerate(batters)
+                if v == int(r["order"]) and abs(t - old) <= window and k not in used]
+        if not near:
+            continue
+        _, k, t = min(near)
+        used.add(k)
+        before = [c for c in cuts if t - 8 <= c <= t + 1]
+        new = before[-1] if before else t - 1.0
+        prev = next((rows[j] for j in range(i - 1, -1, -1) if not rows[j].get("_split") and rows[j].get("end")), None)
+        if prev and (prev["inning"], prev["half"]) == (r["inning"], r["half"]) and new <= float(prev["start"]) + 2:
+            continue  # 前の打席を食いつぶすような動きはしない
+        if abs(new - old) >= 0.5:
+            moved += 1
+        r["start"] = f"{new:.1f}"
+        if prev and (prev["inning"], prev["half"]) == (r["inning"], r["half"]):
+            prev["end"] = r["start"]
+        elif prev and float(prev["end"]) > new:
+            prev["end"] = r["start"]
+    return moved
+
+
+def scored_row(game: dict, s: dict, a: dict, note: str) -> dict:
+    top, bot = side_teams(game)
+    bat, pit = (top, bot) if s["half"] == "表" else (bot, top)
+    return {"inning": s["inning"], "half": s["half"], "order": s["order"],
+            "bat_team": bat, "batter": s["batter"], "pit_team": pit, "pitcher": s["pitcher"],
+            "start": a["start"], "end": a["end"], "n_pitch": len(s["seq"]) + 1, "pitches": a.get("pitches", ""),
+            "results": a.get("results", ""), "headline": s["result_ja"], "seq": s["seq"], "result": s["result"],
+            "note": note, "ctx": a.get("ctx", ""), "source": "score"}
+
+
+def place_pitches(r: dict, calls: list) -> str:
+    """スコアの1球の並びに実況の言葉を当てはめ、「時刻|球速 種類|何球目」を全球ぶん並べる（時刻なしもある）。"""
+    seq = list(r.get("seq") or "") + [final_type(r.get("result") or "")]
+    labels = [TYPE_JA.get(t, "") for t in seq[:-1]] + [r.get("headline") or ""]
+    start, end = float(r["start"]), float(r["end"])
+    span, n = max(1.0, end - start), len(seq)
+    items = list(enumerate(seq))
+
+    def fit(item, c):
+        i, t = item
+        if t not in call_types(c[1]):
+            return -1.0
+        return 2.0 - 0.5 * abs((i + 0.5) / n - (c[0] - start) / span)  # 同じ種類なら、打席の中の位置が近いほど高い
+
+    pairs = align(items, calls, fit, gap_a=0.0, gap_b=-0.5, miss=-1.0)
+    at = {i: calls[j] for i, j in pairs if i is not None and j is not None}
+    out = []
+    for k, (t, label) in enumerate(zip(seq, labels), 1):
+        if k - 1 in at:
+            c = at[k - 1]
+            speed = c[1].split(" ")[0] if c[1].split(" ")[0].isdigit() else ""
+            out.append(f"{c[0]}|{(speed + ' ' + label).strip()}|{k}")
+        else:
+            out.append(f"|{label}|{k}")
+    return ";".join(out)
 
 
 # ---------------------------------------------------------------- export
@@ -940,6 +1168,8 @@ def main() -> None:
     p = sub.add_parser("segment", help="打席の区切り")
     p.add_argument("--game")
     sub.add_parser("score", help="西部ガス戦の正解と照らす")
+    p = sub.add_parser("scorebook", help="スコア.csv を映像の区切りに当てて 打席.csv を書く")
+    p.add_argument("--game", required=True)
     p = sub.add_parser("export", help="打席ごとの動画とサムネイル")
     p.add_argument("--game")
     p.add_argument("--workers", type=int, default=3)
@@ -964,6 +1194,8 @@ def main() -> None:
             print(f"{g['id']}: {len(rows)}打席、注意つき{notes}、{chain_report(rows)} → {AUTO}")
     elif args.cmd == "score":
         score()
+    elif args.cmd == "scorebook":
+        apply_scorebook(game_of(args.game))
     elif args.cmd == "export":
         for g in pick(args.game):
             export(g, args.workers)
