@@ -93,6 +93,11 @@ EVENTS = {
         "2025-asian-baseball-championship",
         "第31回BFAアジア選手権。台北と韓国",
     ),
+    "asian-games-2026": (
+        "www.wbscasia.org",
+        "2026-xx-aichi-nagoya-asian-games-2026-mens-baseball",
+        "第20回アジア競技大会（愛知・名古屋）。台湾の王宇傑・林佾葳が出場",
+    ),
 }
 
 
