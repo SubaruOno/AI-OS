@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import argparse
+import bisect
 import json
 import re
 import subprocess
@@ -46,6 +47,10 @@ IN_PLAY_MAX = 30.0
 BATTER = 0.25     # しゃがみの間に打者が映っているコマの割合がこれ未満なら投球練習とみなす（投球練習は0.17以下）
 MERGE = 1.5       # 残す場面同士の間がこれより短ければ1つにつなぐ
 VOICE = re.compile(r"[0-9一二三四五六七八九]番|代わり|交代|代打|代走|守ります|攻撃")
+# 記録係の1球ごとの読み上げ（「4-1ボール」「2-7打ってショートゴロ」）。聞き違いの「スライト」「ボル」も拾う
+CALL = re.compile(r"\d\s*[-ー−の]\s*\d|ボール|ボル|ストライク|スト?ライ|スライト|ファウル|ファール|空振り|から振り|見逃し|打って"
+                  r"|ゴロ|フライ|ヒット|ライナー|三振|バント|牽制|けん制|デッド|パスボール|ワイルド")
+HALLUCINATION = re.compile(r"ご視聴|お疲れ|おやすみ|次回予告|次の動画|ありがとう")
 
 
 # ---------------------------------------------------------------- 下ごしらえ
@@ -199,6 +204,64 @@ def segment(scan_file: Path, words: Path | None, extra: Path | None = None) -> l
     return [[round(a, 2), round(b, 2), why] for a, b, why in merged]
 
 
+# ---------------------------------------------------------------- 取りこぼしの確認
+
+
+def check(video: Path, segs: list[list], folder: Path) -> list[str]:
+    """切り落とした側の音声だけを文字にして、記録係の投球の読み上げが残っていないか探す。
+
+    読み上げは投球の数秒後に来るので、切り落とし側の頭の数秒に出るのはたいてい直前の球のはみ出し。
+    それより後ろに出たものは、その前後の元の動画を目で見て、抜けていれば 追加.json に足す。
+    文字起こしの時刻は30秒の窓の単位で粗く、10秒ほど早く出ることがある。
+    """
+    import soundfile as sf
+
+    full = folder / "音声.wav"
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(video), "-vn", "-ac", "1", "-ar", "16000", str(full)], check=True)
+    y, sr = sf.read(full, dtype="float32")
+    full.unlink()
+    gaps, prev = [], 0.0
+    for a, b, _ in segs:
+        if a - prev >= 1.0:
+            gaps.append((prev, a))
+        prev = max(prev, b)
+    if len(y) / sr - prev >= 1.0:
+        gaps.append((prev, len(y) / sr))
+    gap_sil = np.zeros(3 * sr, np.float32)  # 切れ目に3秒の無音を挟み、文字起こしの区切りを切れ目にそろえやすくする
+    pieces, table, pos = [], [], 0.0
+    for a, b in gaps:
+        piece = y[int(a * sr):int(b * sr)]
+        table.append((pos, a, b))
+        pieces += [piece, gap_sil]
+        pos += len(piece) / sr + 3.0
+    cut = folder / "切り落とし.wav"
+    sf.write(cut, np.concatenate(pieces), sr)
+    prompt = "4-1ボール。4-0ストライク。2-7打って、ショートゴロ。1-1見逃しストライク。3-2ファウル。空振り三振。デッドボール。"
+    subprocess.run(["whisper-cli", "-m", str(WHISPER_MODEL), "-l", "ja", "-mc", "0", "-bs", "5", "-np", "-ml", "20", "-sow",
+                    "--prompt", prompt, "-f", str(cut), "-oj", "-of", str(folder / "切り落とし")],
+                   check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    cut.unlink()
+    found, prev_text = [], None
+    starts = [p for p, _, _ in table]
+    for s in json.loads((folder / "切り落とし.json").read_text(encoding="utf-8"))["transcription"]:
+        text = s["text"].strip()
+        if not text or text == prev_text or HALLUCINATION.search(text) or not CALL.search(text):
+            prev_text = text
+            continue
+        prev_text = text
+        at = s["offsets"]["from"] / 1000
+        p, a, b = table[max(0, bisect.bisect_right(starts, at) - 1)]
+        into = at - p
+        if into <= b - a + 0.5:
+            found.append(f"{a + into:8.1f}秒（{fmt(a + into)}）  切り落とし {fmt(a)}〜{fmt(b)} の {into:.0f}秒目  {text}")
+    (folder / "確認.txt").write_text("\n".join(found) + "\n", encoding="utf-8")
+    return found
+
+
+def fmt(sec: float) -> str:
+    return f"{int(sec // 3600)}:{int(sec % 3600 // 60):02d}:{int(sec % 60):02d}"
+
+
 # ---------------------------------------------------------------- 書き出し
 
 
@@ -237,6 +300,8 @@ def main() -> None:
     ap.add_argument("video", type=Path)
     ap.add_argument("--out", type=Path)
     ap.add_argument("--no-voice", action="store_true", help="記録係の声（打者紹介・交代）を足さない")
+    ap.add_argument("--check", action="store_true",
+                    help="書き出しの代わりに、切り落とした側の音声から投球の読み上げを探して 確認.txt に書く（1時間の動画で約15分）")
     args = ap.parse_args()
     video = args.video.expanduser().resolve()
     out = args.out or video.with_name(video.stem + "_投球カット.mp4")
@@ -259,6 +324,11 @@ def main() -> None:
     kept = sum(b - a for a, b, _ in segs)
     total = float(np.load(scan_file)["t"][-1])
     print(f"投球の候補 {pitches}、残す場面 {len(segs)} → {kept / 60:.0f}分（元 {total / 60:.0f}分）")
+    if args.check:
+        found = check(video, segs, folder)
+        print(f"切り落とした側の読み上げ {len(found)}件 → {folder / '確認.txt'}")
+        print("\n".join(found))
+        return
     render(video, segs, out, folder)
     print(f"書き出し → {out}")
 
