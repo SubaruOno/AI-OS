@@ -215,6 +215,7 @@ STYLE = """<style>
 color:var(--text);font:inherit;font-size:12px;line-height:1.3;cursor:pointer}
 .vchips small{display:block;color:var(--dim);font-size:11px}
 .vchips button:disabled{opacity:.45;cursor:default;border-style:dashed}
+.vchips button[aria-busy=true]{opacity:.6;cursor:progress}
 .vtent{display:inline-block;margin-left:6px;padding:0 6px;border-radius:6px;background:var(--t-amber-bg);
 color:var(--t-amber);font-size:11px;font-weight:700;vertical-align:2px}
 .vgame{margin:18px 0 4px;font-size:15px}
@@ -227,17 +228,53 @@ color:var(--text);font:inherit;font-size:14px;cursor:pointer}
 SCRIPT = """<script>
 (function () {
   var main = document.currentScript.parentNode;
+  // 置き場（Cloudflare Pages）は動画の部分読み込みに応じない。PCのChromeはそのとき位置を飛ばせない
+  // （seekable が 0〜0 になる）ので、飛べないと分かったら動画を丸ごと読み込んでから飛ばす。iPhone は飛べるのでそのまま
+  var seekable = function (v, t) {
+    var s = v.seekable;
+    return s.length > 0 && s.end(s.length - 1) >= Math.min(t, v.duration - 0.5);
+  };
+  var whole = function (v) {  // 丸ごと読み込んだ動画に差し替える（1本につき1回）。見ていた位置と再生中かは引き継ぐ
+    if (!v._whole) {
+      v._whole = fetch(v.currentSrc || v.src).then(function (r) {
+        if (!r.ok) throw new Error(r.status);
+        return r.blob();
+      }).then(function (blob) {
+        var at = v.currentTime, playing = !v.paused;
+        return new Promise(function (ok) {
+          v.addEventListener("loadedmetadata", function () {
+            v.currentTime = at;
+            if (playing) v.play();
+            ok();
+          }, { once: true });
+          v.src = URL.createObjectURL(blob);
+          v.load();
+        });
+      });
+      v._whole.catch(function () { v._whole = null; });
+    }
+    return v._whole;
+  };
   main.querySelectorAll(".vclip").forEach(function (a) {
     var v = a.querySelector("video");
     a.querySelectorAll(".vchips button").forEach(function (b) {
       b.addEventListener("click", function () {
         var t = +b.getAttribute("data-t");
         var go = function () { v.currentTime = t; v.play(); };
-        if (v.readyState >= 1) go(); else { v.preload = "metadata"; v.addEventListener("loadedmetadata", go, { once: true }); v.load(); }
+        var ready = function () {
+          if (seekable(v, t)) return go();
+          b.setAttribute("aria-busy", "true");
+          v.pause();
+          whole(v).then(go, function () { go(); }).then(function () { b.removeAttribute("aria-busy"); });
+        };
+        if (v.readyState >= 1) ready(); else { v.preload = "metadata"; v.addEventListener("loadedmetadata", ready, { once: true }); v.load(); }
       });
     });
     v.addEventListener("play", function () {  // 1本だけ鳴らす
       main.querySelectorAll("video").forEach(function (o) { if (o !== v && !o.paused) o.pause(); });
+    });
+    v.addEventListener("loadedmetadata", function () {  // 再生ボタンで見始めたときも、飛べなければ裏で丸ごと読み込む（下のつまみ用）
+      if (!v._whole && !seekable(v, v.duration)) whole(v);
     });
   });
   var buttons = main.querySelectorAll(".vfil button");
