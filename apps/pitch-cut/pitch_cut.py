@@ -43,6 +43,7 @@ SAME_PITCH = 2.0  # しゃがみ同士の間がこれより短ければ同じ投
 PRE = 1.5         # しゃがみ始めの何秒前から残すか
 POST = 3.0        # 球審が立ってから何秒残すか
 IN_PLAY_MAX = 30.0
+BATTER = 0.25     # しゃがみの間に打者が映っているコマの割合がこれ未満なら投球練習とみなす（投球練習は0.17以下）
 MERGE = 1.5       # 残す場面同士の間がこれより短ければ1つにつなぐ
 VOICE = re.compile(r"[0-9一二三四五六七八九]番|代わり|交代|代打|代走|守ります|攻撃")
 
@@ -134,7 +135,7 @@ def crouch_runs(t, crouch, n_tall, top) -> list[tuple[float, float]]:
                 j = k
                 continue
             break
-        if t[j] - t[i] >= MIN_RUN and np.mean(n_tall[i:j + 1] >= 2) >= 0.5:
+        if t[j] - t[i] >= MIN_RUN and np.mean(n_tall[i:j + 1] >= 2) >= BATTER:
             runs.append((float(t[i]), float(t[j])))
         i = j + 1
     joined: list[list[float]] = []
@@ -146,15 +147,16 @@ def crouch_runs(t, crouch, n_tall, top) -> list[tuple[float, float]]:
     return [(a, e) for a, e in joined]
 
 
-def play_end(t, motion, end: float, next_start: float) -> float:
-    """投球のあとカメラが打球を追ったら、落ち着くまで残す。"""
+def play_end(t, motion, top, end: float, next_start: float) -> float:
+    """投球のあとカメラが打球を追ったら、本塁付近に戻って落ち着くまで残す。
+    外野を映したまま止まった所で切ると、走者が還る場面が落ちる（日本通運戦の犠牲フライ）。"""
     after = (t > end) & (t <= end + 3.0)
     if not np.any(motion[after] > 15):
         return end + POST
     k, quiet = int(np.searchsorted(t, end)), 0
     limit = min(end + IN_PLAY_MAX, next_start - 1.0)
     while k < len(t) and t[k] < limit:
-        quiet = quiet + 1 if motion[k] < 8 else 0
+        quiet = quiet + 1 if motion[k] < 8 and top[k] >= 0.35 else 0
         if quiet >= 8:
             return max(float(t[k]), end + POST)
         k += 1
@@ -172,7 +174,7 @@ def voice_lines(words: Path) -> list[list]:
     return lines
 
 
-def segment(scan_file: Path, words: Path | None) -> list[list]:
+def segment(scan_file: Path, words: Path | None, extra: Path | None = None) -> list[list]:
     z = np.load(scan_file)
     t, motion = z["t"], z["motion"]
     feats = np.array([frame_features(b) for b in json.loads(str(z["boxes"]))])
@@ -180,9 +182,12 @@ def segment(scan_file: Path, words: Path | None) -> list[list]:
     parts = []
     for i, (a, e) in enumerate(runs):
         nxt = runs[i + 1][0] if i + 1 < len(runs) else float(t[-1])
-        parts.append([a - PRE, play_end(t, motion, e, nxt), "投球"])
+        parts.append([a - PRE, play_end(t, motion, feats[:, 2], e, nxt), "投球"])
     if words is not None:
         parts += voice_lines(words)
+    if extra is not None and extra.is_file():
+        # 目で見つけた取りこぼしを手で足す: [[始まり, 終わり, "メモ"], ...]（元の動画の秒）
+        parts += [[a, b, "手で追加:" + note] for a, b, note in json.loads(extra.read_text(encoding="utf-8"))]
     merged: list[list] = []
     for a, b, why in sorted(parts):
         a = max(0.0, a)
@@ -248,7 +253,7 @@ def main() -> None:
         if not words.is_file():
             print("記録係の声の文字起こし（whisper）")
             transcribe(video, words)
-    segs = segment(scan_file, words)
+    segs = segment(scan_file, words, folder / "追加.json")
     (folder / "区切り.json").write_text(json.dumps(segs, ensure_ascii=False, indent=0), encoding="utf-8")
     pitches = sum(1 for s in segs for w in s[2] if w == "投球")
     kept = sum(b - a for a, b, _ in segs)
