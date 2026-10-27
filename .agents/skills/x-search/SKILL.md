@@ -252,6 +252,7 @@ Pay-per-use plan: sign up at https://developer.x.com, select "Pay as you go" bil
 6. Cost is charged in `cost_in_usd_ticks` — divide by 100,000,000 to get USD.
 7. X API v2 `public_metrics` is returned as a single object — you can't request individual metric fields.
 8. Tweet ID extraction from x.com URLs: match `/status/(\d+)` to get the numeric ID.
+9. If `XAI_API_KEY` is empty in `.env` (checked 2026-10-28), use the desktop app's built-in browser instead: it is signed in to X, so `x.com/search?q=...&f=top` with `since:YYYY-MM-DD min_faves:N lang:ja` works. `get_page_text` returns nothing on X; read `article[data-testid="tweet"]` with javascript_tool, and define the extractor inside each call because navigation clears `window`.
 
 ### Improvement Backlog
 
