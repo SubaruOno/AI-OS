@@ -40,6 +40,16 @@
 - フィリピンの大学生のAI子猫シリーズ：登録約60万人、最高の月で$9,000。1本1〜2時間で、1日1〜2本作っている（[NPR、2025-08-28](https://www.ctpublic.org/2025-08-28/ai-slop-videos-may-be-annoying-but-theyre-racking-up-views-and-ad-money)）。週5時間には収まらない。
 - AIキャラが歴史の事件を旅する長尺動画のChloe VS History：収入は元の給料を大きく上回ると話すが、金額は出していない。TikTokの報酬プログラムは不承認だった（[Business Insider Japan、2026-07-08](https://www.businessinsider.jp/article/2606-quit-job-now-makes-ai-videos-youtube-earns-more-money/)）。
 - 日本で、AI動画の収益を本人が数字で出している例は見つからなかった。「AIで全自動」をうたう教材の数字は証拠から外した。
+- 「ほぼ100%AIで自動運用」を27日続けて、その日の収益がnote・アフィリエイト・SNS広告のどれも0円だったという報告もある（[投稿](https://x.com/saisoku_ai_note/status/2097674810994368913)、2026-09-09）。
+
+### AI猫の動画（すばるの質問を受けて追記）
+
+- 稼いだ人はいる。上のフィリピンの大学生がその例で、始めたのは2025年。動物もののAIチャンネルは、AI量産動画の再生数の上位に多い（[Kapwing、2025-11-28](https://www.kapwing.com/blog/ai-slop-report-the-global-rise-of-low-quality-ai-videos/)）。
+- 2026-07-16からのYouTubeの基準では、収益化できない「見る人を不快にさせる動画」の例として、苦しんでいる動物を誰かが助ける動画が挙がった（[TechCrunch、2026-07-20](https://techcrunch.com/2026/07/20/youtube-clarifies-policies-around-ai-slop-and-upsetting-videos/)）。かわいそうな子猫が助けられる話は、AI猫動画でよくある型。
+- 日本でも、AI猫のチャンネル「黒猫のご飯屋さん」が「不快な動画」と判定されて収益化を止められ、続けられないと告知した（[視聴者の投稿](https://x.com/Mainichi_Neko_/status/2088248866848354701)、2026-08-14）。止められたあと戻ったチャンネルもあり（[投稿](https://x.com/inakanekonomegu/status/2088481305906516016)、2026-08-15）、判定は読みにくい。
+- AIツールに課金して収益はほぼ0円、フォロワー1万人超のAI猫アカウントでも投稿をやめたところが多い、という声もある（[投稿](https://x.com/AIsato01/status/2074072110943875483)、2026-07-06）。
+- 動画を全部AIで作ると費用がかさむ。GoogleのGemini Omni Flashは720pで1秒約$0.10（[料金表](https://ai.google.dev/gemini-api/docs/pricing)、2026-10-28確認）。TikTokの報酬の対象になる1分の動画なら1本約900円で、毎日出すと月約2.7万円かかる。TikTokの単価（1,000回で$0.40〜1）だと、元を取るだけで月18万〜45万回の再生が要る（計算値、1ドル150円）。
+- 今から週5時間で始めて月1〜3万円を得るのは難しい。
 
 ## SNSでアプリを宣伝した例
 
