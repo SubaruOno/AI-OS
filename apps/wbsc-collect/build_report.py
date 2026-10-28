@@ -26,7 +26,8 @@ OUT_PATH = Path.home() / "野球" / "U23ワールドカップ2026" / "06_レポ�
 # 先に書いたものほど新しく、直近の世代に近い。
 OPPONENTS = [
     ("キューバ", "Cuba", "B", [("u23-americas-2025", "Cuba"), ("u23-wc-2022", "Cuba")]),
-    ("韓国", "Korea", "B", [("asian-championship-2025", "Korea"),
+    ("韓国", "Korea", "B", [("asian-games-2026", "Korea"),
+                            ("asian-championship-2025", "Korea"),
                             ("u23-wc-2024", "South Korea")]),
     ("ベネズエラ", "Venezuela", "B", [("u23-wc-2024", "Venezuela"),
                                       ("u23-wc-2022", "Venezuela")]),
@@ -35,7 +36,8 @@ OPPONENTS = [
     ("南アフリカ", "South Africa", "B", [("u23-wc-2024", "South Africa"),
                                          ("u23-wc-2022", "South Africa")]),
     ("チャイニーズタイペイ", "Chinese Taipei", "A",
-     [("asian-championship-2025", "Chinese Taipei"),
+     [("asian-games-2026", "Chinese Taipei"),
+      ("asian-championship-2025", "Chinese Taipei"),
       ("u23-wc-2024", "Chinese Taipei")]),
     ("プエルトリコ", "Puerto Rico", "A", [("u23-americas-2025", "Puerto Rico"),
                                           ("u23-wc-2024", "Puerto Rico")]),
@@ -49,6 +51,7 @@ OPPONENTS = [
 EVENT_LABEL = {
     "u23-americas-2025": "北中米カリブ予選 2025",
     "u23-euro-2025": "U-23欧州選手権 2025",
+    "asian-games-2026": "アジア競技大会 2026",
     "asian-championship-2025": "アジア選手権 2025",
     "u23-wc-2024": "U-23W杯 2024",
     "u23-wc-2022": "U-23W杯 2022",
