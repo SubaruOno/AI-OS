@@ -1039,7 +1039,7 @@ def vs_japan_block(info: dict) -> str:
     rows = info.get("vs_japan") or []
     lead = '<p class="note">今とは別の世代どうしの結果です。スコアは日本が先。</p>'
     if not rows:
-        return lead + ('<p class="empty">集めた大会（U-23W杯 2022・2024、アジア選手権 2025）'
+        return lead + ('<p class="empty">集めた大会（U-23W杯 2022・2024、アジア選手権 2025、アジア競技大会 2026）'
                        "では対戦していません。</p>")
     # 結果は2列目に置き、スマホの最初の画面に入れる。注意書きは表の中で細く折り返すと
     # 読めないので、※印を付けて表の下に出す（同じ文は同じ印）
