@@ -1,0 +1,116 @@
+# AIコンテンツの再生数で稼ぐ・SNSでアプリを宣伝する
+
+2026-10-28時点。[自動で回る仕組みのメモ](2026-10-28-ai-automated-income.md)の続き。「アプリは宣伝しないと売れない」という話を受けて、すばるが「Bufferを使ってXやTikTokで宣伝する。AIコンテンツの再生数で稼ぐのでもいい」と方向を出したので、その2つを調べた。Xの2026年7〜10月の投稿を内蔵ブラウザで集め、Webは3つ（Buffer、各SNSの収益化の条件、AI動画で稼いでいる例）に分けて並行して調べた。大きな数字と制度の変更は元のページで確かめた。
+
+## 先に結論
+
+- AIコンテンツの再生数そのもので月1〜3万円を得るのは、週5時間では難しい。どのSNSも、お金が出始めるまでの条件が高い。単価は低く、AIの量産は取り締まりの対象になっている。
+- 現実に近いのは、AIで作った投稿を自分のアプリへの送客に使うこと。Bufferには公式のMCPサーバーがあり、Claudeが下書きを入れ、すばるが確認して予約する流れを無料プランで組める。
+- ただし再生数とダウンロードは別物。TikTokは投稿にリンクを貼れないので、見た人が自分でアプリを探したくなる投稿でないと入れてもらえない。
+- 手持ちでいちばん合うのはケタ感。1問がそのまま1本のクイズ投稿になり、出典つきの数字なので量産扱いされにくく、アプリそのものが投稿のネタになる。
+
+## 再生数で稼ぐ：入口の条件と単価
+
+| | お金が出始める条件 | 単価の目安 | 月1.5万円に要る量（概算） |
+|---|---|---|---|
+| YouTubeショート | 登録1,000人＋ショート90日1,000万回。2027-02-01からは新規参加が2,000万回になり、参加後も毎月「90日で1,000万回」を保つ必要がある | 1,000回で約20円（クリエイター1人の報告） | 月75万回。ただし条件を満たすまでは0円 |
+| TikTok（クリエイター報酬プログラム） | 18歳以上、フォロワー1万、30日で10万再生、1分以上の動画 | 1,000回で$0.40〜1（世界のクリエイターの報告。日本の数字は見つからず） | 1分以上の動画で月10万〜25万回 |
+| X（オリジナルコンテンツ報酬） | Premium加入、認証済みフォロワー500、90日で認証ユーザーからの表示50万 | 100万表示で中央値$63、平均$301（公開された報告92件の集計） | 中央値なら月約160万表示 |
+| Instagram・Threads | 日本で使える再生連動の仕組みは確認できず | | |
+
+1ドル150円で計算。出典：[YouTubeの参加条件](https://support.google.com/youtube/answer/72851?hl=ja)、[2027年からの変更（SEJ、2026-08-11）](https://searchenginejournal.com/youtube-updates-partner-program-terms-shorts-payout-rules/585331)、[ショートの単価の報告](https://x.com/shupeiman/status/2111264425181413397)（2026-10-17）、[TikTokの日本での開始](https://newsroom.tiktok.com/ja-jp/tiktok-creator-rewards-program)（2024-03-19）、[TikTokの単価（Fourthwall、2026-08-13）](https://fourthwall.com/blog/how-much-does-tiktok-pay)、[Xの新制度（Impress Watch、2026-08-08）](https://www.watch.impress.co.jp/docs/news/2131768.html)、[Xの報酬の集計](https://x.com/game_idaa/status/2109558788051353705)（2026-10-12）
+
+補足
+- Xの旧制度で約3年続けた人の累計は$2,758。本人は「労働したほうが楽」と書いている（[@tokoroten](https://x.com/tokoroten/status/2098668105887281188)、2026-09-12）。新制度の最低支払額は$30。
+- YouTubeは2026年10月から、すでに収益化しているショートのクリエイターに、毎月決まった本数を出せば最低額を払う試験を招待制で始めた。日本も対象。届いた案内の例は月12〜16本で1.5万〜4.5万円、期間は2026-11-01〜2027-01-31（[Net Influencer、2026-10-16](https://www.netinfluencer.com/youtube-pilots-monthly-shorts-bonus-program-tied-to-upload-consistency-and-views/)、金額は[受け取った人たちの案内のまとめ](https://x.com/taiga_hayami/status/2110932165018185961)）。新しいチャンネルには関係しない。
+- TikTokは混んできている。2026年の調査で、前年より再生が31.3%減り、投稿量は72%増えた（[Metricool、2026-05-11](https://metricool.com/press-release-tiktok-study-2026/)）。
+- TikTok Shopのアフィリエイト（日本は2025-06-30開始）はフォロワー1,000人から参加できる。料率は商品ごとに売り手が決める（[日本セラーセンター](https://seller-jp.tiktok.com/university/essay?knowledge_id=94378787227408&default_language=ja-JP)）。
+
+## AI動画の取り締まり
+
+- YouTubeは、テンプレートで量産した感じのAI動画を収益化しない。2026-07に対象をはっきりさせ、量産もの、感情をあおって再生を稼ぐもの、実在の人物を再現したAI人物が金融・法律・医療を語るもの、の3つを挙げた。台本や背景をAIで作ること自体は問題ない（[YouTubeのポリシー](https://support.google.com/youtube/answer/1311392?hl=en)、[TechCrunch、2026-07-20](https://techcrunch.com/2026/07/20/youtube-clarifies-policies-around-ai-slop-and-upsetting-videos/)）。
+- 2026-01には、AIで量産していたチャンネルが少なくとも18、削除または非表示になった（[Tubefilter、2026-01-29](https://tubefilter.com/2026/01/29/youtube-ai-slop-channel-crackdown-bans/)）。日本では登録10万人超の「21時のAI」が2026-08に収益化を止められた（[運営者の投稿](https://x.com/doseisan7208/status/2090397492076765441)）。
+- 止められた側の体験談：AIで約400字の台本を書き、同じ読み上げ音声で毎回53秒前後にしていたチャンネルだけが止まった。本人は「冒頭と終わりの長さが毎回同じだとbot扱いされる」と推測している（[投稿](https://x.com/K1sqttPHfC41982/status/2078393999703101801)、2026-07-15）。
+- 続いている例は、同じキャラクターのシリーズや、解説や物語のあるものが多い。YouTubeのポリシーも、この2つを収益化できる例に挙げている。
+- 本物に見えるAI生成物には、TikTokもYouTubeもラベルが必要。ラベルを付けても配信は減らない。付けずに繰り返すと、YouTubeではパートナープログラムを止められることがある（[TikTok](https://support.tiktok.com/en/using-tiktok/creating-videos/ai-generated-content)、[YouTube](https://support.google.com/youtube/answer/14328491?hl=en)）。
+- Xの新制度は、他人の投稿のコピーと、自動化した手段で作成・投稿したものを報酬の対象外にしている。
+
+## AI動画で稼いでいる例（本人が出した数字）
+
+- フィリピンの大学生のAI子猫シリーズ：登録約60万人、最高の月で$9,000。1本1〜2時間で、1日1〜2本作っている（[NPR、2025-08-28](https://www.ctpublic.org/2025-08-28/ai-slop-videos-may-be-annoying-but-theyre-racking-up-views-and-ad-money)）。週5時間には収まらない。
+- AIキャラが歴史の事件を旅する長尺動画のChloe VS History：収入は元の給料を大きく上回ると話すが、金額は出していない。TikTokの報酬プログラムは不承認だった（[Business Insider Japan、2026-07-08](https://www.businessinsider.jp/article/2606-quit-job-now-makes-ai-videos-youtube-earns-more-money/)）。
+- 日本で、AI動画の収益を本人が数字で出している例は見つからなかった。「AIで全自動」をうたう教材の数字は証拠から外した。
+
+## SNSでアプリを宣伝した例
+
+うまくいった例
+- 海外の個人開発者が、AIエージェントにTikTokのスライドショーを1日6本作らせ、1週間足らずで50万再生。2本のアプリで課金108人、月$588。人の作業は1投稿約60秒（下書きの確認と音源選び）。本人は使った道具も宣伝しているので割り引いて読む（[本人の記事の転載、2026-02-12](https://youmind.com/landing/x-viral-articles/viral-tiktok-ai-agent-guide)）。
+- 筋トレ記録アプリのStrongerは、6秒の動画を数百本出して推定2〜3億再生、年間売上約$60万（[Superwall、2025-10-27](https://superwall.com/blog/how-stronger-built-a-usd600k-app-using-viral-on-demand-tiktok-strategy)）。
+- IQテストのアプリが1週間で1,000ダウンロード・$322、流入はほぼ1つのアカウントから、という海外の例の紹介もあった（[紹介した投稿](https://x.com/chikaidev/status/2110673876388548823)、又聞き）。
+
+うまくいかなかった例
+- 5アカウントで2日に10万表示、初投稿で1,000いいね。それでもダウンロードは増えなかった。本人の分析は「TikTokとInstagramは投稿にリンクを置けないので、見た人が自分で検索するほどの欲求が要る。アプリをネタとして面白く使っている動画でないと意味がない」（[@taishiyade](https://x.com/taishiyade/status/2094548617470370253)、2026-08-31）。
+- 10万表示でダウンロード9件（[@datemankun](https://x.com/datemankun/status/2106613064758177846)、2026-10-04）。1,500再生で5インストール（[@Enging1iw](https://x.com/Enging1iw/status/2082088045638267290)、2026-07-28）。
+
+読み取れること：1,000再生あたりのダウンロードは、例によって約0.1件から約3件まで開きがある。バズる型より、ダウンロードにつながる型を見つけるほうが大事。
+
+## Buffer
+
+- 予約できる先：X、TikTok、YouTubeショート、Instagram、Threads、Blueskyなど。XとTikTokの両方に無料で予約できるのは、比べた中ではBufferだけだった（Laterは2025-08にXの対応を終了、MetricoolとPublerの無料プランはX対象外）。
+- 無料プラン：3チャンネルまで、予約は1チャンネル10件まで（投稿されると枠が空く）。有料は1チャンネル月$6から（[料金](https://buffer.com/pricing)）。
+- TikTokは自動投稿できる。音楽や投票を付けた投稿と10分を超える動画は、スマホへの通知から手で出す形になる。料金表の表記は「business profiles」で、個人アカウントをつなげるかは未確認（[ヘルプ](https://support.buffer.com/en-us/articles/using-tiktok-with-buffer-oGEroY9Of2)）。
+- Xは自動投稿で、Buffer経由の動画は140秒まで。
+- AIからつなぐ：公式のMCPサーバー `https://mcp.buffer.com/mcp` があり、ClaudeとはOAuthでつなぐ。投稿を作る機能に「下書きとして保存」があるので、Claudeが下書きを入れ、すばるが確認してから予約できる。APIは2026-05に公開され、無料プランでも使える（[MCPの説明](https://developers.buffer.com/guides/integrations/mcp.html)、[APIの告知、2026-05-27](https://buffer.com/resources/buffer-api-is-here/)）。
+- AI生成の印：投稿ごとに「AI-Generated」を付けられる（TikTokの動画、YouTubeショート、X、Instagram）。
+- 画面は英語のみ。ブラウザの翻訳で読める。
+
+自前で投稿の仕組みを作らない理由
+- TikTokの審査を通っていない自作アプリからは、非公開の投稿しかできない（[TikTokのガイドライン、2026-08-04更新](https://developers.tiktok.com/doc/content-sharing-guidelines)）。自作の投稿ツールは審査に通らなかったと書いている個人開発者もいた（[投稿](https://x.com/okozukai_gadget/status/2112306665785573837)、2026-10-19）。
+- X APIは2026-02から従量課金で、1投稿$0.015、URL付きは$0.20（[X APIの料金](https://docs.x.com/x-api/getting-started/pricing)）。
+
+## 投稿のルール
+
+- X：予約投稿は認められている。禁止されているのは、自動返信（相手から反応があったときの1回だけは可）、キーワードを拾った自動返信、頼まれていない@メンション、同じ内容を複数アカウントに投稿すること、トレンドに乗って露出を稼ぐこと、同じ目的の複数アカウント（[開発者ガイドライン](https://docs.x.com/developer-guidelines)）。Xで勧められていた「アカウントを5つ作って回す」やり方は、Xではこの禁止に当たる。
+- ステマ規制：自分のアカウントで自分のアプリを紹介すること自体は問題ない。作った本人だと分かるように、プロフィールに「ケタ感の開発者」などと書いておく。人に頼んで投稿してもらうなら、広告だと明示する。2026-08-06には写真加工アプリSNOWの運営会社が、広告と書かずにインフルエンサーに投稿させたとして措置命令を受けた（[消費者庁](https://www.caa.go.jp/policies/policy/representation/fair_labeling/stealth_marketing/)、[報道](https://kumanichi.com/articles/2022748)）。
+- 声と顔：法務省は2026-08-07、声を似せた偽動画を公開して収益を得ることは権利の侵害にあたるとする指針を出した。東京地裁も2026-09-30に、人を引きつける声はパブリシティー権で守られると初めて判断した（[報道](https://kumanichi.com/articles/2023122)、[弁護士ドットコム](https://www.bengo4.com/c_18/n_20987/)）。有名人の声や顔、既存のキャラクターは使わない。
+- 著作権：プロンプトに作品名やキャラクター名を入れると、元の作品に依拠したと認められやすい（[文化庁のチェックリスト](https://www.bunka.go.jp/seisaku/chosakuken/pdf/94097701_01.pdf)）。
+
+## 動画を作る道具（2026-10時点）
+
+- Sora 2はAPIが2026-09-24に終了した（[OpenAIの終了予定一覧](https://developers.openai.com/api/docs/deprecations)）。Soraで作る方法を紹介した記事や教材は、もう使えない。
+- GoogleのVeo 3.1は、Gemini APIのプレビュー版が2026-10-22に終了した（[Google](https://ai.google.dev/gemini-api/docs/video)）。
+- 月額の例：Runway Standard $15（5秒の動画が月約10本）、ElevenLabs Starter $6（音声約30分、商用可）（[Runway](https://runway.com/pricing)、[ElevenLabs](https://elevenlabs.io/pricing)）。Kling、Hailuo、Seedanceの料金は第三者の情報しかなく未確認。
+- アプリの宣伝なら、AI動画は要らないことが多い。上の成功例もスライドショーや短い動画で、アプリの画面で足りる。
+
+## すばるの場合：ケタ感を毎日のクイズ投稿で宣伝する案
+
+ケタ感がこの形に合う理由
+- 1問がそのまま1本の投稿になる。「日本の自動販売機は何台？」と出して、答えと出典を見せる。
+- 数字は公的な統計で出典付き。YouTubeが収益化できる例に挙げる「教育的な価値」にあたり、量産扱いを避けやすい（推測）。
+- マスコットのペンタがいるので、同じキャラクターのシリーズにできる。
+- 投稿で見せている遊びが、そのままアプリの中身。「自分でもやりたい」と思った人がアプリを探す流れになる。
+
+回し方（案）
+1. 週1回、Claudeが[questions.json](../apps/keta/questions.json)から7問を選び、TikTok・YouTubeショート・X向けの投稿（画像か短い動画と文面）を作る。画面はアプリの実際の画面を使い、AI動画は使わない。毎回同じ長さにならないよう、問題ごとに答えと豆知識で中身を変える。
+2. ClaudeがBufferのMCPで下書きとして入れる。
+3. すばるがBufferで中身を確かめて予約する。1本1分前後の見込み。
+4. 毎日自動で投稿される。
+5. 2〜4週ごとに、再生数とApp Store Connectのダウンロード数を並べて、1,000再生あたり何件入ったかを見る。型を変えて試し、入る型が見つからなければやめる。
+
+無料プランの3チャンネル・1チャンネル10件の枠に、週7本ずつなら収まる。
+
+先に必要なこと
+- ケタ感をApp Storeに出す（実機での確認とTestFlightが残っている）。
+- BufferでTikTokの個人アカウントをつなげるか確かめる。だめならビジネスアカウントに切り替える（使える音楽が商用の曲に限られる）。
+- BufferのMCPをClaudeにつなぐ。OAuthでの承認はすばるが行う。
+
+お金の見込みは分からない。上の例のとおり1,000再生あたりのダウンロードには大きな開きがあり、ケタ感は広告と「広告なし」の課金なので、1件あたりの売上も小さい。これは「宣伝の型がケタ感で効くか」を安く確かめる試しで、月1〜3万円はその先の話。
+
+## 確認できなかったこと
+
+- TikTokの報酬プログラムの2026年の正式な条件と、AI生成動画が対象になるか。公式ヘルプの本文が読めなかった。
+- 日本のTikTokとYouTubeショートの、本人が出した実測の単価（ショートの1,000回約20円は1人の報告）。
+- BufferでTikTokの個人アカウントをつなげるか。
+- Xの新制度の公式ヘルプの本文（bot確認の画面で読めなかった）と、AI生成の投稿の扱い。
+- 2027年からのYouTubeの新条件が日本にも同じく適用されるか（地域の限定は書かれていない）。
+- 日本の個人開発者が、AI短尺動画からのダウンロード数を数字で出している例。
