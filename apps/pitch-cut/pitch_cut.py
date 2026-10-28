@@ -154,11 +154,14 @@ def crouch_runs(t, crouch, n_tall, top) -> list[tuple[float, float]]:
 
 def play_end(t, motion, top, end: float, next_start: float) -> float:
     """投球のあとカメラが打球を追ったら、本塁付近に戻って落ち着くまで残す。
-    外野を映したまま止まった所で切ると、走者が還る場面が落ちる（日本通運戦の犠牲フライ）。"""
-    after = (t > end) & (t <= end + 3.0)
-    if not np.any(motion[after] > 15):
+    外野を映したまま止まった所で切ると、走者が還る場面が落ちる（日本通運戦の犠牲フライ）。
+    ホームランのように、撮影者が打球を見送ってから数秒後にカメラを振ることもあるので、
+    3〜8秒後でも1.5秒続けて大きく振れたら打球とみなす（日本通運戦3回裏の穴水のホームランは6秒後）。"""
+    soon = np.where((t > end) & (t <= end + 3.0) & (motion > 15))[0]
+    late = [k for k in np.where((t > end + 3.0) & (t <= end + 8.0))[0] if np.all(motion[k:k + 6] > 15)]
+    if not len(soon) and not late:
         return end + POST
-    k, quiet = int(np.searchsorted(t, end)), 0
+    k, quiet = int(soon[0] if len(soon) else late[0]), 0  # 落ち着いたかはカメラが振れ始めてから数える
     limit = min(end + IN_PLAY_MAX, next_start - 1.0)
     while k < len(t) and t[k] < limit:
         quiet = quiet + 1 if motion[k] < 8 and top[k] >= 0.35 else 0
