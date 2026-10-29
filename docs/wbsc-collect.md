@@ -121,8 +121,11 @@ python3 apps/wbsc-collect/collect.py --event u23-wc-2026 --skip-missing
 
 `plays.csv` には画面に出ていない項目が入っています。
 
-- **`pitchheight` / `pitchoutside`** … 1球ごとの到達位置の座標。
-  ストライクゾーン上にプロットできます
+- `pitchheight` / `pitchoutside` … 1球ごとの位置の座標の欄ですが、**実際のコースではありません**（2026-10-29に4大会の33,844球で確かめた）。
+  ストライクはゾーンの枠（横−20〜19・高さ12〜61）の中に均等にばらけ、ボールはすべて横30〜39の帯、死球は横−60前後に置かれています。
+  画面に点を出すための値とみられるので、コースの分析には使わないでください。球種と球速の欄（`pitchtype`・`speed`）も空です
+- 1球の結果（見逃し・空振り・ファウル・ボール・打球）は、`narrative` の書き出し（`Called Strike`・`Swinging Strike`・`Foul`・`Ball` など）で分けます。
+  `ball`・`swing` などの欄は空です。牽制（`Pickoff Attempt`）とマウンドへの訪問（`Coaching Visit`）も、1球ではない行として入っています
 - `pitch_pitches` / `pitch_balls` / `pitch_strikes` … その行が1球か、ボールかストライクか（1球の行は1）。
   足せば打席や投手ごとの球数になります
 - `balls` / `strikes` / `outs` と各塁の走者、進塁と刺殺
