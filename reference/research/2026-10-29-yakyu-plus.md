@@ -2,6 +2,7 @@
 
 2026-10-29〜30に、公式サイト、App Store、公式Instagram、運営会社の記事と求人、同じ会社のバスケ・バレー・サッカー版、競合アプリを読んでまとめた。
 対象は [yakyu-plus.jp](https://yakyu-plus.jp/)。「推測」と書いたもの以外は、出典で確かめた事実。
+12枚のまとめ資料は [野球プラス調査まとめ（スライド）](https://claude.ai/artifact/NCh47EqHVKnMmqVb187FcQ) にある。
 
 ## ひとことで
 
