@@ -147,8 +147,10 @@ SECOND_ROUND = (
 OFFICIAL_JAPAN = "https://www.japan-baseball.jp/jp/news/press/20261006_1.html"
 WBSC_RULES = ("https://static.wbsc.org/uploads/federations/0/cms/documents/"
               "d3d36a7c-4a8a-1cca-adc1-d4edff1efc30.pdf")
+# 2026年大会の大会規程（2026年6月3日版）。WBSCの日程ページの Documents 欄から開ける Googleドライブのファイル
+WBSC_REGS = "https://drive.google.com/file/d/1S9WZKCeWYptEVjkyZCAMtrPwMsuqIxfb/view"
 FOOTER = "WBSCの大会サイトの記録と公表された情報から作成・関係者限り。リンクを外に回さないでください。"
-# 大会方式のページの文。公式日程（01_大会情報/WBSC公式日程_2026.png）とその注記から
+# 大会方式のページの文。公式日程（01_大会情報/WBSC公式日程_2026.png）とその注記、大会規程 B7.2 から
 FORMAT_FLOW = (
     '<ol class="flow">'
     "<li>12チームが6チームずつ2組に分かれ、1次ラウンドを総当たりで戦います"
@@ -160,10 +162,13 @@ FORMAT_FLOW = (
     "会場はどちらも Nacional Soberania（マナグア）です。時刻は公式日程では未定。</li></ol>"
 )
 FORMAT_CARRY = (
-    "<p>スーパーラウンドでは、1次ラウンドで進出3チーム同士が戦った2試合の結果を持ち越し、"
-    "スーパーラウンドの3試合と合わせた5試合で順位を決めます。決勝と3位決定戦に進むのは、"
-    "この順位の上位4チームです。どの試合が持ち越しになるかは、1次ラウンドが終わるまで"
-    "決まりません。順位決定ラウンドも同じやり方です（WBSCの公式日程の注記）。</p>"
+    "<p>スーパーラウンドへ持ち越すのは、1次ラウンドで勝ち上がった3チーム同士の2試合の結果だけです。"
+    "これとスーパーラウンドの3試合を合わせた5試合で順位を決めます。1次ラウンドで敗退した3チームとの"
+    "3試合は数えません。決勝と3位決定戦に進むのは、この順位の上位4チームです。どの試合が持ち越しに"
+    "なるかは、1次ラウンドが終わるまで決まりません。順位決定ラウンドも同じやり方です"
+    "（大会規程 B7.2）。</p>"
+    '<p class="note">例：日本がB組の3位以内に入り、イギリスと南アフリカがどちらも敗退すれば、'
+    "日本の対イギリス・対南アフリカの結果はスーパーラウンドの順位に入りません。</p>"
 )
 WEEK = "月火水木金土日"
 # ページに出さない作業用のファイル名と、代わりに出す言い方（public() で使う）
@@ -368,6 +373,7 @@ def load() -> dict:
         "reading": readings(br.read_csv(SITE_INFO / "名簿_読み.csv")),
         "numbers": numbers(br.read_csv(SITE_INFO / "背番号.csv")),
         "outs": sl.load_outs(br.DATA_ROOT / CURRENT / "raw"),
+        "box": sl.load_box(br.DATA_ROOT / CURRENT / "raw"),
         "tables": {}, "people": {}, "pid_key": {},
     }
 
@@ -817,13 +823,37 @@ def stand_table(rows: list[dict], title: str, root: str, second: bool = False) -
             f'<thead><tr>{head}</tr></thead><tbody>{"".join(body)}</tbody></table></div></div>')
 
 
+def cancel_alerts(games: list[dict]) -> str:
+    """中止の試合があるときに順位表の上に出す注意（大会規程 C11.3・C12.2）。中止がなければ空。"""
+    texts = []
+    opening = sl.cancelled_games(games, GROUPS, "Opening Round")
+    if opening:
+        pairs = "・".join(f"{ja(g['awaylabel'])} 対 {ja(g['homelabel'])}" for g in opening)
+        texts.append(f"1次ラウンドで中止になった試合があります（{pairs}）。同率のチーム同士の試合が"
+                     "中止で欠けたときは、大会規程 C11.3 により、そのラウンドの全試合での"
+                     "TQB → ER-TQB → 打率で並べています。")
+    short = sl.short_teams(games, GROUPS)
+    if short:
+        texts.append(f"{'・'.join(ja(t) for t in short)}が1次ラウンドを3試合しないまま終えました。"
+                     "大会規程 C12.2 a) により、1次ラウンドの順位は前年12月31日時点の WBSC 世界ランキングで"
+                     "決まります。下の表は試合結果からの計算なので、公式の順位と違うことがあります。")
+    if sl.cancelled_games(games, GROUPS, "Super Round", "Placement Round"):
+        texts.append("スーパーラウンドか順位決定ラウンドで中止になった試合があります。大会規程 C12.2 b) では、"
+                     "残りの試合を打ち切り、各組1位どうしで金メダル、2位どうしで銅メダルを争うことがあります。"
+                     "メダル戦の顔ぶれは WBSC の日程で確かめてください。")
+    if sl.cancelled_games(games, GROUPS, "Final", "Bronze"):
+        texts.append("決勝か3位決定戦が中止になりました。大会規程 C12.2 c) では、スーパーラウンドの勝敗 → "
+                     "直接対決 → C11.3 の順で決まります。")
+    return "".join(f'<p class="warn">{esc(text)}</p>' for text in texts)
+
+
 def standings_block(d: dict, root: str) -> str:
     """順位表。グループB（日本の組）を先に。スーパーラウンドが始まったらその表を上に。"""
-    first = sl.standings(d["games"], GROUPS, outs=d["outs"])
-    second = sl.second_round(d["games"], GROUPS, outs=d["outs"])
+    first = sl.standings(d["games"], GROUPS, outs=d["outs"], box=d["box"])
+    second = sl.second_round(d["games"], GROUPS, outs=d["outs"], box=d["box"])
     played = any(sl.is_final(g) and "Super Round" in str(g.get("gametypelabel"))
                  for g in d["games"])
-    parts = []
+    parts = [cancel_alerts(d["games"])]
     if second["super"] and (second["ready"] or played):
         parts.append('<div class="two">'
                      + stand_table(second["super"], "スーパーラウンド（持ち越し込み）", root, True)
@@ -835,9 +865,10 @@ def standings_block(d: dict, root: str) -> str:
     started = any(r["rank"] is not None for rows in first.values() for r in rows)
     note = ("試合前なので順位は「-」で、並びは組み合わせ表の順です。" if not started else
             "差はゲーム差です。")
-    parts.append(f'<p class="note">{note}同率の並べ方は WBSC のW杯共通の規程（2024年版）で'
-                 "計算しています。2026年大会の要項とは照らし合わせていないので、同率のときは WBSC の"
-                 '公式の順位も確かめてください。持ち越しの決まりは<a href="'
+    parts.append(f'<p class="note">{note}同率の並べ方は2026年大会の大会規程 C11.2 のとおりに'
+                 "計算しています。注記の「当該」は並んだチーム同士の試合、「全試合」はそのラウンドの全試合での"
+                 "数字です。コイントスで決まる同率や、ボックススコアがなくて計算できない同率もあるので、"
+                 '同率のときは WBSC の公式の順位も確かめてください。決め方と持ち越しは<a href="'
                  f'{root}format/">大会方式</a>に。</p>')
     return "".join(parts)
 
@@ -1700,13 +1731,40 @@ def japan_venue_text(d: dict) -> str:
 
 
 def format_rules() -> str:
-    """規定。大会要項で確かめていないものは「未確認」とだけ書く。"""
-    unknown = ("イニング数", "延長のタイブレーク", "コールドゲーム", "同率の順位の決め方")
+    """規定。2026年大会の大会規程（2026年6月3日版）と競技規則（2025-2026版）の App.1 から。"""
+    rules = ext(WBSC_RULES, "WBSC Official Rules of Baseball 2025-2026")
+    regs = ext(WBSC_REGS, "大会規程（2026年6月3日版）")
     return ("<ul>"
-            f"<li>球数制限：U-23W杯にはありません（"
-            f"{ext(WBSC_RULES, 'WBSC Official Rules of Baseball 2025-2026')} A1.8.4）。</li>"
-            + "".join(f"<li>{name}：未確認（大会要項で確認中）</li>" for name in unknown)
-            + "<li>同じ順位どうしの対戦（例：A組1位 対 B組1位）の先攻・後攻：大会前の技術会議の"
+            f"<li>イニング数：7回制です（{rules} App.1 A1.2）。</li>"
+            "<li>延長のタイブレーク：7回を終えて同点なら、8回から毎回、無死一・二塁で始めます。打順は"
+            "前の回の続きで、前の回に最後に打席に立った打者の次から打ち、その前の2人が二塁と一塁の"
+            "走者になります（例：7回を8番打者で終えたら、8回は9番から、二塁に7番・一塁に8番）。"
+            "この走者がかえった点は自責点になりません（A1.4.2.2）。</li>"
+            "<li>コールドゲーム：負けているチームが5回以上攻撃した時点で10点差以上なら、そこで試合終了です。"
+            "決勝には使わず、3位決定戦には使います（A1.4.1.2）。</li>"
+            "<li>雨などで止まった試合：審判は打ち切りを決める前に60〜90分待ちます。4回を終えた時点"
+            "（後攻がリードしているときは4回表を終えた時点）で正式試合として成立し、その前に止まれば"
+            "後日、止まった場面から再開します。成立後でも、同点のときと、回の途中で先攻が勝ち越したまま"
+            "止まったときは、止まった場面から再開します（A1.6.1.1〜A1.6.1.3、A1.6.1.6）。</li>"
+            f"<li>球数制限：U-23W杯にはありません（A1.8.4）。</li>"
+            "<li>同率の順位の決め方：各ラウンドの順位は、そのラウンドの全試合の勝敗で決めます。並んだときは"
+            f"次の順で比べます（{regs} C11.1・C11.2）。"
+            "<ol>"
+            "<li>当該チーム同士の勝敗。2チームなら直接対決の勝者が上。3チーム以上で一部だけ分かれたら、"
+            "残ったチームでもう一度ここから比べます。</li>"
+            "<li>当該チーム同士の試合での TQB（得点 ÷ 攻撃イニング − 失点 ÷ 守備イニング）。</li>"
+            "<li>当該チーム同士の試合での ER-TQB（自責点で同じ計算）。</li>"
+            "<li>当該チーム同士の試合でのチーム打率。</li>"
+            "<li>そのラウンドの全試合での TQB → ER-TQB → チーム打率（C11.3 の手順）。</li>"
+            "<li>コイントス。</li></ol></li>"
+            "<li>中止の試合があるとき：並んだチーム同士の試合がそろっていれば上と同じ順です。"
+            "中止で欠けていれば、1〜4を飛ばして、そのラウンドの全試合での TQB → ER-TQB → チーム打率 → "
+            "コイントスで比べます（C11.3）。1次ラウンドを3試合しないまま終えたチームがあれば、"
+            "1次ラウンドの順位は前年12月31日時点の WBSC 世界ランキングで決まります（C12.2 a)）。"
+            "スーパーラウンドと順位決定ラウンドが最後までできないときは、残りを打ち切り、各組1位どうしで"
+            "金メダル、2位どうしで銅メダルを争うことがあります（C12.2 b)）。決勝・3位決定戦ができなければ、"
+            "スーパーラウンドの勝敗 → 直接対決 → C11.3 の順で決まります（C12.2 c)）。</li>"
+            "<li>同じ順位どうしの対戦（例：A組1位 対 B組1位）の先攻・後攻：大会前の技術会議の"
             "コイントスで決まります（公式日程の注記）。</li></ul>")
 
 
@@ -1855,7 +1913,7 @@ def after_text(d: dict, japan: list[dict]) -> str:
         return done  # 順位決定ラウンドの後に日本の試合はない
     super_round = [g for g in games if round_of(g, "Super")]
     if super_round and all(sl.is_settled(g) for g in super_round):
-        rows = sl.second_round(games, GROUPS, outs=d["outs"])["super"]
+        rows = sl.second_round(games, GROUPS, outs=d["outs"], box=d["box"])["super"]
         rank = next((r["rank"] for r in rows if r["team"] == "Japan"), None)
         named = [t for g in medal for t in (g.get("awaylabel"), g.get("homelabel")) if t in JA]
         decided = medal and len(named) == 2 * len(medal) and "Japan" not in named
