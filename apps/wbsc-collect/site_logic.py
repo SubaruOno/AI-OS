@@ -1049,8 +1049,8 @@ def _fake(gid: str, away: str, away_runs: int, home: str, home_runs: int) -> dic
 
 
 def _selftest_rules(check: Check) -> None:
-    """規程 C11 の例（Scenario 2・3）と同じ形の同率を作って並べる。"""
-    print("\n== 同率の決め方（WBSC規程 C11 の例）")
+    """規程 C11.2 の例（Scenario 2・3・5）と同じ形の同率を作って並べる。"""
+    print("\n== 同率の決め方（WBSC規程 C11.2 の例）")
     # Scenario 2: A・B・C が1勝1敗で回り合う。B-A は A のサヨナラで6回1/3
     games = [{**_fake("s1", "B", 4, "A", 5), "runshome7": 1},
              _fake("s2", "C", 2, "A", 0), _fake("s3", "B", 6, "C", 2)]
@@ -1119,15 +1119,14 @@ def _selftest_cancel(check: Check) -> None:
     check(rows["A"]["rank"] == 2 and rows["B"]["rank"] == 3
           and rows["A"]["note"] == "同率2チーム・当該の対戦は中止・全試合TQB +0.0714",
           f"同率の2チームの直接対決が中止: 規程 C11.3 で全試合の TQB で A が上「{rows['A']['note']}」")
-    # A・B・C の3チームが並び、A-B は行われて A の勝ち、A-C は中止。当該の勝敗（A が上）は使わず、
-    # 全試合の TQB で C・B・A
+    # A・B・C が1勝1敗で並び、A-B（A の勝ち）と B-C（B の勝ち）は行われ、A-C は中止。
+    # 当該の勝敗なら A が上だが、それは使わず全試合の TQB で C +0.2857・B +0.2143・A 0
     trio = [_fake("1", "A", 2, "B", 1), {**_fake("2", "A", 0, "C", 0), **cancel},
-            _fake("3", "C", 9, "B", 1), _fake("4", "E", 5, "A", 4),
-            _fake("5", "B", 5, "E", 1), _fake("6", "E", 2, "C", 1)]
-    rows = standings(trio, {t: "X" for t in "ABCE"})["X"]
+            _fake("3", "B", 5, "C", 1), _fake("4", "E", 5, "A", 4), _fake("5", "C", 9, "F", 1)]
+    rows = standings(trio, {t: "X" for t in "ABCEF"})["X"]
     print("      " + " / ".join(f"{r['rank']}位 {r['team']} {r['w']}-{r['l']} {r['note']}"
                                 for r in rows))
-    check([r["team"] for r in rows[:3]] == ["C", "B", "A"] and rows[2]["rank"] == 3,
+    check([(r["team"], r["rank"]) for r in rows[1:4]] == [("C", 2), ("B", 3), ("A", 4)],
           "3チームのうち1組の対戦が中止なら、当該の勝敗を使わず全試合の TQB で並べる（C11.3 b)・c)）")
     # 1チームが3試合に届かないまま1次ラウンドが終わったら、順位は世界ランキング（C12.2 a)）
     team = target["homelabel"]
