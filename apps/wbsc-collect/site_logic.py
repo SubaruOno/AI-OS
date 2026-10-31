@@ -7,10 +7,11 @@
 
     python3 site_logic.py --selftest   # 2022年・2024年の公式順位と照らし合わせる
 
-同率の決め方は WBSC Baseball World Cups Tournament Regulations（2024年6月14日改訂）
-の C11 による。12チームの大会方式と持ち越しは同じ資料の「12-Team Format」。
-https://static.wbsc.org/uploads/federations/0/cms/documents/84c93467-7438-c6b9-5a72-6d2419e95abf.pdf
-2026年大会の要項そのものとは照らし合わせていない。
+同率の決め方と中止の試合の扱いは、2026年大会の WBSC Baseball World Cups Tournament
+Regulations（2026年6月3日改訂）の C11.2・C11.3・C12.2 による。12チームの大会方式と持ち越しは
+同じ資料の B7.2（12-Team Format）。WBSCの日程ページの Documents 欄から開ける。
+https://drive.google.com/file/d/1S9WZKCeWYptEVjkyZCAMtrPwMsuqIxfb/view
+文字起こしは ~/野球/U23ワールドカップ2026/01_大会情報/WBSC_WC大会規程_20260603版_文字起こし.txt
 """
 
 from __future__ import annotations
@@ -162,14 +163,12 @@ def outs_to_ip(outs: int) -> str:
     return f"{outs // 3}.{outs % 3}"
 
 
-def load_outs(raw_dir) -> dict[str, tuple[int, int]]:
-    """raw の各試合から、両チームが攻撃したアウト数を正確に取る。
+def _raw_totals(raw_dir):
+    """raw の終わった試合ごとに (試合ID, 先攻の totals, 後攻の totals) を返す。
 
-    戻り値は {試合ID: (先攻の攻撃アウト数, 後攻の攻撃アウト数)}。
-    boxScore の totals にある守備側の投球回が、そのまま相手の攻撃イニングになる。
-    standings() と second_round() の outs に渡すと、サヨナラの回の端数が正確になる。
+    totals は boxScore の両チームの合計（打撃の ab・h と、投手の pitch_ip・pitch_er など）。
+    読めない試合と、両チームの totals がそろわない試合は飛ばす。
     """
-    out: dict[str, tuple[int, int]] = {}
     for path in sorted(Path(raw_dir).glob("*.json")):
         try:
             game = json.loads(path.read_text(encoding="utf-8"))
@@ -178,12 +177,44 @@ def load_outs(raw_dir) -> dict[str, tuple[int, int]]:
         info = game.get("gameData") or {}
         totals = (game.get("boxScore") or {}).get("totals") or {}
         home, away = str(info.get("homeid")), str(info.get("awayid"))
-        if not is_final(info) or home not in totals or away not in totals:
-            continue
-        away_bat = ip_to_outs(totals[home].get("pitch_ip"))
-        home_bat = ip_to_outs(totals[away].get("pitch_ip"))
+        if is_final(info) and home in totals and away in totals:
+            yield str(info.get("id") or path.stem), totals[away], totals[home]
+
+
+def load_outs(raw_dir) -> dict[str, tuple[int, int]]:
+    """raw の各試合から、両チームが攻撃したアウト数を正確に取る。
+
+    戻り値は {試合ID: (先攻の攻撃アウト数, 後攻の攻撃アウト数)}。
+    boxScore の totals にある守備側の投球回が、そのまま相手の攻撃イニングになる。
+    standings() と second_round() の outs に渡すと、サヨナラの回の端数が正確になる。
+    """
+    out: dict[str, tuple[int, int]] = {}
+    for gid, away, home in _raw_totals(raw_dir):
+        away_bat = ip_to_outs(home.get("pitch_ip"))
+        home_bat = ip_to_outs(away.get("pitch_ip"))
         if away_bat and home_bat:
-            out[str(info.get("id") or path.stem)] = (away_bat, home_bat)
+            out[gid] = (away_bat, home_bat)
+    return out
+
+
+def load_box(raw_dir) -> dict[str, dict]:
+    """raw の各試合から、ER-TQB と打率に使う自責点・打数・安打をチームごとに取る。
+
+    戻り値は {試合ID: {"er": (先攻が取った自責点, 後攻が取った自責点),
+    "ab": (先攻の打数, 後攻の打数), "h": (先攻の安打, 後攻の安打)}}。
+    先攻が取った自責点は、後攻の投手の自責点の合計（後攻の totals の pitch_er）。
+    2022年・2024年の100チーム分で、totals は投手と打者の個人の合計と一致し、
+    個人の行の pitch_teamuer（チームとしての非自責点と思われる欄）はすべて0だった。
+    standings() と second_round() の box に渡す。渡さないと ER-TQB と打率は比べない。
+    """
+    out: dict[str, dict] = {}
+    for gid, away, home in _raw_totals(raw_dir):
+        try:
+            out[gid] = {"er": (int(home["pitch_er"]), int(away["pitch_er"])),
+                        "ab": (int(away["ab"]), int(home["ab"])),
+                        "h": (int(away["h"]), int(home["h"]))}
+        except (KeyError, TypeError, ValueError):
+            continue
     return out
 
 
@@ -264,21 +295,30 @@ def _label_match(game: dict, label: str) -> bool:
     return label in str(game.get("gametypelabel") or "")
 
 
-def _tally(games: list[dict], teams: list[str], outs: dict | None) -> dict[str, dict]:
-    """チームごとに試合数・勝敗・得失点・攻撃と守備のアウト数を数える。"""
+def _tally(games: list[dict], teams: list[str], outs: dict | None,
+           box: dict | None = None) -> dict[str, dict]:
+    """チームごとに試合数・勝敗・得失点・攻撃と守備のアウト数・自責点・打数・安打を数える。
+
+    teams に入っているチームの側だけを数える（相手が teams の外の試合も、その側は数える）。
+    box は load_box() の戻り値。その試合がなければ nobox に数える。
+    """
     # est は、攻撃と守備のアウト数を推定で数えた試合の数（batting_outs が確かでない試合）
-    table = {t: {"g": 0, "w": 0, "l": 0, "t": 0, "rs": 0, "ra": 0, "ob": 0, "of": 0, "est": 0}
+    table = {t: {"g": 0, "w": 0, "l": 0, "t": 0, "rs": 0, "ra": 0, "ob": 0, "of": 0, "est": 0,
+                 "ers": 0, "era": 0, "ab": 0, "h": 0, "nobox": 0}
              for t in teams}
     for game in games:
         home, away = game.get("homelabel"), game.get("awaylabel")
-        if home not in table or away not in table or not known_runs(game):
+        if (home not in table and away not in table) or not known_runs(game):
             continue  # 点数が入っていない試合は、0-0の引き分けと数えない
         away_runs, home_runs = runs(game)
         away_outs, home_outs, sure = batting_outs(game, outs)
-        for team, mine, theirs, bat, field in (
-            (away, away_runs, home_runs, away_outs, home_outs),
-            (home, home_runs, away_runs, home_outs, away_outs),
+        stats = (box or {}).get(str(game.get("id")))
+        for side, team, mine, theirs, bat, field in (
+            (0, away, away_runs, home_runs, away_outs, home_outs),
+            (1, home, home_runs, away_runs, home_outs, away_outs),
         ):
+            if team not in table:
+                continue
             row = table[team]
             row["g"] += 1
             row["w" if mine > theirs else "l" if mine < theirs else "t"] += 1
@@ -287,6 +327,13 @@ def _tally(games: list[dict], teams: list[str], outs: dict | None) -> dict[str, 
             row["ob"] += bat
             row["of"] += field
             row["est"] += not sure
+            if stats:
+                row["ers"] += stats["er"][side]
+                row["era"] += stats["er"][1 - side]
+                row["ab"] += stats["ab"][side]
+                row["h"] += stats["h"][side]
+            else:
+                row["nobox"] += 1
     return table
 
 
@@ -303,6 +350,26 @@ def _tqb(row: dict) -> Fraction | None:
     return Fraction(3 * row["rs"], row["ob"]) - Fraction(3 * row["ra"], row["of"])
 
 
+def _er_tqb(row: dict) -> Fraction | None:
+    """ER-TQB = 取った自責点 ÷ 攻撃イニング − 取られた自責点 ÷ 守備イニング。
+    ボックススコアのない試合が1つでもあれば None。"""
+    if row["nobox"] or not row["ob"] or not row["of"]:
+        return None
+    return Fraction(3 * row["ers"], row["ob"]) - Fraction(3 * row["era"], row["of"])
+
+
+def _avg(row: dict) -> Fraction | None:
+    """チーム打率 = 安打 ÷ 打数。ボックススコアのない試合が1つでもあれば None。"""
+    if row["nobox"] or not row["ab"]:
+        return None
+    return Fraction(row["h"], row["ab"])
+
+
+# 同率を分ける数字。規程 C11.2 b)〜d)（当該チーム同士の試合）と C11.3 c)〜e)（ラウンドの全試合）で
+# 同じ順に使う
+MEASURES = (("TQB", _tqb), ("ER-TQB", _er_tqb), ("打率", _avg))
+
+
 def _bands(teams: list[str], key) -> list[list[str]]:
     """key の値が大きい順に並べ、同じ値どうしを1つの組にまとめる。"""
     ordered = sorted(teams, key=key, reverse=True)
@@ -315,40 +382,47 @@ def _bands(teams: list[str], key) -> list[list[str]]:
     return bands
 
 
-def _break_tie(members: list[str], games: list[dict], outs: dict | None,
+def _break_tie(members: list[str], games: list[dict], outs: dict | None, box: dict | None,
                notes: dict[str, str], cancelled: frozenset = frozenset()) -> list[list[str]]:
-    """勝率が並んだチームを、WBSCの C11 の順に並べる。分けきれない組はまとめて返す。
+    """勝率が並んだチームを、規程 C11.2 の順に並べる。分けきれない組はまとめて返す。
 
+    games はその表（組やスーパーラウンド）で数える終わった試合のすべて。
     1. 当該チーム同士の勝敗（2チームなら直接対決）。3チーム以上で一部だけ分かれたら、
-       残った組でもう一度 1 からやり直す（規程の例 Scenario 3 と同じ扱い）。
-    2. 当該チーム同士の試合での TQB。3チーム以上はこれで全員を上から並べる。
-    3. ER-TQB と打率は games.json から出せないので計算しない。そこまで並んだら同率のまま。
+       残った組でもう一度 1 からやり直す（規程の例 Scenario 3・4 と同じ扱い）。
+    2〜4. 当該チーム同士の試合での TQB → ER-TQB → 打率。どれも並んだチームを上から全員並べ、
+       同じ値で残ったチームだけを次の数字で比べる。1 には戻らない（規程の「分けられなかった
+       基準はもう使わない」の読み）。数える試合は、2 に入ったときの当該チーム同士の試合のまま。
+    5. C11.3 の手順。当該チーム同士の試合は 1〜4 で使い切っているので、C11.3 c)〜e) の
+       ラウンドの全試合での TQB → ER-TQB → 打率になる。
+    6. それでも並べばコイントス。計算では決めず、同率のまま注記に出す。
+    ER-TQB と打率は box（load_box）から数える。ボックススコアのない試合が混ざればそこで止め、
+    同率のまま注記に「計算できない」と出す。
     当該チーム同士の対戦が残っているうち（大会の途中）は決めず、同率のままにする。
-    cancelled は中止になった組（frozenset の集まり）。もう行われないので「残っている」とは
-    見なさず、行われた試合だけで比べる（規程に定めがないので、この扱いは推測）。
+    cancelled は中止になった組（frozenset の集まり）。当該チーム同士の試合が中止で欠けたら、
+    規程 C11.3 b) の「共通の試合がない・数がそろわない」に当たるので、1〜4 を飛ばして
+    C11.3 c)〜e)（ラウンドの全試合での TQB → ER-TQB → 打率）で比べる。
     """
     if len(members) < 2:
         return [members]
     between = [g for g in games
                if g.get("homelabel") in members and g.get("awaylabel") in members]
     played = {frozenset((g["homelabel"], g["awaylabel"])) for g in between}
-    if any(frozenset(pair) not in played and frozenset(pair) not in cancelled
-           for pair in combinations(members, 2)):
+    pairs = [frozenset(pair) for pair in combinations(members, 2)]
+    if any(pair not in played and pair not in cancelled for pair in pairs):
         for team in members:
             notes[team] = "同率（当該チームの対戦が残っている）"
         return [members]
-    if not between:
-        for team in members:
-            notes[team] = "同率（当該チーム同士の試合は中止）"
-        return [members]
-    table = _tally(between, members, outs)
+    whole = ("全試合", _tally(games, members, outs, box))
+    if any(pair not in played for pair in pairs):
+        return _split_by_measures(members, [whole], notes, "当該の対戦は中止・")
+    table = _tally(between, members, outs, box)
     bands = _bands(members, lambda t: _pct(table[t]) or Fraction(0))
     if len(bands) > 1:
-        return _split_by_record(members, bands, table, games, outs, notes, cancelled)
-    return _split_by_tqb(members, table, notes)
+        return _split_by_record(members, bands, table, games, outs, box, notes, cancelled)
+    return _split_by_measures(members, [("当該", table), whole], notes)
 
 
-def _split_by_record(members, bands, table, games, outs, notes,
+def _split_by_record(members, bands, table, games, outs, box, notes,
                      cancelled=frozenset()) -> list[list[str]]:
     tiers: list[list[str]] = []
     for band in bands:
@@ -358,23 +432,65 @@ def _split_by_record(members, bands, table, games, outs, notes,
                 notes[team] = "直接対決で勝ち" if row["w"] > row["l"] else "直接対決で負け"
             else:
                 notes[team] = f"同率{len(members)}チームの当該対戦 {row['w']}勝{row['l']}敗"
-        tiers.extend(_break_tie(band, games, outs, notes, cancelled) if len(band) > 1 else [band])
+        tiers.extend(_break_tie(band, games, outs, box, notes, cancelled)
+                     if len(band) > 1 else [band])
     return tiers
 
 
-def _split_by_tqb(members, table, notes) -> list[list[str]]:
-    tqb = {t: _tqb(table[t]) for t in members}
-    tiers = _bands(members, lambda t: tqb[t] if tqb[t] is not None else Fraction(-999))
-    guessed = any(table[t]["est"] for t in members)
-    for tier in tiers:
+def _fmt_measure(name: str, value: Fraction) -> str:
+    return _fmt_pct(value) if name == "打率" else f"{float(value):+.4f}"
+
+
+def _measure_tiers(tier: list[str], steps: list, trail: dict) -> list[tuple[list[str], str]]:
+    """steps（[(見出し, 名前, 計算, 表), ...]）の順に tier を分ける。
+
+    戻り値は [(組, 止まった理由), ...]。理由は、1チームに分かれたら ""、最後まで並んだら
+    "coin"、計算できない数字で止まったらその数字の見出しと名前（"当該ER-TQB" など）。
+    trail には、チームごとに比べた数字を「当該TQB +0.1234」の形で足していく。
+    """
+    if len(tier) == 1:
+        return [(tier, "")]
+    if not steps:
+        return [(tier, "coin")]
+    label, name, measure, table = steps[0]
+    values = {t: measure(table[t]) for t in tier}
+    if any(value is None for value in values.values()):
+        return [(tier, label + name)]
+    for team in tier:
+        trail[team].append(f"{label}{name} {_fmt_measure(name, values[team])}")
+    out: list[tuple[list[str], str]] = []
+    for band in _bands(tier, lambda t: values[t]):
+        out.extend(_measure_tiers(band, steps[1:], trail))
+    return out
+
+
+def _split_by_measures(members, stages, notes, lead: str = "") -> list[list[str]]:
+    """TQB → ER-TQB → 打率の順に、stages（[(見出し, _tally の表), ...]）の表で並べる。
+
+    C11.2 では [("当該", 当該チーム同士の表), ("全試合", ラウンドの全試合の表)]、
+    当該の対戦が中止の C11.3 では [("全試合", ...)] だけを渡す。lead は注記の頭に足す語。
+    """
+    steps = [(label, name, measure, table)
+             for label, table in stages for name, measure in MEASURES]
+    trail: dict[str, list[str]] = {t: [] for t in members}
+    tiers = _measure_tiers(members, steps, trail)
+    used = {item.split()[0] for t in members for item in trail[t]}
+    guessed = any(table[t]["est"] for label, table in stages for t in members
+                  if any(u.startswith(label) for u in used))
+    for tier, stopped in tiers:
+        if stopped == "coin":
+            end = "。数字がすべて同じなので、規程ではコイントス"
+        elif stopped:
+            # TQB が出せないのはイニングが数えられないときだけ。ER-TQB と打率はボックススコアがないとき
+            plain_tqb = stopped.endswith("TQB") and not stopped.endswith("ER-TQB")
+            why = "" if plain_tqb else "ボックススコアのない試合があり、"
+            end = f"。{why}{stopped}から先は計算できない"
+        else:
+            end = ""
+        remark = "（イニングの一部は推定）" if guessed else ""
         for team in tier:
-            value = tqb[team]
-            shown = f"{float(value):+.4f}" if value is not None else "-"
-            remarks = (["TQBも同じ。ER-TQB以降は未計算"] if len(tier) > 1 else []) \
-                + (["イニングの一部は推定"] if guessed else [])
-            extra = f"（{'。'.join(remarks)}）" if remarks else ""
-            notes[team] = f"同率{len(members)}チーム・当該TQB {shown}{extra}"
-    return tiers
+            notes[team] = f"同率{len(members)}チーム・{lead}{'・'.join(trail[team])}{end}{remark}"
+    return [tier for tier, _ in tiers]
 
 
 def _fmt_pct(value: Fraction | None) -> str:
@@ -383,19 +499,19 @@ def _fmt_pct(value: Fraction | None) -> str:
     return f"{float(value):.3f}".lstrip("0") if value < 1 else "1.000"
 
 
-def _rows(teams: list[str], games: list[dict], outs: dict | None,
+def _rows(teams: list[str], games: list[dict], outs: dict | None, box: dict | None = None,
           cancelled: frozenset = frozenset()) -> list[dict]:
     """1つの表（組）の順位を決めて、行の一覧にする。試合のないチームは順位なしで最後。
 
     games は終わった試合だけ。cancelled は中止になった組（_cancelled_pairs）。
     """
-    table = _tally(games, teams, outs)
+    table = _tally(games, teams, outs, box)
     played = [t for t in teams if table[t]["g"]]
     notes: dict[str, str] = {}
     tiers: list[list[str]] = []
     for band in _bands(played, lambda t: _pct(table[t]) if _pct(table[t]) is not None
                        else Fraction(1, 2)):
-        for tier in _break_tie(band, games, outs, notes, cancelled):
+        for tier in _break_tie(band, games, outs, box, notes, cancelled):
             # 同率のまま残った組は、首位とのゲーム差が小さい順に見せる
             tiers.append(sorted(tier, key=lambda t: table[t]["l"] - table[t]["w"]))
     out: list[dict] = []
@@ -440,7 +556,7 @@ def _cancelled_pairs(games: list[dict], label: str) -> frozenset:
 
 def standings(games: list[dict], groups: dict[str, str],
               round_label: str = "Opening Round",
-              outs: dict | None = None) -> dict[str, list[dict]]:
+              outs: dict | None = None, box: dict | None = None) -> dict[str, list[dict]]:
     """組ごとの順位表。{"A": [行...], "B": [行...]} を返す。
 
     groups は {チーム名（WBSCの英語表記）: "A" | "B"}。この順が試合前の並び順になる。
@@ -448,6 +564,7 @@ def standings(games: list[dict], groups: dict[str, str],
     行: team, rank（試合がなければ None）, g, w, l, t, pct, gb, rs, ra, tqb, note。
     tqb はその組の全試合での値。同率を分けた理由は note に書く（当該チームでの TQB など）。
     outs は load_outs() の戻り値。省くとサヨナラの回の端数が近似になる。
+    box は load_box() の戻り値。省くと同率の比べ方が TQB で止まる。
     """
     counted = [g for g in games
                if is_final(g) and _label_match(g, round_label)
@@ -458,8 +575,40 @@ def standings(games: list[dict], groups: dict[str, str],
     for group in sorted(set(groups.values())):
         teams = [t for t in groups if groups[t] == group]
         mine = [g for g in counted if groups[g["homelabel"]] == group]
-        out[group] = _rows(teams, mine, outs, cancelled)
+        out[group] = _rows(teams, mine, outs, box, cancelled)
     return out
+
+
+# 規程 C12.2 a)：1次ラウンドでこの数の試合をしていないチームがあれば、計算ではなく世界ランキングで決まる
+MIN_OPENING_GAMES = 3
+
+
+def _opening(games: list[dict], groups: dict[str, str]) -> list[dict]:
+    return [g for g in games if _label_match(g, "Opening Round")
+            and g.get("homelabel") in groups and g.get("awaylabel") in groups]
+
+
+def short_teams(games: list[dict], groups: dict[str, str]) -> list[str]:
+    """1次ラウンドが中止込みで終わったのに、3試合に届かなかったチーム（規程 C12.2 a)）。
+
+    1次ラウンドに残った試合（試合前・延期など）があるうちは、まだ届くかもしれないので空を返す。
+    このチームがあると、1次ラウンドの順位は前年12月31日時点の WBSC 世界ランキングで決まる。
+    """
+    opening = _opening(games, groups)
+    if not opening or not all(is_settled(g) for g in opening):
+        return []
+    played = {t: 0 for t in groups}
+    for game in opening:
+        if is_final(game) and known_runs(game):
+            for team in (game["homelabel"], game["awaylabel"]):
+                played[team] += 1
+    return [t for t in groups if played[t] < MIN_OPENING_GAMES]
+
+
+def cancelled_games(games: list[dict], groups: dict[str, str], *labels: str) -> list[dict]:
+    """labels のどれかのラウンドで中止になった試合（両チームとも groups にいる試合だけ）。"""
+    return [g for g in games if is_cancelled(g) and any(_label_match(g, x) for x in labels)
+            and g.get("homelabel") in groups and g.get("awaylabel") in groups]
 
 
 # ---------------------------------------------------------------- 第2ラウンド
@@ -492,7 +641,7 @@ def _split_first_round(first: dict[str, list[dict]]) -> tuple[list, list, bool]:
 
 
 def _second_table(teams: list[str], games: list[dict], label: str,
-                  groups: dict, outs: dict | None) -> list[dict]:
+                  groups: dict, outs: dict | None, box: dict | None) -> list[dict]:
     """当該チーム同士の1次ラウンドの結果を持ち越し、第2ラウンドの試合を足して並べる。"""
     members = set(teams)
     carried = [g for g in games
@@ -502,7 +651,7 @@ def _second_table(teams: list[str], games: list[dict], label: str,
              if is_final(g) and _label_match(g, label)
              and g.get("homelabel") in members and g.get("awaylabel") in members]
     cancelled = _cancelled_pairs(games, "Opening Round") | _cancelled_pairs(games, label)
-    rows = _rows(teams, carried + added, outs, cancelled)
+    rows = _rows(teams, carried + added, outs, box, cancelled)
     carry = _tally(carried, teams, outs)
     for row in rows:
         mine = carry[row["team"]]
@@ -512,25 +661,26 @@ def _second_table(teams: list[str], games: list[dict], label: str,
 
 
 def second_round(games: list[dict], groups: dict[str, str],
-                 outs: dict | None = None) -> dict:
+                 outs: dict | None = None, box: dict | None = None) -> dict:
     """スーパーラウンドと順位決定ラウンドの順位（持ち越し込み）。
 
     戻り値は {"ready": bool, "super": [行...], "placement": [行...]}。
     1次ラウンドの各組の上位3チームがスーパーラウンド、下位3チームが順位決定ラウンド。
-    1次ラウンドで当該チーム同士が戦った2試合を持ち越す（12-Team Format の規程）。
+    1次ラウンドで当該チーム同士が戦った2試合を持ち越す（規程 B7.2 b)・c)）。
     1次ラウンドが終わったあと、日程に第2ラウンドの組み合わせが実名で載っていれば、
     そちらの顔ぶれを正とする（3位と4位が同率のまま計算で分けられない場合もこれで決まる）。
     ready は顔ぶれが決まったかどうか。1次ラウンドの途中は False で、
     「今の順位のまま終わったら」の暫定の表を返す（全チームが1試合以上してから）。
     中止（CANC など）のまま日程に残った試合は、もう行われないので「終わった」側に数える。
+    3試合に届かないチームがいれば（short_teams）、1次ラウンドの順位は世界ランキングで決まる
+    （規程 C12.2 a)）ので、日程に実名が載るまで ready にしない。
     行は standings() と同じ形に、group（1次ラウンドの組）と carry（持ち越しの勝敗）を足したもの。
     """
-    first = standings(games, groups, "Opening Round", outs)
+    first = standings(games, groups, "Opening Round", outs, box)
     top, bottom, clear = _split_first_round(first)
-    opening = [g for g in games if _label_match(g, "Opening Round")
-               and g.get("homelabel") in groups and g.get("awaylabel") in groups]
+    opening = _opening(games, groups)
     done = bool(opening) and all(is_settled(g) for g in opening)
-    ready = done and clear
+    ready = done and clear and not short_teams(games, groups)
     super_sched = _scheduled(games, "Super Round", groups)
     place_sched = _scheduled(games, "Placement Round", groups)
     if done and len(super_sched) == 6 and len(place_sched) == 6:
@@ -539,8 +689,8 @@ def second_round(games: list[dict], groups: dict[str, str],
         return {"ready": False, "super": [], "placement": []}
     return {
         "ready": ready,
-        "super": _second_table(top, games, "Super Round", groups, outs),
-        "placement": _second_table(bottom, games, "Placement Round", groups, outs),
+        "super": _second_table(top, games, "Super Round", groups, outs, box),
+        "placement": _second_table(bottom, games, "Placement Round", groups, outs, box),
     }
 
 
@@ -819,16 +969,18 @@ def _compare(rows: list[dict], official: dict[str, int], label: str, check: Chec
 def _selftest_event(key: str, check: Check) -> None:
     games, folder = _event(key)
     info, groups = _teams_info(games), _groups(games)
-    outs = load_outs(folder / "raw")
-    print(f"\n== {key}（試合 {len(games)}件、raw のイニング {len(outs)}試合分）")
+    outs, box = load_outs(folder / "raw"), load_box(folder / "raw")
+    print(f"\n== {key}（試合 {len(games)}件、raw のイニング {len(outs)}試合分・"
+          f"自責点と打数 {len(box)}試合分）")
     _check_outs(games, outs, check, key)
-    for use, title in ((outs, "raw のアウト数で端数も正確に"), (None, "games.json だけで近似")):
+    for use, stats, title in ((outs, box, "raw のアウト数・自責点・打数も使う"),
+                              (None, None, "games.json だけで近似")):
         print(f"  -- 1次ラウンド：{title}")
-        for group, rows in standings(games, groups, outs=use).items():
+        for group, rows in standings(games, groups, outs=use, box=stats).items():
             official = {t: int(info[t]["groupstandingsadmin"]) for t in groups
                         if groups[t] == group}
             _compare(rows, official, f"{key} 1次R 組{group}", check)
-    second = second_round(games, groups, outs)
+    second = second_round(games, groups, outs, box)
     check(second["ready"], f"{key} 第2ラウンドの顔ぶれが決まっている（ready）")
     for part, label in (("super", "スーパーR"), ("placement", "順位決定R")):
         print(f"  -- {label}：持ち越し込み")
@@ -839,17 +991,17 @@ def _selftest_event(key: str, check: Check) -> None:
 def _selftest_netherlands(check: Check) -> None:
     """2024年B組のオランダとチャイニーズタイペイ（どちらも2勝3敗）。"""
     games, folder = _event("u23-wc-2024")
-    groups, outs = _groups(games), load_outs(folder / "raw")
+    groups, outs, box = _groups(games), load_outs(folder / "raw"), load_box(folder / "raw")
     print("\n== 2024年 オランダとチャイニーズタイペイ")
     duel = [g for g in games if {g["homelabel"], g["awaylabel"]}
             == {"Netherlands", "Chinese Taipei"}]
     for game in duel:
         print(f"      直接対決 {game['gametypelabel']}: {game['awaylabel']} {game['awayruns']}"
               f" - {game['homeruns']} {game['homelabel']}")
-    rank = {r["team"]: r for r in standings(games, groups, outs=outs)["B"]}
+    rank = {r["team"]: r for r in standings(games, groups, outs=outs, box=box)["B"]}
     check(rank["Netherlands"]["rank"] == 4 and rank["Chinese Taipei"]["rank"] == 5,
           "1次R B組 オランダ4位・チャイニーズタイペイ5位（2勝3敗で並び、直接対決でオランダ）")
-    place = {r["team"]: r for r in second_round(games, groups, outs)["placement"]}
+    place = {r["team"]: r for r in second_round(games, groups, outs, box)["placement"]}
     check(place["Netherlands"]["rank"] == 1 and place["Chinese Taipei"]["rank"] == 2,
           "順位決定R オランダ1位（大会7位）・チャイニーズタイペイ2位（大会8位）")
 
@@ -918,6 +1070,29 @@ def _selftest_rules(check: Check) -> None:
     print("      " + " / ".join(f"{r['rank']}位 {r['team']} {r['w']}-{r['l']}" for r in rows))
     check([r["team"] for r in rows[1:4]] == ["C", "E", "D"],
           "Scenario 3: 3チームが2勝2敗でも、当該対戦の勝敗で C・E・D（TQB は使わない）")
+    # Scenario 5: A・B・C が1勝1敗で回り合い、3試合とも7-4（勝った側が先攻で、両チーム7回まで攻撃）。
+    # 得点では TQB が3チームとも0。自責点は A-B 3-4、B-C 5-2、C-A 5-1
+    games = [_fake("e1", "A", 7, "B", 4), _fake("e2", "B", 7, "C", 4), _fake("e3", "C", 7, "A", 4)]
+    box = {"e1": {"er": (3, 4), "ab": (30, 30), "h": (10, 6)},
+           "e2": {"er": (5, 2), "ab": (30, 30), "h": (9, 7)},
+           "e3": {"er": (5, 1), "ab": (30, 30), "h": (8, 8)}}
+    three = {"A": "X", "B": "X", "C": "X"}
+    rows = standings(games, three, box=box)["X"]
+    print("      " + " / ".join(f"{r['rank']}位 {r['team']} {r['note']}" for r in rows))
+    check([(r["team"], r["rank"]) for r in rows] == [("B", 1), ("C", 2), ("A", 3)]
+          and rows[0]["note"].endswith("当該ER-TQB +0.2857"),
+          "Scenario 5: TQB が3チームとも0なら ER-TQB で B（+0.2857）・C・A（規程の答えと同じ）")
+    # 自責点も得点と同じにすると ER-TQB も0で並び、打率 A .300・B .250・C .250 で A が上。
+    # B と C は打率も全試合の数字も同じなので、規程ではコイントス
+    even = {gid: {**stats, "er": (7, 4)} for gid, stats in box.items()}
+    rows = standings(games, three, box=even)["X"]
+    print("      " + " / ".join(f"{r['rank']}位 {r['team']} {r['note']}" for r in rows))
+    check([r["rank"] for r in rows] == [1, 2, 2] and rows[0]["team"] == "A"
+          and "当該打率 .300" in rows[0]["note"] and "コイントス" in rows[1]["note"],
+          "ER-TQB も並べば当該チーム同士の打率で A、B と C は最後まで並ぶので同率のまま「コイントス」")
+    rows = standings(games, three)["X"]
+    check([r["rank"] for r in rows] == [1, 1, 1] and "計算できない" in rows[0]["note"],
+          f"ボックススコアがなければ ER-TQB で止めて同率のまま（{rows[0]['note']}）")
 
 
 def _selftest_cancel(check: Check) -> None:
@@ -936,13 +1111,34 @@ def _selftest_cancel(check: Check) -> None:
     check(not second_round([{**g, **cancel, "gamestatustext": "PPD"} if g is target else g
                             for g in games], groups, outs)["ready"],
           "延期（PPD）はあとで行われるので、まだ決まらない")
-    tied = [_fake("1", "A", 5, "C", 1), _fake("2", "E", 5, "A", 1),
+    # A と B が1勝1敗で並び、直接対決は中止。全試合の得失点は A 7-6、B 6-6
+    tied = [_fake("1", "A", 6, "C", 1), _fake("2", "E", 5, "A", 1),
             _fake("3", "B", 5, "C", 1), _fake("4", "E", 5, "B", 1),
             {**_fake("5", "A", 0, "B", 0), **cancel}]
     rows = {r["team"]: r for r in standings(tied, {t: "X" for t in "ABCE"})["X"]}
-    check(rows["A"]["rank"] == rows["B"]["rank"] == 2
-          and rows["A"]["note"] == "同率（当該チーム同士の試合は中止）",
-          f"同率の2チームの直接対決が中止: 同率のまま「{rows['A']['note']}」")
+    check(rows["A"]["rank"] == 2 and rows["B"]["rank"] == 3
+          and rows["A"]["note"] == "同率2チーム・当該の対戦は中止・全試合TQB +0.0714",
+          f"同率の2チームの直接対決が中止: 規程 C11.3 で全試合の TQB で A が上「{rows['A']['note']}」")
+    # A・B・C の3チームが並び、A-B は行われて A の勝ち、A-C は中止。当該の勝敗（A が上）は使わず、
+    # 全試合の TQB で C・B・A
+    trio = [_fake("1", "A", 2, "B", 1), {**_fake("2", "A", 0, "C", 0), **cancel},
+            _fake("3", "C", 9, "B", 1), _fake("4", "E", 5, "A", 4),
+            _fake("5", "B", 5, "E", 1), _fake("6", "E", 2, "C", 1)]
+    rows = standings(trio, {t: "X" for t in "ABCE"})["X"]
+    print("      " + " / ".join(f"{r['rank']}位 {r['team']} {r['w']}-{r['l']} {r['note']}"
+                                for r in rows))
+    check([r["team"] for r in rows[:3]] == ["C", "B", "A"] and rows[2]["rank"] == 3,
+          "3チームのうち1組の対戦が中止なら、当該の勝敗を使わず全試合の TQB で並べる（C11.3 b)・c)）")
+    # 1チームが3試合に届かないまま1次ラウンドが終わったら、順位は世界ランキング（C12.2 a)）
+    team = target["homelabel"]
+    mine = [g for g in games if g["gametypelabel"] == "Opening Round" and team in
+            (g["homelabel"], g["awaylabel"])][:3]
+    short = [dict(g, **cancel) if g in mine else g for g in games
+             if g["gametypelabel"] == "Opening Round"]
+    check(short_teams(short, groups) == [team] and not second_round(short, groups, outs)["ready"],
+          f"{team} の3試合が中止で2試合しかしていなければ、計算では顔ぶれを決めない（C12.2 a)）")
+    check(not short_teams([g for g in changed if g["gametypelabel"] == "Opening Round"], groups),
+          "1試合の中止だけなら、どのチームも3試合以上していて計算で決める")
 
 
 def _selftest_states(check: Check) -> None:
