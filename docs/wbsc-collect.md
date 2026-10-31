@@ -616,7 +616,7 @@ headless Chrome の窓は500pxより狭くならないので、スマホ幅の�
 計算と電波対策の部品は、それぞれ自分で照合できます。
 
 ```bash
-python3 site_logic.py --selftest    # 2022年・2024年の公式順位（持ち越し込み）、日本戦の勝敗、登板記録、選手の鍵と照らし合わせる。最後に「合わなかった 0件」
+python3 site_logic.py --selftest    # 2022年・2024年の公式順位（持ち越し込み）、規程C11.2の同率の例（Scenario 2・3・5）、中止の扱い（C11.3・C12.2）、日本戦の勝敗、登板記録、選手の鍵と照らし合わせる。最後に「合わなかった 0件」
 python3 site_offline.py --selftest  # 一時フォルダに sw.js などを書き出して中身を確かめる。最後に「selftest: OK」
 ```
 
