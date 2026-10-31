@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import argparse
+import bisect
 import csv
 import html
 import http.cookiejar
@@ -70,6 +71,16 @@ BEFORE = 5.0   # 打席の始まりの前に足す秒
 AFTER = 3.0    # 次の打者に替わったあとに足す秒
 COARSE = 15    # 見取り図で何小片おきに調べるか（6秒×15＝約90秒）
 HEAD_BYTES = 80_000  # 静止画1枚のために取る小片の頭の大きさ（540pの小片は約0.75MB）
+# 打席の長さの下限（割り当てで、ありえない速さで打席が進む並びを除く）：1打席5秒＋1球8秒、攻守交代60秒。
+# 静止画は小片の頭なので、2小片分（12秒）は大目に見る
+MIN_PA, MIN_PITCH, MIN_CHANGE, SLACK = 5.0, 8.0, 60.0, 12.0
+# 打者名が読めなかった打席の長さの目安（前後の打席が見えた所のあいだを、この比で割り振る）
+EST_PA, EST_PITCH, EST_CHANGE = 15.0, 22.0, 150.0
+# 見逃しの頭から最初の静止画まで、最後の静止画から終わりまでに、その前後の打席が入りきる並びに足す点。
+# 守っている選手の背中の名前や紹介の字幕で終盤の打席に飛ぶのを抑える（配信が試合の途中で切れたときは
+# 入りきらないのが正しいので、打者と投手がそろって写った静止画が数枚続けば負けるくらいの点にしておく）
+EDGE = 10.0
+NOT_IN = "見逃しに入っていない（見逃しが試合の途中で終わっている）"
 
 PA_FIELDS = ["no", "inning", "half", "bat_team", "order", "batter", "pit_team", "pitcher", "pitchers",
              "n_pitch", "pitches", "result", "complete", "pit_before", "pit_after", "targets"]
@@ -574,31 +585,67 @@ def candidates(pas: list[dict], found: dict[str, float], nums: set[int]) -> dict
             continue
         pitchers = [x for x in p["pitchers"].split("/") if x] or [p["pitcher"]]
         pt = max(found.get(x, 0.0) for x in pitchers)
-        s = b + pt
+        s = b + pt if pt else 0.5 * b  # 打者名だけ（背中の名前や字幕のことがある）は軽く
         if pt and any(int(p["pit_before"]) <= n <= int(p["pit_after"]) for n in nums):
             s += 0.5
         out[i] = s
     return out
 
 
-def assign(probes: list[dict]) -> None:
+def min_times(pas: list[dict]) -> tuple[list[float], list[float]]:
+    """打席ごとの、試合の頭から数えた始まりと終わりの秒の下限（MIN_* の積み上げ）。"""
+    start, end, acc = [], [], 0.0
+    for j, p in enumerate(pas):
+        if j and (p["inning"], p["half"]) != (pas[j - 1]["inning"], pas[j - 1]["half"]):
+            acc += MIN_CHANGE
+        start.append(acc)
+        acc += MIN_PA + MIN_PITCH * int(p["n_pitch"] or 0)
+        end.append(acc)
+    return start, end
+
+
+def assign(probes: list[dict], pas: list[dict], t_end: float) -> None:
     """時刻順の静止画に打席の番号を割り当てる。時刻が進むほど番号も進む（同じか増える）並びのうち、点数の合計が
-    最大のもの。打席は100前後、静止画は数百なので、「最後に選んだ番号ごとの最良」を持つ動的計画で足りる。"""
+    最大のもの。ただし打席 a の静止画から後の打席 b の静止画までには、あいだの打席を投げ終える時間（下限）が要る。
+    これがないと、似た名前の読み違い1枚で何打席も先へ飛び、あいだの打席の範囲が6秒に潰れる。
+    見逃しの頭（0秒）と終わり（t_end）についても同じ下限が成り立つ並びには EDGE 点を足す。
+    状態は「どの静止画を、どの打席として選んだか」。打席ごとに時刻順の累積最良を持ち、二分探索で引く。"""
     for p in probes:
         p["pa"] = None
     pts = sorted((p for p in probes if p["cands"]), key=lambda r: r["seg"])
-    table: dict[int, tuple[float, list[tuple[int, int]]]] = {}
+    start, end = min_times(pas)
+    states: list[tuple[float, int, int, int]] = []  # （点数、ひとつ前の状態、静止画、打席）
+    times: dict[int, list[float]] = {}
+    best: dict[int, list[tuple[float, int]]] = {}
     for j, p in enumerate(pts):
-        new = dict(table)
+        t = float(p["sec"])
+        add = []
         for k, s in p["cands"].items():
-            prev = max((v for kk, v in table.items() if kk <= k), default=(0.0, []), key=lambda v: v[0])
-            cand = (prev[0] + s, prev[1] + [(j, k)])
-            if k not in new or cand[0] > new[k][0]:
-                new[k] = cand
-        table = new
-    if table:
-        for j, k in max(table.values(), key=lambda v: v[0])[1]:
+            top = (EDGE if t >= start[k] - SLACK else 0.0, -1)
+            for a, ts in times.items():
+                if a > k:
+                    continue
+                lim = t if a == k else t - (start[k] - end[a] - SLACK)
+                i = bisect.bisect_right(ts, lim)
+                if i and best[a][i - 1] > top:
+                    top = best[a][i - 1]
+            add.append((top[0] + s, top[1], j, k))
+        for st in add:  # 同じ静止画の候補どうしはつながない
+            sid, a = len(states), st[3]
+            states.append(st)
+            times.setdefault(a, []).append(t)
+            run = best.setdefault(a, [])
+            run.append(max(run[-1], (st[0], sid)) if run else (st[0], sid))
+    if states:
+        def final(i: int) -> float:  # 最後の静止画のあと、残りの打席が終わりまでに入りきるなら EDGE
+            score, _, j, k = states[i]
+            return score + (EDGE if t_end - float(pts[j]["sec"]) >= end[-1] - end[k] - SLACK else 0.0)
+
+        sid = max(range(len(states)), key=final)
+        while sid >= 0:
+            _, prev, j, k = states[sid]
             pts[j]["pa"] = k
+            sid = prev
 
 
 def look(v: Video, idx: list[int], pas: list[dict], names: set[str], log: dict[int, dict]) -> None:
@@ -643,7 +690,7 @@ def locate_game(g: dict, force: bool = False) -> list[dict] | None:
         log: dict[int, dict] = {}
         # 1. 見取り図：COARSE 小片おき
         look(v, list(range(1, v.n(), COARSE)), pas, names, log)
-        assign(list(log.values()))
+        assign(list(log.values()), pas, v.starts[-1])
         # 2. 対象の打席がありうる範囲を、2小片（12秒）おきに読む
         for step in (2, 1):
             want = []
@@ -651,7 +698,7 @@ def locate_game(g: dict, force: bool = False) -> list[dict] | None:
                 lo, hi = bracket(log, k, v.n())
                 want += list(range(lo + 1, hi, step))
             look(v, want, pas, names, log)
-            assign(list(log.values()))
+            assign(list(log.values()), pas, v.starts[-1])
         # 3. 始まりと終わりの手前の小片も読み、境目を6秒単位にする
         edge = []
         for k in targets:
@@ -659,8 +706,16 @@ def locate_game(g: dict, force: bool = False) -> list[dict] | None:
             if segs:
                 edge += [segs[0] - 1, segs[0] - 2, segs[-1] + 1, segs[-1] + 2]
         look(v, edge, pas, names, log)
-        assign(list(log.values()))
+        assign(list(log.values()), pas, v.starts[-1])
         rows = [place(k, pas, log, v) for k in targets]
+        # やり直しで場面が変わらなかった打席は、切った動画を引き継ぐ（files が空の打席だけ cut が切り直す）。
+        # 確かめの結果は ok だけ引き継ぎ、印の付いていたものは check で読み直す
+        before = {r["no"]: r for r in read_csv(out)}
+        for r in rows:
+            o = before.get(r["no"])
+            if o and (o["start"], o["end"]) == (str(r["start"]), str(r["end"])):
+                r["files"] = o["files"]
+                r["check"] = o["check"] if o["check"] == "ok" else ""
         write_csv(out, LOC_FIELDS, rows)
         write_csv(gd / "探索.csv", ["seg", "sec", "names", "pa", "batter", "cands"],
                   [{**r, "batter": pas[r["pa"]]["batter"] if r["pa"] is not None else "",
@@ -692,12 +747,40 @@ def place(k: int, pas: list[dict], log: dict[int, dict], v: Video) -> dict:
         start = v.starts[first] - BEFORE
         row["status"] = "ok"
     else:
-        # 打者名が一度も読めなかった（短い打席で、帯がリプレーや広告で隠れていた）：前の打席が最後に見えた所から、
-        # 「30秒＋1球25秒」か次の打席が見えた所の早いほうまでを切る
-        start = v.starts[min(lo + 1, v.n() - 1)] - BEFORE
-        end = min(v.starts[min(hi, v.n())] + AFTER, start + 30 + 25 * max(1, int(p["n_pitch"] or 1)))
-        first, last = lo + 1, hi
-        row["status"] = "打者名が読めず、前の打席の直後から切り出した"
+        # 打者名が一度も読めなかった（短い打席で、帯がリプレーや広告で隠れていた）。前後で見えた打席のあいだの時間を、
+        # 読めなかった打席どうしに EST_* の比で割り振り、その打席の分に前後の余裕を足して切る。続けて読めなかった
+        # 打席が同じ所から切られないようにするため
+        a = log[lo]["pa"] if log.get(lo, {}).get("pa") is not None else -1
+        b = log[hi]["pa"] if log.get(hi, {}).get("pa") is not None else len(pas)
+        t0, t1 = v.starts[lo] + 6, v.starts[min(hi, v.n())]
+
+        def change(j: int) -> float:
+            return EST_CHANGE if 0 < j < len(pas) and (pas[j]["inning"], pas[j]["half"]) != (
+                pas[j - 1]["inning"], pas[j - 1]["half"]) else 0.0
+
+        def own(j: int) -> float:
+            return EST_PA + EST_PITCH * int(pas[j]["n_pitch"] or 0)
+
+        # 見逃しの頭か終わりまで読めずに来て、残りの時間にこの打席が入りきらない：配信がその打席の前に切れている
+        if a < 0 or b >= len(pas):
+            lo_t, hi_t = min_times(pas)
+            need = MIN_PA + MIN_PITCH * int(p["n_pitch"] or 0)
+            need += (lo_t[k] - hi_t[a]) if a >= 0 else 0.0
+            need += (lo_t[b] - hi_t[k]) if b < len(pas) else 0.0
+            if t1 - t0 + 2 * SLACK < need:
+                row.update({"start": "", "end": "", "seg_first": "", "seg_last": "", "status": NOT_IN})
+                return row
+        pre = (10.0 if a >= 0 else 0.0) + sum(change(j) + own(j) for j in range(a + 1, k)) + change(k)
+        total = pre + own(k) + sum(change(j) + own(j) for j in range(k + 1, b)) + change(b) + 5.0
+        f = max(t1 - t0, 0.0) / total
+        pad = max(20.0, 0.5 * f * own(k))
+        start = max(t0 - BEFORE, t0 + f * pre - pad)
+        end = min(t1 + AFTER, t0 + f * (pre + own(k)) + pad)
+        if t1 - t0 <= 60 + 40 * int(p["n_pitch"] or 1):  # あいだが短ければ全部
+            start, end = t0 - BEFORE, t1 + AFTER
+        first = max(0, bisect.bisect_right(v.starts, start) - 1)
+        last = max(first, bisect.bisect_left(v.starts, end) - 1)
+        row["status"] = "打者名が読めず、前後の打席のあいだから割り振って切り出した"
     row.update({"start": round(max(0.0, start), 1), "end": round(min(v.starts[-1], end), 1),
                 "seg_first": first, "seg_last": last})
     return row
@@ -732,9 +815,13 @@ def cmd_cut(args) -> None:
         pas_by_no = {p["no"]: p for p in read_csv(gd / "打席_KBO.csv")}
         todo = []
         for r in rows:
+            if r["status"] == NOT_IN:
+                r["files"] = ""
+                continue
             files = [CLIPS / who / clip_name(g, r, who, pas_by_no) for who in r["targets"].split("/") if who]
+            fresh = not r["files"]  # 初めての打席か、locate のやり直しで場面が変わった打席
             r["files"] = "|".join(str(f.relative_to(DATA)) for f in files)
-            if args.force or not all(f.exists() for f in files):
+            if args.force or fresh or not all(f.exists() for f in files):
                 todo.append((r, files))
         if not todo:
             print(f"  {g['id']}: 動画はそろっている")
@@ -800,36 +887,43 @@ def cmd_check(args) -> None:
             continue
         pas = read_csv(gd / "打席_KBO.csv")
         by_no = {p["no"]: i for i, p in enumerate(pas)}
+        names = {x["batter"] for x in pas} | {y for x in pas for y in x["pitchers"].split("/") if y}
         with tempfile.TemporaryDirectory(prefix="kbo_chk_") as td:
             for r in rows:
+                if r["check"] and not args.force:
+                    continue
                 files = [DATA / f for f in r["files"].split("|") if f]
                 if not files or not files[0].exists():
-                    r["check"] = "動画がない"
+                    r["check"] = "見逃しに入っていない" if r["status"] == NOT_IN else "動画がない"
                     continue
                 total += 1
                 mp4 = files[0]
                 dur = duration(mp4)
-                # 頭から終わりまで6枚。帯はリプレーや紹介の画面で隠れるので、どれか1枚に見えればよい
-                shots = stills(mp4, [dur * j / 6 for j in range(1, 7)][:-1] + [dur - 1], Path(td))
-                res = ocr(shots)
                 p = pas[by_no[r["no"]]]
-                names = {x["batter"] for x in pas} | {y for x in pas for y in x["pitchers"].split("/") if y}
+                pitchers = [x for x in p["pitchers"].split("/") if x]
+                # 頭から終わりまで6枚。帯はリプレーや紹介の画面で隠れるので、どれか1枚に見えればよい。
+                # 6枚で打者か投手が見えなければ、2秒おき（最大90枚）に読み直す
                 seen: dict[str, float] = {}
-                for s in shots:
-                    for n, sc in names_in(res.get(str(s), []), names).items():
-                        seen[n] = max(seen.get(n, 0), sc)
+                for at in ([dur * j / 6 for j in range(1, 6)] + [dur - 1],
+                           [t for t in (j * 2.0 for j in range(int(dur // 2) + 1)) if t < dur - 0.3][:90]):
+                    shots = stills(mp4, at, Path(td))
+                    res = ocr(shots)
+                    for sh in shots:
+                        for n, sc in names_in(res.get(str(sh), []), names).items():
+                            seen[n] = max(seen.get(n, 0), sc)
+                        sh.unlink(missing_ok=True)
+                    if p["batter"] in seen and any(x in seen for x in pitchers):
+                        break
                 notes = []
                 if p["batter"] not in seen:
                     notes.append("打者名が見えない")
-                if not any(x in seen for x in p["pitchers"].split("/") if x):
+                if not any(x in seen for x in pitchers):
                     notes.append("投手名が見えない")
                 n = int(p["n_pitch"] or 0)
                 if n and dur < 8 * n + BEFORE:
                     notes.append(f"短い（{dur:.0f}秒・{n}球）")
                 r["check"] = "ok" if not notes else "／".join(notes)
                 flagged += bool(notes)
-                for s in shots:
-                    s.unlink(missing_ok=True)
         write_csv(gd / "打席_映像.csv", LOC_FIELDS, rows)
         bad = [r for r in rows if r["check"] != "ok"]
         print(f"  {g['id']}: {len(rows)}本、印 {len(bad)}" + "".join(f"\n    - {r['no']} {r['batter']} vs {r['pitcher']}: {r['check']}" for r in bad))
@@ -909,7 +1003,7 @@ def cmd_run(args) -> None:
         a = argparse.Namespace(game=g["id"], player=None, force=False)
         try:
             cmd_relay(a)
-            cmd_locate(a)
+            cmd_locate(argparse.Namespace(game=g["id"], player=None, force=args.force))  # --force は場面探しだけやり直す
             cmd_cut(a)
             cmd_check(a)
         except Exception as e:  # 1試合の失敗で全体を止めない
