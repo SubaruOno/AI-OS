@@ -12,6 +12,7 @@
     python3 kbo_clips.py check [--game ID]     # 動画の頭と終わりの静止画で、打者・投手が合うか確かめる
     python3 kbo_clips.py index                 # BASSに入れる順の 一覧.csv・一覧.html
     python3 kbo_clips.py run [--player 名前]   # relay→locate→cut→check を試合ごとに続けて流す（できた試合は飛ばす）
+    python3 kbo_clips.py fix                   # 手直し.csv（静止画を目で見て決めた秒）を当て、その打席を切り直す
 
 打席の正解はKBO公式の文字中継で、映像からは「その打席が何秒から何秒か」だけを取る。
 場面は、静止画を丸ごと文字認識にかけ、その試合に出た選手の名前（投手と打者の組み）で決める。
@@ -81,6 +82,11 @@ EST_PA, EST_PITCH, EST_CHANGE = 15.0, 22.0, 150.0
 # 入りきらないのが正しいので、打者と投手がそろって写った静止画が数枚続けば負けるくらいの点にしておく）
 EDGE = 10.0
 NOT_IN = "見逃しに入っていない（見逃しが試合の途中で終わっている）"
+# 静止画（帯のカウント・アウト・球数）を目で見て確かめた打席の秒。列は game, no, start, end, note。
+# 名前の読み取りで外れて秒を直した打席と、印が付いたが見たら合っていた打席の両方を置く。
+# locate のやり直しでも、ここにある打席はこの秒を使い、check は読み直さない
+FIXES = DATA / "手直し.csv"
+MANUAL = "目で確かめた"
 
 PA_FIELDS = ["no", "inning", "half", "bat_team", "order", "batter", "pit_team", "pitcher", "pitchers",
              "n_pitch", "pitches", "result", "complete", "pit_before", "pit_after", "targets"]
@@ -708,14 +714,15 @@ def locate_game(g: dict, force: bool = False) -> list[dict] | None:
         look(v, edge, pas, names, log)
         assign(list(log.values()), pas, v.starts[-1])
         rows = [place(k, pas, log, v) for k in targets]
+        apply_fixes(g["id"], rows)
         # やり直しで場面が変わらなかった打席は、切った動画を引き継ぐ（files が空の打席だけ cut が切り直す）。
-        # 確かめの結果は ok だけ引き継ぎ、印の付いていたものは check で読み直す
+        # 確かめの結果は ok と目で確かめたものだけ引き継ぎ、印の付いていたものは check で読み直す
         before = {r["no"]: r for r in read_csv(out)}
         for r in rows:
             o = before.get(r["no"])
             if o and (o["start"], o["end"]) == (str(r["start"]), str(r["end"])):
                 r["files"] = o["files"]
-                r["check"] = o["check"] if o["check"] == "ok" else ""
+                r["check"] = o["check"] if o["check"] in ("ok", MANUAL) else ""
         write_csv(out, LOC_FIELDS, rows)
         write_csv(gd / "探索.csv", ["seg", "sec", "names", "pa", "batter", "cands"],
                   [{**r, "batter": pas[r["pa"]]["batter"] if r["pa"] is not None else "",
@@ -725,6 +732,21 @@ def locate_game(g: dict, force: bool = False) -> list[dict] | None:
     print(f"  {g['id']}: 対象 {len(rows)}打席、打者名で場面を確かめた {ok}、静止画 {len(log)}枚、"
           f"通信 {g['locate']['mb']}MB、{g['locate']['sec']}秒")
     return rows
+
+
+def apply_fixes(gid: str, rows: list[dict]) -> int:
+    """手直し.csv の秒を、その試合の打席に当てる。秒が変わった打席は files を空にして、cut に切り直させる。"""
+    fix = {f["no"]: f for f in read_csv(FIXES) if f["game"] == gid}
+    for r in rows:
+        f = fix.get(r["no"])
+        if not f:
+            continue
+        start, end = round(float(f["start"]), 1), round(float(f["end"]), 1)
+        if (str(r["start"]), str(r["end"])) != (str(start), str(end)):
+            r["files"] = ""
+        r.update({"start": start, "end": end, "seg_first": "", "seg_last": "",
+                  "status": f"目で確かめた（{f['note']}）", "check": MANUAL})
+    return len(fix)
 
 
 def place(k: int, pas: list[dict], log: dict[int, dict], v: Video) -> dict:
@@ -890,7 +912,7 @@ def cmd_check(args) -> None:
         names = {x["batter"] for x in pas} | {y for x in pas for y in x["pitchers"].split("/") if y}
         with tempfile.TemporaryDirectory(prefix="kbo_chk_") as td:
             for r in rows:
-                if r["check"] and not args.force:
+                if r["check"] == MANUAL or (r["check"] and not args.force):  # 目で確かめた打席は読み直さない
                     continue
                 files = [DATA / f for f in r["files"].split("|") if f]
                 if not files or not files[0].exists():
@@ -1011,6 +1033,20 @@ def cmd_run(args) -> None:
     cmd_index(args)
 
 
+def cmd_fix(_args) -> None:
+    """手直し.csv を 打席_映像.csv に当て、秒の変わった打席だけ切り直して、一覧を作り直す。"""
+    games = load_games()
+    for gid in dict.fromkeys(f["game"] for f in read_csv(FIXES)):
+        out = game_dir(gid) / "打席_映像.csv"
+        rows = read_csv(out)
+        n = apply_fixes(gid, rows)
+        write_csv(out, LOC_FIELDS, rows)
+        print(f"  {gid}: 手直し {n}打席")
+        cmd_cut(argparse.Namespace(game=gid, player=None, force=False))
+    save_games(games)
+    cmd_index(_args)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -1023,9 +1059,10 @@ def main() -> None:
         s.add_argument("--player")
         s.add_argument("--force", action="store_true")
     sub.add_parser("index")
+    sub.add_parser("fix")
     args = ap.parse_args()
     {"games": cmd_games, "soop": cmd_soop, "relay": cmd_relay, "locate": cmd_locate, "cut": cmd_cut,
-     "check": cmd_check, "index": cmd_index, "run": cmd_run}[args.cmd](args)
+     "check": cmd_check, "index": cmd_index, "run": cmd_run, "fix": cmd_fix}[args.cmd](args)
 
 
 if __name__ == "__main__":
