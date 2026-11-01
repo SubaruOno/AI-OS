@@ -24,6 +24,7 @@ import re
 import sys
 import time
 import unicodedata
+import urllib.parse
 from datetime import date, datetime, timedelta, timezone
 from fractions import Fraction
 from itertools import combinations
@@ -867,6 +868,22 @@ def person_key(name: str, birth_year, team: str) -> str:
     return hashlib.sha1(basis.encode("utf-8")).hexdigest()[:12]
 
 
+# ---------------------------------------------------------------- 映像のリンク
+
+# 登録や支払いなしで見られる映像の置き場。GameTime（ログインと Tournament Pass）と
+# BaseballEurope.TV（€5.99から）は、2026年11月1日に開いて確かめたとおり見られないので入れない
+FREE_VIDEO_HOSTS = ("youtube.com", "youtu.be")
+
+
+def free_video(url) -> str:
+    """無料で見られる映像のURLならそのまま、それ以外（有料の配信、空、URLでないもの）は空を返す。"""
+    text = str(url or "").strip()
+    if not text.startswith(("http://", "https://")):
+        return ""
+    host = (urllib.parse.urlsplit(text).hostname or "").lower()
+    return text if any(host == h or host.endswith("." + h) for h in FREE_VIDEO_HOSTS) else ""
+
+
 # ---------------------------------------------------------------- 照合（--selftest）
 
 
@@ -1247,6 +1264,16 @@ def _people(keys: list[str]) -> list[dict]:
     return list(seen.values())
 
 
+def _selftest_video(check: Check) -> None:
+    check(free_video("https://www.youtube.com/live/abc?si=1") == "https://www.youtube.com/live/abc?si=1",
+          "YouTubeの映像は無料として出す")
+    check(free_video("https://youtu.be/abc") == "https://youtu.be/abc", "短いYouTubeのURLも出す")
+    check(free_video("https://gametime.sport/events/abc") == "", "GameTimeは出さない")
+    check(free_video("https://baseballeurope.tv/home/videos/abc") == "", "BaseballEurope.TVは出さない")
+    check(free_video("https://notyoutube.com/x") == "", "似た名前のサイトは出さない")
+    check(free_video(None) == "", "空なら空を返す")
+
+
 def _selftest_people(check: Check) -> None:
     print("\n== 大会をまたいだ選手の鍵")
     events = ["u23-wc-2022", "u23-wc-2024", "u23-americas-2025", "u23-euro-2025",
@@ -1286,6 +1313,7 @@ def selftest() -> int:
     _selftest_states(check)
     _selftest_pitchers(check)
     _selftest_people(check)
+    _selftest_video(check)
     print(f"\n合った {check.ok}件 / 合わなかった {len(check.ng)}件")
     for text in check.ng:
         print(f"  NG {text}")

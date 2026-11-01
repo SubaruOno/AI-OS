@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""選手ごとの「カット集」（奪三振集・被安打集・被凡打集・牽制集、打者の安打集・凡打集・三振集）。
+"""選手ごとの「場面の一覧」（奪三振集・被安打集・被凡打集・牽制集、打者の安打集・凡打集・三振集）。
 
 collect.py が書いた plays.csv（1球ごとの記録）から、打席の終わりの行（pa が 1 の行）と
-牽制の行を拾い、選手ページに並べる一覧にする。映像は試合ごとのリンク（games.json の
-gamevideo）しかないので、各行には「その試合の映像」へのリンクと、場面（回・カウント）を出す。
+牽制の行を拾い、選手ページに並べる一覧にする。各行には場面（回・カウント）を出す。
+映像は試合ごとのリンク（games.json の gamevideo）しかなく、多くは有料の配信なので、
+無料で見られるもの（site_logic.free_video）だけ ▶ のリンクを付ける。
 
     import site_clips as sc
     clips = sc.pitcher_clips("u23-americas-2025", "637041")
@@ -29,6 +30,7 @@ import re
 from pathlib import Path
 
 import build_report as br
+import site_logic as sl
 
 CURRENT = "u23-wc-2026"
 PITCHER_KEYS = ("奪三振", "被安打", "被凡打", "牽制")
@@ -115,8 +117,8 @@ def _videos(path: Path) -> dict[str, str]:
     for game in games if isinstance(games, list) else []:
         if not isinstance(game, dict):
             continue
-        link = str(game.get("gamevideo") or "").strip()
-        if link.startswith(("http://", "https://")):
+        link = sl.free_video(game.get("gamevideo"))
+        if link:
             videos[str(game.get("id"))] = link
     return videos
 
@@ -462,19 +464,29 @@ def _row_html(row: dict, key: str) -> str:
     play = ""
     if row.get("video"):
         play = (f'<a class="play" href="{esc(row["video"], quote=True)}" target="_blank" '
-                f'rel="noreferrer">▶ 試合の映像</a>')
+                f'rel="noreferrer">▶ YouTube</a>')
     return (f'<li><span class="when">{esc(when)}</span>'
             f'<span class="what">{esc(what)}</span>{play}</li>')
 
 
+def has_video(clips: dict[str, list[dict]]) -> bool:
+    """無料の映像へのリンクが1行でもあるか。"""
+    return any(row.get("video") for rows in (clips or {}).values() for row in rows or [])
+
+
+def note_html(video: bool) -> str:
+    """一覧の上に出す説明。"""
+    text = "WBSCの1球ごとの記録から拾った場面です。"
+    if video:
+        text += "▶ の付いた場面は、無料で見られる試合の映像に飛べます。試合全体の映像なので、回とカウントを目安に探してください。"
+    return f'<p class="note">{text}</p>'
+
+
 def clips_html(clips: dict[str, list[dict]]) -> str:
-    """カット集のHTML。最初の、記録のある項目だけを開いておく。件数0の項目は「記録なし」。"""
+    """一覧のHTML。項目ごとに閉じておき、押すと開く。件数0の項目は「記録なし」。"""
     parts = []
-    opened = False
     for key, rows in (clips or {}).items():
         rows = rows or []
-        is_open = bool(rows) and not opened
-        opened = opened or is_open
         head = (f'<summary><b>{html_mod.escape(key)}集</b>'
                 f'<span class="cnt">{len(rows)}</span></summary>')
         if rows:
@@ -485,5 +497,5 @@ def clips_html(clips: dict[str, list[dict]]) -> str:
             inner = f'<ol class="clip-list">{body}</ol>{note}'
         else:
             inner = '<p class="empty">記録なし</p>'
-        parts.append(f'<details class="clip"{" open" if is_open else ""}>{head}{inner}</details>')
+        parts.append(f'<details class="clip">{head}{inner}</details>')
     return f'<div class="clips">{"".join(parts)}</div>'

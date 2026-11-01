@@ -45,7 +45,7 @@ WHITE = (255, 255, 255)
 ICONS = {"icon-192.png": 192, "icon-512.png": 512, "icon-180.png": 180}
 ASSETS = Path(__file__).resolve().parent / "assets"
 # install のときに core_urls と一緒に先に保存するもの
-EXTRA = ["status.js", "pages.json", "manifest.webmanifest",
+EXTRA = ["status.js", "pages.json", "search.json", "manifest.webmanifest",
          "icons/icon-192.png", "icons/icon-180.png"]
 
 

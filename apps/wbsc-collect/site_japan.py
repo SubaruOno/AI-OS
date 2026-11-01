@@ -35,7 +35,6 @@ ROUND_TAG = (("Opening Round", "1次R", "op"), ("Super Round", "SR", "sup"),
 POS_ORDER = ("投手", "捕手", "内野手", "外野手")
 PLACEHOLDER = {"", "TBD", "TBA"}
 GAME_HOURS = 4  # 次の日本戦の帯で、始まってから何時間は「次の試合」として出し続けるか
-LOCK_TEXT = "準備中です。トラックマン・ラプソード・BLASTの数字を、パスワードで保護して載せます。"
 NO_LIMIT = ("U-23W杯には球数制限がありません（WBSC Official Rules 2025-2026 A1.8.4）。"
             "起用の判断の材料として使ってください。")
 
@@ -118,10 +117,6 @@ def when_parts(game: dict) -> tuple[str, str]:
     """（日本時間の「11/7(土) 08:00」, 現地の「11/6(金) 17:00」）。"""
     jst, local = sl.jst_dt(game), sl.local_dt(game)
     return f"{md(jst)} {jst:%H:%M}", f"{md(local)} {local:%H:%M}"
-
-
-def lock(title: str = "計測データ") -> str:
-    return f'<div class="lock"><b>{esc(title)}</b><p>{LOCK_TEXT}</p></div>'
 
 
 def head(crumbs: list[tuple[str, str]], title: str, meta: str) -> str:
@@ -237,8 +232,9 @@ def game_row(game: dict, root: str, table_of_starters: dict) -> str:
         if mine or theirs:
             sub.append(esc(f"先発 {mine or '?'}（相手 {theirs or '?'}）"))
     links = [ext(box_url(game["id"]), "速報・ボックス")] if game.get("id") else []
-    if game.get("gamevideo"):
-        links.append(ext(game["gamevideo"], "試合の映像"))
+    video = sl.free_video(game.get("gamevideo"))
+    if video:
+        links.append(ext(video, "試合の映像"))
     return (f'<tr class="jp"><td class="t"><b>{jst}</b><small>現地 {local}</small></td>'
             f'<td class="m">{tag(game)}{text}<small>{"・".join(x for x in sub if x)}</small>'
             f'<small class="lk">{" ".join(x for x in links if x)}</small></td></tr>')
@@ -406,14 +402,12 @@ def japan_page(d: dict, page, rec: Record) -> str:
     w, l, t = win_loss(d)
     record_text = f"{w}勝{l}敗" + (f"{t}分" if t else "") if finished else "大会前"
     tiles = (
-        # 入口の3枚は横幅いっぱいに並べる（.tiles の既定は小さな数字のタイル向けの幅）
+        # 入口の2枚は横幅いっぱいに並べる（.tiles の既定は小さな数字のタイル向けの幅）
         '<div class="tiles" style="grid-template-columns:repeat(auto-fit,minmax(100px,1fr))">'
         f'<a class="tile" href="pitching/"><i>投手の登板表</i><b>{pitchers}人</b>'
         "<small>試合ごとの球数・投球回と中何日</small></a>"
         f'<a class="tile" href="#stats"><i>今大会の成績</i><b>{record_text}</b>'
-        f"<small>{len(finished)}試合・打者と投手の表へ</small></a>"
-        '<a class="tile" href="#measure"><i>計測データ</i><b>準備中</b>'
-        "<small>パスワードで保護して載せる予定</small></a></div>")
+        f"<small>{len(finished)}試合・打者と投手の表へ</small></a></div>")
     meta = (f"グループB・選手{len(players)}人と首脳陣{len(staff)}人・"
             f'{ext(OFFICIAL_JAPAN, "侍ジャパン公式の発表（2026年10月6日）")}の項目だけを載せています。'
             "年齢は発表時の値です。")
@@ -427,7 +421,6 @@ def japan_page(d: dict, page, rec: Record) -> str:
         section("staff", "首脳陣", staff_cards(staff)),
         section("games", "日本戦の日程と結果", games_table(d, root, starters(d, names))),
         section("stats", "今大会の成績", stats_block(rec, names)),
-        section("measure", "計測データ", lock()),
     ])
     return page("日本代表", body, "japan/", "japan")
 
@@ -607,7 +600,7 @@ def batter_part(d: dict, rec: Record, number: str, by_id: dict) -> str:
 
 
 def clips_part(rec: Record, number: str, pitcher: bool) -> str:
-    """今大会の映像のカット集（site_clips があり、記録があるときだけ）。"""
+    """今大会の場面の一覧（site_clips があり、記録があるときだけ）。"""
     pid = rec.pid_of(number)
     if not pid:
         return ""
@@ -617,8 +610,9 @@ def clips_part(rec: Record, number: str, pitcher: bool) -> str:
                  else site_clips.batter_clips(CURRENT, pid))
         if not any(clips.values()):
             return ""
-        return section("clips", "今大会のカット集", site_clips.clips_html(clips))
-    except Exception:  # カット集が作れなくても、選手のページは出す
+        return section("clips", "今大会の場面の一覧",
+                       site_clips.note_html(site_clips.has_video(clips)) + site_clips.clips_html(clips))
+    except Exception:  # 一覧が作れなくても、選手のページは出す
         return ""
 
 
@@ -644,8 +638,7 @@ def player_page(d: dict, page, rec: Record, row: dict) -> str:
     link = ('<p class="note"><a href="../../pitching/">投手の登板表へ</a></p>' if pitcher else "")
     body = (head(crumbs, title, meta)
             + section("now", "今大会の成績", now + link)
-            + clips_part(rec, number, pitcher)
-            + section("measure", "計測データ", lock()))
+            + clips_part(rec, number, pitcher))
     return page(str(row.get("name") or f"背番号{number}"), body, f"japan/p/{number}/", "japan")
 
 

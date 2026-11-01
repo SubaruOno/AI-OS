@@ -30,7 +30,8 @@ URL はフォルダ形式（team/cuba/ → team/cuba/index.html）。Cloudflare 
 画面の動き（並べ替え・次の日本戦・今日の試合・投手と野手の切り替えなど）は site.js にまとめる。
 別の部品（どれも読めなければ、その部分だけ今の形で書き出す）:
     site_theme.py   見た目（CSS の文字列）
-    site_clips.py   選手ページの映像のカット集（奪三振集・被安打集など）
+    site_clips.py   選手ページの場面の一覧（奪三振集・被安打集など）
+    site_find.py    サイト内の検索と、使い方とTipsのページ
     site_japan.py   日本代表のページ（japan/・japan/pitching/・japan/p/<背番号>/）
     site_video.py   台湾の日本遠征の打席ごとの映像（team/chinese-taipei/v/<背番号>/ と media/）
 URL に ?now=2026-11-08T12:00:00-06:00 を付けると「今」を差し替えて試せる。
@@ -59,13 +60,14 @@ from pathlib import Path
 
 import build_report as br
 import collect
+import site_find
 import site_logic as sl
 import site_offline as so
 
-try:  # 映像のカット集（別の部品）。なければ選手ページに出さないだけ
+try:  # 場面の一覧（別の部品）。なければ選手ページに出さないだけ
     import site_clips
 except Exception as _error:
-    print(f"注意: site_clips.py が読めないので、カット集は出しません（{_error}）", file=sys.stderr)
+    print(f"注意: site_clips.py が読めないので、場面の一覧は出しません（{_error}）", file=sys.stderr)
     site_clips = None
 try:  # 台湾の日本遠征の映像ページ（別の部品）。なければ映像を出さないだけ
     import site_video
@@ -132,7 +134,7 @@ TEXT_COLUMNS = {"名前", "守備", "選手", "所属", "役割"}
 NAV = (("japan", "japan/", "日本"), ("teams", "teams/", "相手国"),
        ("schedule", "schedule/", "日程"), ("format", "format/", "大会方式"))
 # 最初に開いたときに端末へ先に保存するページ（相手国11ページはこのあとに足す）
-CORE = ("", "schedule/", "teams/", "japan/", "japan/pitching/", "format/")
+CORE = ("", "schedule/", "teams/", "japan/", "japan/pitching/", "format/", site_find.GUIDE_URL)
 
 # 公式日程のスーパーラウンドと順位決定ラウンド。(現地の日付, ((先攻, 後攻), ...))。
 # 同じ順位どうしの先攻・後攻は大会前の技術会議のコイントスで決まる（公式日程の注記）
@@ -645,8 +647,9 @@ def state_label(game: dict, state: str) -> str:
 
 def game_links(game: dict) -> str:
     parts = [ext(box_url(game["id"]), "速報・ボックス")] if game.get("id") else []
-    if game.get("gamevideo"):
-        parts.append(ext(game["gamevideo"], "映像"))
+    video = sl.free_video(game.get("gamevideo"))
+    if video:
+        parts.append(ext(video, "映像"))
     return " ".join(parts)
 
 
@@ -865,11 +868,8 @@ def standings_block(d: dict, root: str) -> str:
     started = any(r["rank"] is not None for rows in first.values() for r in rows)
     note = ("試合前なので順位は「-」で、並びは組み合わせ表の順です。" if not started else
             "差はゲーム差です。")
-    parts.append(f'<p class="note">{note}同率の並べ方は2026年大会の大会規程 C11.2 のとおりに'
-                 "計算しています。注記の「当該」は並んだチーム同士の試合、「全試合」はそのラウンドの全試合での"
-                 "数字です。コイントスで決まる同率や、ボックススコアがなくて計算できない同率もあるので、"
-                 '同率のときは WBSC の公式の順位も確かめてください。決め方と持ち越しは<a href="'
-                 f'{root}format/">大会方式</a>に。</p>')
+    parts.append(f'<p class="note">{note}同率のときは WBSC の公式の順位も確かめてください。決め方と持ち越しは'
+                 f'<a href="{root}format/">大会方式</a>に。</p>')
     return "".join(parts)
 
 
@@ -881,8 +881,8 @@ def header(root: str, current: str) -> str:
     links = "".join(f'<a href="{root}{href}"{here if key == current else ""}>{label}</a>'
                     for key, href, label in NAV)
     top = here if current == "top" else ""
-    return (f'<header><a class="brand" href="{root or "./"}"{top}>U-23W杯 2026</a>'
-            f'<nav aria-label="サイト内">{links}</nav></header>')
+    return (f'<header><a class="brand" href="{root or "./"}"{top}>U-23<span class="brand-more">W杯 2026</span></a>'
+            f'<nav aria-label="サイト内">{links}</nav>{site_find.button(root)}</header>')
 
 
 def page(title: str, body: str, url: str, current: str, main_class: str = "") -> str:
@@ -897,7 +897,7 @@ def page(title: str, body: str, url: str, current: str, main_class: str = "") ->
         '<meta name="referrer" content="no-referrer">\n'
         f"<title>{esc(full)}</title>\n<style>{CSS}</style>\n{so.head_tags(root)}\n"
         f'</head><body>\n{header(root, current)}\n<div id="band"></div>\n'
-        f"<main{cls}>\n{body}\n</main>\n<footer>{FOOTER}</footer>\n"
+        f'<main{cls}>\n{body}\n</main>\n<footer><a href="{root}{site_find.GUIDE_URL}">使い方とTips</a><br>{FOOTER}</footer>\n'
         f'<script src="{root}site.js?v={JS_VERSION}" defer></script>\n'
         f"{so.body_end(root)}\n</body></html>\n"
     )
@@ -905,6 +905,12 @@ def page(title: str, body: str, url: str, current: str, main_class: str = "") ->
 
 def section(anchor: str, title: str, body: str) -> str:
     return f'<section id="{anchor}"><h2>{title}</h2>{body}</section>'
+
+
+def jump_nav(items) -> str:
+    """このページの中の行き先。items は (id, 見出し) の並び。"""
+    links = "".join(f'<a href="#{anchor}">{esc(label)}</a>' for anchor, label in items)
+    return f'<nav class="toc" aria-label="このページの中">{links}</nav>'
 
 
 # ---------------------------------------------------------------- 相手国ページ
@@ -943,10 +949,14 @@ def facts_block(info: dict) -> str:
 
 
 def notes_block(info: dict) -> str:
-    notes = info.get("notes") or []
-    if not notes:
+    """出場経路と、手で書いたメモ。長いので閉じておく。"""
+    route = info.get("route")
+    items = ([f"出場経路：{esc(route)}"] if route else []) + [public(n) for n in info.get("notes") or []]
+    if not items:
         return ""
-    return '<ul class="notes">' + "".join(f"<li>{public(n)}</li>" for n in notes) + "</ul>"
+    return ('<details class="more team-notes"><summary><b>このチームのメモ</b>'
+            f"<small>{len(items)}件</small></summary>"
+            '<ul class="notes">' + "".join(f"<li>{item}</li>" for item in items) + "</ul></details>")
 
 
 def roster_record(d: dict, code: str, name: str, root: str) -> str:
@@ -1378,13 +1388,7 @@ def player_grid(d: dict, team: str, info: dict, root: str) -> str:
     if not any(top.values()) and not any(hint.values()) and not any(extra.values()):
         return '<p class="empty">名簿も過去の記録もまだありません。</p>'
     title, count, final = roster_heading(info, rows) if rows else ("", "", True)
-    first = ""  # 下にまだ別のまとまりがあるときだけ「先に並べています」と書く
-    if rows and (extra["p"] or extra["b"]):
-        first = f'{"今大会のメンバー" if final else "今大会の候補"}を先に並べています。'
-    elif not rows and any(top.values()):
-        first = "今大会に出場した選手を先に並べています。"
-    lead = (f'<p class="note">{first}数字は国際大会（WBSC）の記録で、どの大会の数字かはカードに'
-            "書いています。</p>")
+    lead = '<p class="note">数字は国際大会（WBSC）の記録で、どの大会の数字かはカードに書いています。</p>'
     panels, counts = {}, {}
     for s in sides:
         if rows:
@@ -1431,12 +1435,10 @@ def team_tiles(d: dict, team: str, info: dict) -> str:
     count = len([r for r in d["roster"] if r.get("team") == code])
     roster = (f'<b>{count}人</b><small>{esc(meta.get("label") or "発表名簿")}</small>' if count
               else "<b>未確認</b><small>今大会の名簿</small>")
-    route = esc(info.get("route") or "未確認")
     return ('<div class="tiles">'
             f'<div class="tile"><i>世界ランク</i><b>{esc(str(rank) + "位") if rank else "未確認"}</b></div>'
             f'<div class="tile"><i>今大会の名簿</i>{roster}</div>'
-            f'<div class="tile"><i>監督</i><small>{esc(manager or "未確認")}</small></div></div>'
-            f'<p class="note">出場経路：{route}</p>')
+            f'<div class="tile"><i>監督</i><small>{esc(manager or "未確認")}</small></div></div>')
 
 
 def team_page(d: dict, label: str, team: str, group: str) -> str:
@@ -1444,18 +1446,21 @@ def team_page(d: dict, label: str, team: str, group: str) -> str:
     info = d["opp"].get(team) or {}
     game = japan_game(d, team)
     meta = f"グループ{group}・{esc(team)}" + (f"・日本戦 {when_html(game)}" if game else "")
-    details = ("<details class=\"more\"><summary><b>詳しい表と資料</b>"
+    details = ("<details class=\"more\" id=\"more\"><summary><b>詳しい表と資料</b>"
                "<small>名簿の表・監督と出典・大会ごとの傾向・過去の大会の表</small></summary>"
                + section("facts", "基本情報と出典", facts_block(info))
                + section("roster", "今大会の名簿", roster_block(d, team, info, root))
                + section("trend", "大会ごとの傾向", trend_block(d, team))
                + section("past", "過去の大会", past_block(d, team, root, not has_current(d, team)))
                + "</details>")
+    video = video_section(team, root)
+    jump = (("players", "選手"),) + ((("video", "映像"),) if video else ()) + (
+        ("notable", "注目選手"), ("vsjapan", "日本との対戦"), ("now", "今大会の試合"), ("more", "詳しい表"))
     body = "".join([
         page_head([f'<a href="{root}teams/">相手国</a>', esc(label)], esc(label), meta),
-        team_tiles(d, team, info), notes_block(info),
+        team_tiles(d, team, info), jump_nav(jump), notes_block(info),
         section("players", "選手", player_grid(d, team, info, root)),
-        video_section(team, root),
+        video,
         section("notable", "注目選手", notable_block(d, info, root, TEAM_CODE.get(team, ""))),
         section("vsjapan", "日本との対戦<small>参考値</small>", vs_japan_block(info)),
         section("now", "今大会の試合", current_block(d, team, root)),
@@ -1535,10 +1540,10 @@ def player_head_tiles(person: dict) -> str:
 
 
 def player_clips(person: dict) -> str:
-    """映像のカット集（site_clips.py）。部品が読めない・記録がないときは出さない。"""
+    """場面の一覧（site_clips.py）。部品が読めない・記録がないときは出さない。"""
     if site_clips is None:
         return ""
-    parts = []
+    parts, video = [], False
     for kind, event, line in person["blocks"]:
         pid = str(line.get("_id") or "")
         if not pid or event == CURRENT and not d_has_plays(event):
@@ -1549,16 +1554,15 @@ def player_clips(person: dict) -> str:
             if not clips or not any(clips.values()):
                 continue
             html_ = site_clips.clips_html(clips)
+            video = video or site_clips.has_video(clips)
         except Exception as error:  # 部品の失敗でページを止めない
-            print(f"注意: カット集を作れませんでした（{event} {pid}: {error}）", file=sys.stderr)
+            print(f"注意: 場面の一覧を作れませんでした（{event} {pid}: {error}）", file=sys.stderr)
             continue
         label = "投球" if kind == "pit" else "打撃"
         parts.append(f'<h3>{esc(EVENT_LABEL.get(event, event))}<small>{label}</small></h3>{html_}')
     if not parts:
         return ""
-    return section("clips", "映像のカット集<small>試合の映像へのリンク</small>",
-                   '<p class="note">場面は WBSC の1球ごとの記録から拾っています。映像のリンクは'
-                   "試合ごとなので、回とカウントを目安に探してください。</p>" + "".join(parts))
+    return section("clips", "場面の一覧", site_clips.note_html(video) + "".join(parts))
 
 
 def d_has_plays(event: str) -> bool:
@@ -1604,8 +1608,8 @@ def player_page(d: dict, key: str, person: dict) -> str:
     blocks = "".join(player_block(kind, event, line) for kind, event, line in person["blocks"])
     body = (page_head(crumbs, title, esc("・".join(facts)))
             + player_head_tiles(person) + player_notes(d, key, team) + player_apps(d, person)
-            + player_clips(person)
-            + section("seasons", "大会ごとの成績", blocks))
+            + section("seasons", "大会ごとの成績", blocks)
+            + player_clips(person))
     return page(person["name"], body, f"p/{key}/", "japan" if team == "Japan" else "teams")
 
 
@@ -1734,20 +1738,20 @@ def format_rules() -> str:
     """規定。2026年大会の大会規程（2026年6月3日版）と競技規則（2025-2026版）の App.1 から。"""
     rules = ext(WBSC_RULES, "WBSC Official Rules of Baseball 2025-2026")
     regs = ext(WBSC_REGS, "大会規程（2026年6月3日版）")
-    return ("<ul>"
-            f"<li>イニング数：7回制です（{rules} App.1 A1.2）。</li>"
-            "<li>延長のタイブレーク：7回を終えて同点なら、8回から毎回、無死一・二塁で始めます。打順は"
+    return ('<ul id="rules">'
+            f"<li id=\"rule-innings\">イニング数：7回制です（{rules} App.1 A1.2）。</li>"
+            "<li id=\"rule-tiebreak\">延長のタイブレーク：7回を終えて同点なら、8回から毎回、無死一・二塁で始めます。打順は"
             "前の回の続きで、前の回に最後に打席に立った打者の次から打ち、その前の2人が二塁と一塁の"
             "走者になります（例：7回を8番打者で終えたら、8回は9番から、二塁に7番・一塁に8番）。"
             "この走者がかえった点は自責点になりません（A1.4.2.2）。</li>"
-            "<li>コールドゲーム：負けているチームが5回以上攻撃した時点で10点差以上なら、そこで試合終了です。"
+            "<li id=\"rule-called\">コールドゲーム：負けているチームが5回以上攻撃した時点で10点差以上なら、そこで試合終了です。"
             "決勝には使わず、3位決定戦には使います（A1.4.1.2）。</li>"
-            "<li>雨などで止まった試合：審判は打ち切りを決める前に60〜90分待ちます。4回を終えた時点"
+            "<li id=\"rule-rain\">雨などで止まった試合：審判は打ち切りを決める前に60〜90分待ちます。4回を終えた時点"
             "（後攻がリードしているときは4回表を終えた時点）で正式試合として成立し、その前に止まれば"
             "後日、止まった場面から再開します。成立後でも、同点のときと、回の途中で先攻が勝ち越したまま"
             "止まったときは、止まった場面から再開します（A1.6.1.1〜A1.6.1.3、A1.6.1.6）。</li>"
-            f"<li>球数制限：U-23W杯にはありません（A1.8.4）。</li>"
-            "<li>同率の順位の決め方：各ラウンドの順位は、そのラウンドの全試合の勝敗で決めます。並んだときは"
+            '<li id="rule-pitches">球数制限：U-23W杯にはありません（A1.8.4）。</li>'
+            "<li id=\"rule-tie\">同率の順位の決め方：各ラウンドの順位は、そのラウンドの全試合の勝敗で決めます。並んだときは"
             f"次の順で比べます（{regs} C11.1・C11.2）。"
             "<ol>"
             "<li>当該チーム同士の勝敗。2チームなら直接対決の勝者が上。3チーム以上で一部だけ分かれたら、"
@@ -1757,14 +1761,14 @@ def format_rules() -> str:
             "<li>当該チーム同士の試合でのチーム打率。</li>"
             "<li>そのラウンドの全試合での TQB → ER-TQB → チーム打率（C11.3 の手順）。</li>"
             "<li>コイントス。</li></ol></li>"
-            "<li>中止の試合があるとき：並んだチーム同士の試合がそろっていれば上と同じ順です。"
+            "<li id=\"rule-cancel\">中止の試合があるとき：並んだチーム同士の試合がそろっていれば上と同じ順です。"
             "中止で欠けていれば、1〜4を飛ばして、そのラウンドの全試合での TQB → ER-TQB → チーム打率 → "
             "コイントスで比べます（C11.3）。1次ラウンドを3試合しないまま終えたチームがあれば、"
             "1次ラウンドの順位は前年12月31日時点の WBSC 世界ランキングで決まります（C12.2 a)）。"
             "スーパーラウンドと順位決定ラウンドが最後までできないときは、残りを打ち切り、各組1位どうしで"
             "金メダル、2位どうしで銅メダルを争うことがあります（C12.2 b)）。決勝・3位決定戦ができなければ、"
             "スーパーラウンドの勝敗 → 直接対決 → C11.3 の順で決まります（C12.2 c)）。</li>"
-            "<li>同じ順位どうしの対戦（例：A組1位 対 B組1位）の先攻・後攻：大会前の技術会議の"
+            "<li id=\"rule-coin\">同じ順位どうしの対戦（例：A組1位 対 B組1位）の先攻・後攻：大会前の技術会議の"
             "コイントスで決まります（公式日程の注記）。</li></ul>")
 
 
@@ -1772,19 +1776,21 @@ def format_page(d: dict) -> str:
     body = "".join([
         page_head(['<a href="../">トップ</a>', "大会方式"], "大会方式",
                   "U-23W杯 2026（ニカラグア、現地 11/6〜15）"),
-        f"<h2>流れ</h2>{FORMAT_FLOW}",
-        f"<h2>持ち越し</h2>{FORMAT_CARRY}",
-        "<h2>日本の順位ごとの相手<small>公式日程から</small></h2>" + rank_table()
+        jump_nav((("flow", "流れ"), ("carry", "持ち越し"), ("rank", "日本の相手"), ("venues", "球場"),
+                  ("rules-head", "規定"), ("camp", "直前合宿"), ("jet", "時差"))),
+        f'<h2 id="flow">流れ</h2>{FORMAT_FLOW}',
+        f'<h2 id="carry">持ち越し</h2>{FORMAT_CARRY}',
+        '<h2 id="rank">日本の順位ごとの相手<small>公式日程から</small></h2>' + rank_table()
         + '<p class="note">SR＝スーパーラウンド。「コイントス」は同じ順位どうしの対戦で、先攻・後攻は'
           "大会前の技術会議のコイントスで決まります。時刻と球場は公式日程では未定。1次ラウンドと同じ"
           "時間帯（現地10時半〜19時半）なら、日本時間では翌日になります。</p>",
-        "<h2>球場</h2>"
+        '<h2 id="venues">球場</h2>'
         '<div class="scroll"><table class="plain"><thead><tr><th>球場・町</th><th>日本の1次ラウンド</th>'
         f"</tr></thead><tbody>{venue_rows(d)}</tbody></table></div>"
         f'<p class="note">日本の1次ラウンドは {esc(japan_venue_text(d))}。</p>',
-        f"<h2>規定</h2>{format_rules()}",
-        "<h2>直前合宿</h2><p>10/31〜11/2、NTT東日本グラウンドほか（千葉県船橋市）。</p>",
-        "<h2>時差</h2><p>日本時間は現地の15時間後です（ニカラグアは夏時間がありません）。"
+        f'<h2 id="rules-head">規定</h2>{format_rules()}',
+        '<h2 id="camp">直前合宿</h2><p>10/31〜11/2、NTT東日本グラウンドほか（千葉県船橋市）。</p>',
+        "<h2 id=\"jet\">時差</h2><p>日本時間は現地の15時間後です（ニカラグアは夏時間がありません）。"
         "現地 18:30 の試合は、日本時間では翌日 09:30 です。</p>",
     ])
     return page("大会方式", body, "format/", "format")
@@ -1960,18 +1966,17 @@ def today_block(d: dict) -> str:
 
 def save_block(count: int, size_mb: float) -> str:
     # 件数と結果はボタンの下の行（save-status）に出す。ボタンの幅は変わらない（site_offline.py）
-    return ('<h2>電波が弱い所で使うには</h2><div class="card">'
+    return ('<h2 id="save">電波が弱い所で使うには</h2><div class="card">'
             '<button type="button" id="save-all" class="save">全ページを端末に保存</button>'
             '<p class="save-st" id="save-status" aria-live="polite"></p>'
             f'<p class="note">ホテルのWi-Fiなど電波のよい所で押すと、全{count}件（約{size_mb:.1f}MB）を'
-            "端末に保存し、電波がなくても開けるようになります。iPhone は Safari で開き、共有ボタンから"
-            "「ホーム画面に追加」してください。LINEなどアプリの中で開くと、保存が効かないことが"
-            "あります。Safariで開いてください。</p></div>")
+            "端末に保存し、電波がなくても開けるようになります。LINEの中では保存が効かないことがあるので、"
+            f'Safariで開いてください。<a href="{site_find.GUIDE_URL}#start">最初の設定</a></p></div>')
 
 
 def wbsc_links() -> str:
     links = (("", "大会ページ"), ("schedule-and-results", "日程と結果"), ("teams", "出場チーム"))
-    return ('<h2>WBSCの公式ページ</h2><p class="links">'
+    return ('<h2 id="wbsc">WBSCの公式ページ</h2><p class="links">'
             + "".join(ext(collect.event_url(WBSC_DOMAIN, WBSC_SLUG, tail), text)
                       for tail, text in links) + "</p>")
 
@@ -1995,7 +2000,7 @@ def doors_block(d: dict, japan: list[dict]) -> str:
         opp_text = "名簿・注目選手・過去の大会の記録"
     return ('<nav class="doors" aria-label="入口">'
             '<a class="door jp" href="japan/"><span class="door-k">自チーム</span><b>日本代表</b>'
-            f"<small>{esc(record)}・成績・登板表・計測データ</small></a>"
+            f"<small>{esc(record)}・成績・登板表</small></a>"
             '<a class="door opp" href="teams/"><span class="door-k">相手国</span>'
             f"<b>{len(OPP)}チーム</b><small>{esc(opp_text)}</small></a></nav>")
 
@@ -2035,7 +2040,7 @@ def index_page(d: dict, count: int, size_mb: float) -> str:
     japan = team_games(d, "Japan")
     body = "".join([
         '<h1 class="sr">U-23W杯 2026 スタッフ共有</h1>',
-        hero_block(d, japan), previous_block(japan), doors_block(d, japan),
+        hero_block(d, japan), previous_block(japan), site_find.search_box(), doors_block(d, japan),
         next_opponent_block(d, japan), today_block(d),
         '<section id="standings" class="small"><h2>順位表</h2>' + standings_block(d, "")
         + '<p><a class="card go" href="schedule/">日程と結果をすべて見る →</a></p>'
@@ -2049,8 +2054,165 @@ def index_page(d: dict, count: int, size_mb: float) -> str:
 # ---------------------------------------------------------------- 組み立てと書き出し
 
 
-def build() -> tuple[dict[str, str], list[dict]]:
-    """全ページを作る。戻り値は ({URL: HTML}, games.json の一覧)。"""
+TEAM_WORDS = {  # 国の言いかえ（検索用）
+    "Cuba": "キューバ CUB", "Korea": "韓国 コリア 大韓民国 KOR", "Venezuela": "ベネズエラ VEN",
+    "Great Britain": "イギリス 英国 GBR UK", "South Africa": "南アフリカ 南ア RSA",
+    "Chinese Taipei": "台湾 チャイニーズタイペイ タイペイ TPE", "Puerto Rico": "プエルトリコ PUR",
+    "Panama": "パナマ PAN", "Australia": "オーストラリア 豪州 AUS", "Nicaragua": "ニカラグア 開催国 NCA",
+    "Czechia": "チェコ CZE",
+}
+POS_WORDS = {"投手": "投手 ピッチャー", "捕手": "捕手 キャッチャー 野手", "内野手": "内野手 内野 野手",
+             "外野手": "外野手 外野 野手", "ユーティリティ": "ユーティリティ 野手"}
+
+
+def hand_words(throws, bats, pitcher: bool) -> str:
+    """「左投手」「左打者」のような検索の言葉。"""
+    words = []
+    if pitcher and HAND.get(throws):
+        words.append(f"{HAND[throws]}投手")
+    if bats and HAND.get(bats):
+        words.append(f"{HAND[bats]}打者" if bats != "S" else "両打ち スイッチ")
+    return " ".join(words)
+
+
+def search_players(d: dict, team: str, label: str, url: str, pages: dict[str, str]) -> list[dict]:
+    """1チームの選手。名簿の選手を先に、名簿にいない過去の大会の選手を後ろに。"""
+    code = TEAM_CODE.get(team, "")
+    names = f"{label} {TEAM_WORDS.get(team, '')}"
+    entries, used = [], set()
+    rows = [r for r in d["roster"] if r.get("team") == code]
+    npb = japan_league_keys(d, d["opp"].get(team) or {})
+    for row in rows:
+        name, pos = row.get("name") or "", POS_JA.get(row.get("position"), "")
+        key = d["match_by_name"].get((code, name))
+        person = d["people"].get(key) if key and f"p/{key}/" in pages else None
+        extra = reading_of(d, code, name)
+        club_ja = (extra.get("club_ja") or "").strip()
+        club = (row.get("club") or "").strip()
+        meta = d["info"].get(person["pid"], {}) if person else {}
+        throws, bats = row.get("throws") or meta.get("throws"), row.get("bats") or meta.get("bats")
+        pitcher = row.get("position") == "P"
+        out = "離脱" in (row.get("status") or "")
+        sub = "・".join(x for x in (label, pos, club_ja or club, "離脱報道" if out else "") if x)
+        words = [names, POS_WORDS.get(pos, ""), hand_words(throws, bats, pitcher), club, club_ja,
+                 "打者 バッター" if not pitcher else "", person["name"] if person else "",
+                 "離脱" if out else "", "日本の球団" if in_japan_league(npb, key, row) else ""]
+        if person:
+            used.add(key)
+        side = "p" if pitcher else "b"
+        entries.append({"k": "選手", "t": name, "y": (extra.get("reading") or "").strip(), "s": sub,
+                        "u": f"p/{key}/" if person else f"{url}#{side}",
+                        "w": " ".join(x for x in words if x), "n": f"{name} {person['name'] if person else ''}",
+                        "r": 4})
+    for key, person in d["people"].items():
+        if person["team"] != team or key in used or f"p/{key}/" not in pages:
+            continue
+        meta = d["info"].get(person["pid"], {})
+        pos = POS_JA.get(meta.get("position"), "")
+        pitcher = meta.get("position") == "P" or (not pos and person["blocks"] and person["blocks"][0][0] == "pit")
+        sub = "・".join(x for x in (label, pos, "今回の名簿にいない選手" if rows else "過去の大会の記録") if x)
+        words = [names, POS_WORDS.get(pos, ""), hand_words(meta.get("throws"), meta.get("bats"), pitcher),
+                 "打者 バッター" if not pitcher else ""]
+        entries.append({"k": "選手", "t": person["name"], "s": sub, "u": f"p/{key}/",
+                        "w": " ".join(x for x in words if x), "n": person["name"], "r": 1 if rows else 2})
+    return entries
+
+
+def search_notable(d: dict, team: str, label: str, url: str, entries: list[dict]) -> None:
+    """注目選手のメモを、その選手の行の本文に足す。行がなければ注目選手の行を足す。"""
+    code = TEAM_CODE.get(team, "")
+    for item in (d["opp"].get(team) or {}).get("notable") or []:
+        key = d["pid_key"].get(str(item.get("playerid") or ""))
+        facts = [s for fact in item.get("facts") or [] for s in site_find.sentences(public(fact))]
+        target = f"p/{key}/" if key else ""
+        name = item.get("name") or ""
+        found = next((e for e in entries if (target and e["u"] == target) or e["t"] == name), None)
+        if not found:
+            found = {"k": "選手", "t": name, "y": (reading_of(d, code, name).get("reading") or "").strip(),
+                     "s": "・".join(x for x in (label, POS_JA.get(item.get("pos"), ""), item.get("club") or "") if x),
+                     "u": f"{url}#notable", "w": f"{label} {TEAM_WORDS.get(team, '')}", "n": name, "r": 4}
+            entries.append(found)
+        found["w"] = f'{found.get("w", "")} 注目選手 注目 {item.get("club") or ""}'
+        found["b"] = found.get("b", []) + facts
+        found["r"] = found.get("r", 0) + 1
+
+
+def search_team(d: dict, label: str, team: str, group: str, pages: dict[str, str]) -> list[dict]:
+    """1チーム分。国の行、節の行、選手の行。"""
+    url = f"team/{slug(team)}/"
+    info = d["opp"].get(team) or {}
+    words = TEAM_WORDS.get(team, "")
+    game = japan_game(d, team)
+    when = ""
+    if game and sl.jst_dt(game):
+        jst = sl.jst_dt(game)
+        when = f"日本戦 {md(jst)} {jst:%H:%M}"
+    rank = (info.get("ranking") or {}).get("rank")
+    sub = "・".join(x for x in (f"グループ{group}", f"世界ランク{rank}位" if rank else "", when) if x)
+    manager = (info.get("manager") or {}).get("name") or ""
+    notes = [s for note in info.get("notes") or [] for s in site_find.sentences(public(note))]
+    out = [{"k": "国", "t": label, "s": sub, "u": url, "r": 8,
+            "w": f"{team} {words} {manager} グループ{group} 相手国 対戦国", "b": notes}]
+    part = [("#p", "投手", "投手 ピッチャー 選手 名簿"), ("#b", "野手", "野手 打者 バッター 選手 名簿"),
+            ("#notable", "注目選手", "注目 キーマン 主力"), ("#vsjapan", "日本との対戦", "対戦成績 過去の対戦 日本戦"),
+            ("#now", "今大会の試合", "試合 結果 登板 成績"), ("#roster", "今大会の名簿", "名簿 ロースター メンバー 背番号"),
+            ("#facts", "監督と出典", "監督 首脳陣 世界ランク 出場経路 基本情報"),
+            ("#trend", "大会ごとの傾向", "傾向 チーム成績"), ("#past", "過去の大会", "過去 前回 成績 表")]
+    out += [{"k": "国", "t": f"{label}の{title}", "s": label, "u": url + anchor, "w": f"{words} {extra}", "r": 6}
+            for anchor, title, extra in part]
+    players = search_players(d, team, label, url, pages)
+    search_notable(d, team, label, url, players)
+    return out + players
+
+
+def search_index(d: dict, pages: dict[str, str]) -> str:
+    """search.json の中身。ページに載っている文字だけを入れる。"""
+    entries = [{"k": "ページ", "t": t, "s": s, "u": u, "w": w, "r": 8} for t, s, u, w in site_find.TOPICS]
+    if "team/chinese-taipei/" in pages and site_video is not None and site_video.team_section(""):
+        entries.append({"k": "映像", "t": "台湾の日本遠征の打席の映像", "s": "チャイニーズタイペイ",
+                        "u": "team/chinese-taipei/#video", "r": 8,
+                        "w": "台湾 チャイニーズタイペイ TPE 映像 動画 打席 日本遠征 YouTube ビデオ"})
+    for url, content in pages.items():  # 台湾の選手ごとの映像ページ
+        title = re.search(r"<title>(.+?)の映像｜", content) if url.startswith("team/chinese-taipei/v/") else None
+        if title:
+            name = html.unescape(title.group(1))
+            entries.append({"k": "映像", "t": f"{name}の打席の映像", "s": "台湾・日本遠征の打席ごとの動画", "u": url,
+                            "y": (reading_of(d, TEAM_CODE["Chinese Taipei"], name).get("reading") or "").strip(),
+                            "w": "台湾 チャイニーズタイペイ 映像 動画 打席 日本遠征", "r": 5})
+    days: dict[str, str] = {}
+    for game in d["games"]:
+        jst = sl.jst_dt(game)
+        if jst:
+            days.setdefault(jst.date().isoformat(), md(jst))
+    entries += [{"k": "日程", "t": f"{label}の試合", "s": "日本の日付", "u": f"schedule/#d{day}", "r": 7,
+                 "w": f"{int(day[5:7])}/{int(day[8:])} {int(day[5:7])}月{int(day[8:])}日 日程"}
+                for day, label in days.items()]
+    for game in team_games(d, "Japan"):
+        jst, rival = sl.jst_dt(game), opponent(game, "Japan")
+        if jst and rival in OPP:
+            entries.append({"k": "日程", "t": f"日本 vs {ja(rival)}", "s": f"{md(jst)} {jst:%H:%M}・{venue(game)}",
+                            "u": f"schedule/#d{jst.date().isoformat()}", "r": 7,
+                            "w": f"日本戦 {TEAM_WORDS.get(rival, '')} {int(jst.month)}/{jst.day}"})
+    for row in d.get("japan") or []:
+        number = str(row.get("number") or "").strip()
+        url = f"japan/p/{number}/" if f"japan/p/{number}/" in pages else "japan/#staff"
+        if row.get("role") == "選手":
+            pos = row.get("position") or ""
+            sub = "・".join(x for x in ("日本代表", pos, f"背番号{number}", row.get("club")) if x)
+            words = f'日本 ジャパン 背番号{number} {number}番 {POS_WORDS.get(pos, "")} {row.get("club") or ""}'
+            entries.append({"k": "選手", "t": row.get("name") or "", "s": sub, "u": url, "w": words, "r": 5})
+        elif row.get("role"):
+            sub = "・".join(x for x in ("日本代表", row.get("role"), row.get("club")) if x)
+            entries.append({"k": "首脳陣", "t": row.get("name") or "", "s": sub, "u": "japan/#staff",
+                            "w": f'日本 首脳陣 スタッフ {row.get("club") or ""}', "r": 4})
+    for label, team, group, _ in br.OPPONENTS:
+        entries += search_team(d, label, team, group, pages)
+    clean = [{k: v for k, v in e.items() if k == "u" or v not in ("", [], None)} for e in entries if e.get("t")]
+    return site_find.dump(clean)
+
+
+def build() -> tuple[dict[str, str], list[dict], str]:
+    """全ページを作る。戻り値は ({URL: HTML}, games.json の一覧, search.json の中身)。"""
     d = load()
     analyze(d)
     pages: dict[str, str] = {"": "", "schedule/": schedule_page(d), "teams/": teams_page(d),
@@ -2064,9 +2226,16 @@ def build() -> tuple[dict[str, str], list[dict]]:
     for key in sorted(d["paged"]):
         pages[f"p/{key}/"] = player_page(d, key, d["people"][key])
     pages.update(video_pages())
+    pages[site_find.GUIDE_URL] = site_find.guide_page(page)
+    try:
+        search = search_index(d, pages)
+    except Exception as error:  # 検索が作れなくてもサイトは出す。画面には「読めませんでした」と出る
+        print(f"注意: 検索のデータを作れませんでした（{error!r}）", file=sys.stderr)
+        search = "[]\n"
     size = sum(len(p.encode("utf-8")) for p in pages.values()) / 1024 / 1024
-    pages[""] = index_page(d, len(pages) + 1, size + 0.05)
-    return pages, d["games"]
+    size += len(search.encode("utf-8")) / 1024 / 1024
+    pages[""] = index_page(d, len(pages) + 2, size + 0.05)
+    return pages, d["games"], search
 
 
 def video_pages() -> dict[str, str]:
@@ -2115,9 +2284,10 @@ def japan_pages(d: dict) -> dict[str, str]:
     return {"japan/": japan_page(d)}
 
 
-def version_of(pages: dict[str, str]) -> str:
-    """版。ページと site.js の中身から作るので、中身が同じなら版も変わらない。"""
+def version_of(pages: dict[str, str], search: str = "") -> str:
+    """版。ページと site.js・search.json の中身から作るので、中身が同じなら版も変わらない。"""
     digest = hashlib.sha1(SITE_JS.encode("utf-8"))
+    digest.update(search.encode("utf-8"))
     for url in sorted(pages):
         digest.update(url.encode("utf-8") + b"\0" + pages[url].encode("utf-8"))
     return digest.hexdigest()[:10]
@@ -2167,7 +2337,7 @@ def discard(path: Path) -> None:
     shutil.move(str(path), str(trash / f"{path.name}-{time.strftime('%Y%m%d%H%M%S')}"))
 
 
-def write_site(out: Path, token: str, pages: dict[str, str], games: list[dict]) -> None:
+def write_site(out: Path, token: str, pages: dict[str, str], games: list[dict], search: str) -> None:
     """--out のフォルダだけを作り直し、合言葉のフォルダの下にページを書く。"""
     check_out(out)
     if out.exists() and any(out.iterdir()):
@@ -2180,10 +2350,11 @@ def write_site(out: Path, token: str, pages: dict[str, str], games: list[dict]) 
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
     (site / "site.js").write_text(SITE_JS, encoding="utf-8")
+    (site / "search.json").write_text(search, encoding="utf-8")
     place_media(site)
-    version = version_of(pages)
+    version = version_of(pages, search)
     core = [u for u in pages if u in CORE or u.startswith("team/")] + ["site.js"]
-    so.write_assets(site, core, list(pages) + ["site.js"], version,
+    so.write_assets(site, core, list(pages) + ["site.js", "search.json"], version,
                     so.status_from_games(games, version))
     (out / "index.html").write_text(BLANK)
     (out / "404.html").write_text(BLANK)
@@ -2203,9 +2374,9 @@ def main() -> None:
     if args.data_root:
         br.DATA_ROOT = args.data_root.expanduser().resolve()
     token = load_token(args.new_token)
-    pages, games = build()
+    pages, games, search = build()
     out = args.out.expanduser().resolve()
-    write_site(out, token, pages, games)
+    write_site(out, token, pages, games, search)
     size = sum(p.stat().st_size for p in out.rglob("*") if p.is_file()) / 1024 / 1024
     print(f"{len(pages)}ページ・{size:.1f}MB → {out}")
     print(f"入口: /{token}/")
@@ -2609,8 +2780,12 @@ SITE_JS = r"""// U-23W杯 共有サイトの画面の動き。build_site.py が�
     each(tabs, function (t) {
       t.addEventListener("click", function () { show(t.getAttribute("data-seg"), true); });
     });
-    var h = location.hash.slice(1);
-    if (h) show(decodeURIComponent(h), false);
+    function fromHash() {
+      var h = location.hash.slice(1);
+      if (h) show(decodeURIComponent(h), false);
+    }
+    window.addEventListener("hashchange", fromHash);
+    fromHash();
   });
 
   // ---- 日本代表: 背番号順と守備別の切り替え（data-show のボタンだけ）
@@ -2625,13 +2800,14 @@ SITE_JS = r"""// U-23W杯 共有サイトの画面の動き。build_site.py が�
   });
 })();
 """
+SITE_JS += site_find.JS
 JS_VERSION = hashlib.sha1(SITE_JS.encode("utf-8")).hexdigest()[:8]
 
 # 見た目は site_theme.py（CSS の文字列）に任せる。読めなければ上の CSS のまま
 try:
     from site_theme import CSS as _THEME_CSS
     if isinstance(_THEME_CSS, str) and _THEME_CSS.strip():
-        CSS = _THEME_CSS
+        CSS = _THEME_CSS + site_find.CSS
 except Exception as error:  # 部品が壊れていてもサイトは今の見た目で書き出す
     print(f"注意: site_theme.py が読めないので、今の見た目で書き出します（{error}）", file=sys.stderr)
 

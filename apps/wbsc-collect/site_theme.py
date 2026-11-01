@@ -335,9 +335,8 @@ padding:9px 0;border-top:1px solid var(--line)}
 .clip-list li:first-child{border-top:0}
 .clip-list .when{grid-column:1;color:var(--dim);font-size:12px;line-height:1.4}
 .clip-list .what{grid-column:1;font-size:14.5px;line-height:1.45}
-.clip-list .play{grid-column:2;grid-row:1/span 2;display:inline-flex;align-items:center;min-height:44px;padding:0 12px;
-border-radius:8px;background:var(--red);color:#fff;font-size:13px;font-weight:800;white-space:nowrap}
-@media (hover:hover){.clip-list .play:hover{filter:brightness(1.12)}}
+.clip-list .play{grid-column:2;grid-row:1/span 2;display:inline-flex;align-items:center;min-height:44px;padding:0 10px;
+border:1px solid var(--line2);border-radius:8px;color:var(--accent);font-size:13px;font-weight:700;white-space:nowrap}
 
 /* ---- 登板表（行＝投手、列＝日付） */
 table.board th,table.board td{min-width:3em;padding:6px;text-align:center;vertical-align:middle;
@@ -361,16 +360,6 @@ table.board td.ok{background:var(--t-green-bg);color:var(--t-green);font-weight:
 table.board .today{box-shadow:inset 2px 0 0 var(--red-t),inset -2px 0 0 var(--red-t)}
 table.board th.today{background:var(--red);color:#fff;font-weight:800}
 
-/* ---- 鍵つきの枠（準備中の計測データなど） */
-.lock{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:12px;align-items:start;margin-top:10px;
-padding:16px;border:1px dashed var(--line2);border-radius:12px;
-background:repeating-linear-gradient(135deg,transparent 0 10px,var(--hatch) 10px 20px),var(--card)}
-.lock::before{content:"";grid-row:1/span 9;width:22px;height:22px;margin-top:1px;background:var(--dim);
--webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1zm2 0h6V7a3 3 0 0 0-6 0v3z'/%3E%3C/svg%3E") center/contain no-repeat;
-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1zm2 0h6V7a3 3 0 0 0-6 0v3z'/%3E%3C/svg%3E") center/contain no-repeat}
-.lock>*{grid-column:2}
-.lock b{font-size:15px;font-weight:800}
-.lock p{margin:2px 0 0;color:var(--dim);font-size:13.5px}
 
 .no{display:inline-block;min-width:2em;color:var(--dim)}
 ol.flow{padding-left:1.4em}
