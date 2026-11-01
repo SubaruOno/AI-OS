@@ -11,7 +11,7 @@
 
 投球の見つけ方は、球審と捕手がしゃがむ時間（人物検出の枠が横長になる）。投球のたびに球審はしゃがみ、
 投げ終わると立つので、しゃがみの終わりを投球とみなす。打者がいない時間のしゃがみ（イニング間の投球練習）は外す。
-記録係の声は whisper で文字にして、「〇番」「代わり」「攻撃」などを含む行だけ数秒残す。
+記録係の声は whisper で文字にして、「〇番」「代わり」「攻撃」などを含む行だけ残す。交代と選手紹介の放送は行の全体を残す。
 
 途中のファイル（人物検出の結果・文字起こし・区切りの一覧）は ~/.cache/pitch-cut/<動画名>/ に置く。
 二度目からはそこを読むので、区切りの決まりを変えたときは書き出しだけやり直せる。
@@ -50,6 +50,11 @@ MERGE = 1.5       # 残す場面同士の間がこれより短ければ1つに�
 VOICE = re.compile(r"[0-9一二三四五六七八九]番|代わり|交代|代打|代走|守ります|攻撃"
                    r"|フライ|ゴロ|ライナー|三振|ヒット|安打|アウト|ホームラン|四球|フォアボール|デッドボール|死球|エラー"
                    r"|犠打|犠飛|バント|併殺|ゲッツー|点追加|得点")
+# 交代と選手紹介の放送。聞き違い（「変わり」「替わり」「変更」）も拾い、文字起こしの時刻が粗いので行の全体を残す
+CHANGE = re.compile(r"[0-9一二三四五六七八九]番|代わ|変わ|替わ|かわり|かわっ|かわる|交代|代打|代走|変更|ピンチ|入ります|お知らせ|スタメン|背番号"
+                    r"|ピッチャー|投手|キャッチャー|捕手|ファースト|セカンド|サード|サート|ショート|レフト|センター|ライト|指名打者|DH|内野|外野|守備")
+CHANGE_MAX = 30.0   # 交代の放送1行で残す長さの上限（whisperの窓の幅）
+CHANGE_AFTER = 5.0  # 行の終わりから何秒残すか
 # 記録係の1球ごとの読み上げ（「4-1ボール」「2-7打ってショートゴロ」）。聞き違いの「スライト」「ボル」も拾う
 CALL = re.compile(r"\d\s*[-ー−の]\s*\d|ボール|ボル|ストライク|スト?ライ|スライト|ファウル|ファール|空振り|から振り|見逃し|打って"
                   r"|ゴロ|フライ|ヒット|ライナー|三振|バント|牽制|けん制|デッド|パスボール|ワイルド")
@@ -178,9 +183,11 @@ def voice_lines(words: Path) -> list[list]:
     lines, prev = [], None
     for s in json.loads(words.read_text(encoding="utf-8"))["transcription"]:
         text = s["text"].strip()
-        if text != prev and VOICE.search(text):
-            a = s["offsets"]["from"] / 1000
-            lines.append([a - 1.0, min(s["offsets"]["to"] / 1000, a + 5.0) + 1.0, "声:" + text])
+        change = CHANGE.search(text)
+        if text != prev and (change or VOICE.search(text)):
+            a, b = s["offsets"]["from"] / 1000, s["offsets"]["to"] / 1000
+            end = min(b, a + CHANGE_MAX) + CHANGE_AFTER if change else min(b, a + 5.0) + 1.0
+            lines.append([a - 1.0, end, "声:" + text])
         prev = text
     return lines
 
@@ -214,7 +221,7 @@ def segment(scan_file: Path, words: Path | None, extra: Path | None = None) -> l
 
 
 def check(video: Path, segs: list[list], folder: Path) -> list[str]:
-    """切り落とした側の音声だけを文字にして、記録係の投球の読み上げが残っていないか探す。
+    """切り落とした側の音声だけを文字にして、投球の読み上げと交代の放送が残っていないか探す。
 
     読み上げは投球の数秒後に来るので、切り落とし側の頭の数秒に出るのはたいてい直前の球のはみ出し。
     それより後ろに出たものは、その前後の元の動画を目で見て、抜けていれば 追加.json に足す。
@@ -242,7 +249,8 @@ def check(video: Path, segs: list[list], folder: Path) -> list[str]:
         pos += len(piece) / sr + 3.0
     cut = folder / "切り落とし.wav"
     sf.write(cut, np.concatenate(pieces), sr)
-    prompt = "4-1ボール。4-0ストライク。2-7打って、ショートゴロ。1-1見逃しストライク。3-2ファウル。空振り三振。デッドボール。"
+    prompt = ("4-1ボール。4-0ストライク。2-7打って、ショートゴロ。1-1見逃しストライク。3-2ファウル。空振り三振。デッドボール。"
+              "ピッチャーの交代をお知らせいたします。代打。代走。")
     subprocess.run(["whisper-cli", "-m", str(WHISPER_MODEL), "-l", "ja", "-mc", "0", "-bs", "5", "-np", "-ml", "20", "-sow",
                     "--prompt", prompt, "-f", str(cut), "-oj", "-of", str(folder / "切り落とし")],
                    check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -251,7 +259,7 @@ def check(video: Path, segs: list[list], folder: Path) -> list[str]:
     starts = [p for p, _, _ in table]
     for s in json.loads((folder / "切り落とし.json").read_text(encoding="utf-8"))["transcription"]:
         text = s["text"].strip()
-        if not text or text == prev_text or HALLUCINATION.search(text) or not CALL.search(text):
+        if not text or text == prev_text or HALLUCINATION.search(text) or not (CALL.search(text) or CHANGE.search(text)):
             prev_text = text
             continue
         prev_text = text
