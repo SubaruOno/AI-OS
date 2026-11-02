@@ -91,7 +91,7 @@
 ## 最終確認（2026-10-03）
 
 - 試合結果に書く言葉を、本番の既存データ（181試合）と見比べた。直したもの：スリーバント失敗→「K3」、申告敬遠→「四球」、エラーの種類→「6ファンブル」の形。これで成績の画面が三振・四球・エラーとして数える。
-- 本番のアカウント：subaru.ono15@gmail.com は player だけ。試合記録を使うときは subaru.ono1@gmail.com（analyst）か subaru@terakoya.ai（admin・analyst）でログインする。入力担当も analyst か admin の役割が要る。
+- 本番のアカウント：subaru.ono15@gmail.com は player だけ。試合記録を使うときは subaru.ono1@gmail.com（analyst）か subaru@terakoya.ai（admin・analyst）でログインする。入力担当も analyst か admin の役割が要る。（2026-11-02追記：terakoyaのアドレスは変更済み。今のアカウントは[SHIGABASEの説明](../docs/shigabase.md)を参照）
 - 反映の順番：通知の関数を先に本番へ入れてから、最初の同期をする（先に同期すると、今の関数が全員に通知を送る）。
 - 確認用の試合は、確認後にサーバーから消す（アプリに消す画面はないので、すばるのOKのうえで私が消す）。
 

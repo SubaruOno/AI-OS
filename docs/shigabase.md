@@ -57,6 +57,17 @@ react-native-gifted-charts・react-native-svgで投球コース図やスプレ�
 - 管理画面の一括登録で作ったアカウント(`player[背番号]@shiga-baseball.internal`)は実在しないアドレスなので、メールは届かない。アプリはこの宛先には送らず、管理者に聞くよう案内する
 - 判定とエラーの言い方は `lib/password-reset.ts`、テストは `lib/__tests__/password-reset.test.ts`
 
+## すばるの本番アカウント(2026-11-02時点)
+
+| ログインに使うアドレス | 権限 |
+|---|---|
+| `subaru.ono15+shigabase@gmail.com` | 管理者・アナリスト・選手 |
+| `player55@shiga-baseball.internal` | 管理者・アナリスト |
+| `subaru.ono1@gmail.com` | アナリスト |
+| `subaru.ono15@gmail.com` | 選手 |
+
+1行目は `subaru@terakoya.ai` の廃止に合わせて2026-11-02にアドレスだけ変えたもので、権限・過去の記録・パスワードは前のまま。変更前の控えは `private/shigabase-email-change-20261102-before.json`。
+
 ## パスワードの変更と管理者の再発行(2026-10-23に追加)
 
 メールが届かない一括登録の部員も、パスワードを変えられるようにした。

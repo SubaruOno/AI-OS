@@ -917,3 +917,4 @@
 - 2026-11-02 22:09 · subaru · U23/build · 直前合宿11/2の全体の表に、7月と同じ形の前日比の列を足した。数字は元のエクセルから計算し直して全員分一致。11/1以前の全体の表のファイルは作り直していない
 - 2026-11-02 22:17 · subaru · account/research · terakoya移行の残りを確認。SHIGABASE本番のすばるの管理者ログインがterakoyaのまま（10/3時点の計画の記録で、本番は未確認）、メール本体は書き出していない、GitHubに予備アドレスとして残っている。AWS・OpenAIの中身、Googleでログインしていた12サービス、Chromeのパスワードの控え、Cloudflareの件の連絡も済んだ記録なし
 - 2026-11-02 22:23 · subaru · shigabase/research · 本番を読み取りで確認（変更なし）。subaru@terakoya.aiは今もadmin・analyst・playerでパスワードログイン。ただし小野昴の管理者は背番号55の部内アカウントにもあり、ほかに管理者が3人いるので、terakoyaが止まっても締め出されない。1つ前の行の見立てより軽いと訂正
+- 2026-11-02 23:10 · subaru · shigabase/ship · すばるの了承のうえで本番を変更。管理者アカウントのアドレスを subaru@terakoya.ai から subaru.ono15+shigabase@gmail.com へ（確認メールなし）。権限・ログイン中の3端末・利用者IDは変わらないことを前後の比較で確認、実際のログインは未確認。[SHIGABASEの説明](../docs/shigabase.md)に今のアカウントを追記
