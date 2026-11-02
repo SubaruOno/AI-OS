@@ -919,3 +919,4 @@
 - 2026-11-02 22:23 · subaru · shigabase/research · 本番を読み取りで確認（変更なし）。subaru@terakoya.aiは今もadmin・analyst・playerでパスワードログイン。ただし小野昴の管理者は背番号55の部内アカウントにもあり、ほかに管理者が3人いるので、terakoyaが止まっても締め出されない。1つ前の行の見立てより軽いと訂正
 - 2026-11-02 23:10 · subaru · shigabase/ship · すばるの了承のうえで本番を変更。管理者アカウントのアドレスを subaru@terakoya.ai から subaru.ono15+shigabase@gmail.com へ（確認メールなし）。権限・ログイン中の3端末・利用者IDは変わらないことを前後の比較で確認、実際のログインは未確認。[SHIGABASEの説明](../docs/shigabase.md)に今のアカウントを追記
 - 2026-11-02 23:12 · subaru · account/note · ChromeでterakoyaのGmailを開けることを確認（11/2夜の時点でログイン中、今日の受信あり）。10/26の期限のあとも動いているが、止まる日は不明。これまでの一覧になかったInstagramのお知らせがterakoya宛てに届いているのを見つけた
+- 2026-11-02 23:15 · subaru · account/note · terakoyaのメール本体の書き出しをTakeoutに依頼（メールだけ、1回、zip、知らせはterakoya宛て）。未完了で、できたら ~/Documents/terakoya-ai-退避-20261026 に保存して通数を照合する。ダウンロードにはterakoyaのパスワードが要る見込み
