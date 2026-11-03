@@ -9,7 +9,7 @@ kbo_pitcher_reel.py web が作った動画と一覧（投手別映像/web/<投�
     team_section(root)    韓国の相手国ページに入れる節（投手のリンク）。映像がなければ空
     media()               サイトに置くファイル [(元のパス, サイトの根元からのパス)]
 
-ページは「左右別まとめ・奪三振集・全打席」を切り替えて見る。動画の再生と絞り込みは site_video.py の部品を使う。
+ページは「左右別まとめ・奪三振集・最近の打席」を切り替えて見る。動画の再生と絞り込みは site_video.py の部品を使う。
 何球目かは読み違いが出るので出さない。1球ごとのボタンには、中継の表示から読めた球速と球種だけを書く。
 """
 
@@ -110,7 +110,8 @@ def scene_chips(item: dict) -> str:
     out = []
     for scene in item["scenes"]:
         head = f'{esc(scene["kmh"])}km/h' if scene["kmh"] else "球速なし"
-        out.append(f'<button type="button" data-t="{scene["t"]:.1f}"><b>{head}</b><small>{esc(scene["kind"]) or "&nbsp;"}</small></button>')
+        kind = f'<small>{esc(scene["kind"])}</small>' if scene["kind"] else ""
+        out.append(f'<button type="button" data-t="{scene["t"]:.1f}"><b>{head}</b>{kind}</button>')
     return f'<div class="vchips">{"".join(out)}</div>' if len(out) > 1 else ""
 
 
@@ -200,7 +201,7 @@ def team_section(root: str) -> str:
         f'<a class="pcard" href="{root}{page_url(p)}"><b class="nm">{esc(p["player"])}</b>'
         f'<small class="sub">{esc(p["kana"])}・{len(p["at_bats"])}打者</small></a>' for p in people)
     lead = ('<p class="note">今季KBOの1軍で投げた投手の、投球の場面だけを抜いた動画です。投手を押すと、'
-            '左右別まとめ・奪三振集・全打席を切り替えて見られます。1軍で投げていない投手の映像はありません。</p>')
+            '左右別まとめ・奪三振集・最近の打席を切り替えて見られます。1軍で投げていない投手の映像はありません。</p>')
     return f'<section id="video"><h2>KBOの投球の映像</h2>{lead}<div class="pgrid">{cards}</div></section>'
 
 
