@@ -692,7 +692,7 @@ def web_at_bat(group: list[dict], folder: Path, work: Path) -> dict:
         join_clip([web_scene(last, f"{stem}_k", work, strikeout=True)], folder / f"{stem}_k.mp4", work)
         item.update({"k_file": f"{stem}_k.mp4", "k_jpg": f"{stem}_k.jpg", "k_kmh": last["球速"], "k_kind": last["球種"],
                      "k_word": {"W": "空振り三振", "S": "見逃し三振"}.get(last["最後の球"], "三振")})
-    for name in work.glob(f"{stem}_*"):
+    for name in work.glob(f"{stem}*"):
         name.unlink()
     return item
 

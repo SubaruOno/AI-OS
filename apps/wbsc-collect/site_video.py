@@ -281,11 +281,12 @@ SCRIPT = """<script>
   buttons.forEach(function (b) {
     b.addEventListener("click", function () {
       var k = b.getAttribute("data-f");
+      var scope = b.closest("[data-vscope]") || main;  // 韓国のページは全打席の欄の中だけを絞る
       buttons.forEach(function (o) { o.setAttribute("aria-pressed", o === b ? "true" : "false"); });
-      main.querySelectorAll(".vclip").forEach(function (a) {
-        a.hidden = k !== "all" && a.getAttribute("data-kind") !== k;
+      scope.querySelectorAll(".vclip").forEach(function (a) {
+        a.hidden = k !== "all" && (" " + a.getAttribute("data-kind") + " ").indexOf(" " + k + " ") < 0;
       });
-      main.querySelectorAll(".vgame").forEach(function (h) {
+      scope.querySelectorAll(".vgame").forEach(function (h) {
         var n = h.nextElementSibling, any = false;
         n.querySelectorAll(".vclip").forEach(function (a) { if (!a.hidden) any = true; });
         h.hidden = n.hidden = !any;
