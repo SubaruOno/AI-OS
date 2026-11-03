@@ -11,6 +11,7 @@
     python3 kbo_pitcher_reel.py scan --player 최우석    # 打席の動画を読む（球速と球種の表示、センター映像の区間）
     python3 kbo_pitcher_reel.py pick --player 최우석    # 1球ずつの場面を決める → <投手>_1球.csv
     python3 kbo_pitcher_reel.py render --player 최우석  # 3種類の動画にする（--kind all / sides / k で1種類だけ）
+    python3 kbo_pitcher_reel.py web --player 최우석     # 共有サイト用の打席ごとの動画（投手別映像/web/）。site_video_kor.py が読む
 
 1球の並びの正解はKBO公式の文字中継（kbo_clips.py の 打席_KBO.csv）で、映像からは場面だけを取る。
 球速の表示が出た時刻を第一の目印にし、球速が読めた場面を手本にしてセンターカメラの映像を見分け、
@@ -57,6 +58,8 @@ LONGEST_NO_MARK = 10.0
 # 映像の形：放送の画面（720p）の上に字幕の帯を足す
 VW, VH, STRIP = 1280, 720, 64
 BITRATE = "4500k"
+# 共有サイト用の形（字幕の帯まで含めて縮める）
+WEB_W, WEB_H, WEB_CRF = 960, 588, 28
 
 SPEED = re.compile(r"(1[0-6]\d)\s*[kK]")
 SPEED_UNIT = re.compile(r"[kKc][mM]|/h")
@@ -452,7 +455,7 @@ def caption(p: dict, path: Path, after_pitch: bool, strikeout: bool = False) -> 
     draw = ImageDraw.Draw(img)
     head = f"{hand_ja(p['左右'])}　{int(p['日付'][:2])}/{int(p['日付'][3:])} {team_ja(p['相手'])}戦 {inning_ja(p['回'])}　"
     x = draw_text(draw, (20, 16), head, 26, "#FFFFFF")
-    draw_text(draw, (x, 19), p["打者"], 22, "#AEB6C2")
+    x = draw_text(draw, (x, 19), p["打者"], 22, "#AEB6C2")
     if after_pitch:
         pieces = []
         if p["球速"] != "":
@@ -464,7 +467,10 @@ def caption(p: dict, path: Path, after_pitch: bool, strikeout: bool = False) -> 
             if word:
                 pieces.append(f"→ {word}")
         right = "　".join(pieces)
-        draw_text(draw, (VW - 20 - text_width(right, 26), 16), right, 26, "#FFD76A")
+        size = 26
+        while size > 16 and x + 24 + text_width(right, size) > VW - 20:  # 左の字幕とぶつかるときは小さくする
+            size -= 2
+        draw_text(draw, (VW - 20 - text_width(right, size), 16 + (26 - size) // 2), right, size, "#FFD76A")
     img.save(path)
 
 
@@ -478,6 +484,12 @@ def card(lines: list[tuple[str, int, str]], path: Path) -> None:
     img.save(path)
 
 
+def web_flags() -> list[str]:
+    """共有サイト用。電波の弱い所で見るので軽くする（台湾の映像ページと同じ libx264 の veryfast）。"""
+    return ["-c:v", "libx264", "-preset", "veryfast", "-crf", str(WEB_CRF), "-profile:v", "high", "-pix_fmt", "yuv420p",
+            "-r", "30000/1001", "-g", "60", "-threads", "2", "-an"]
+
+
 def encode_flags() -> list[str]:
     return ["-c:v", "h264_videotoolbox", "-b:v", BITRATE, "-profile:v", "high", "-pix_fmt", "yuv420p",
             "-r", "60000/1001", "-video_track_timescale", "90000", "-an"]
@@ -488,16 +500,18 @@ def render_card(image: Path, seconds: float, out: Path) -> None:
                     *encode_flags(), "-f", "mpegts", str(out)], check=True)
 
 
-def render_pitch(p: dict, before: Path, after: Path, out: Path) -> None:
-    """放送の画面の上に字幕の帯を足す。投げた後の字幕は、球速の表示が出た秒から重ねる。"""
+def render_pitch(p: dict, before: Path, after: Path, out: Path, web: bool = False) -> None:
+    """放送の画面の上に字幕の帯を足す。投げた後の字幕は、球速の表示が出た秒から重ねる。web は共有サイト用の軽い版。"""
     length = p["終わり"] - p["始まり"]
     reveal = float(p["目印の秒"]) - p["始まり"] if p["目印の秒"] != "" else max(length - 2.0, 0.0)
-    graph = (f"[0:v]fps=60000/1001,scale={VW}:{VH},setsar=1,pad={VW}:{VH + STRIP}:0:{STRIP}:black[b];"
+    rate = "30000/1001" if web else "60000/1001"
+    finish = f",scale={WEB_W}:{WEB_H}" if web else ""
+    graph = (f"[0:v]fps={rate},scale={VW}:{VH},setsar=1,pad={VW}:{VH + STRIP}:0:{STRIP}:black[b];"
              "[b][1:v]overlay=0:0:shortest=1[c];"
-             f"[c][2:v]overlay=0:0:shortest=1:enable='gte(t,{reveal:.2f})'[v]")
+             f"[c][2:v]overlay=0:0:shortest=1:enable='gte(t,{reveal:.2f})'{finish}[v]")
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", str(p["始まり"]), "-t", f"{length:.2f}",
                     "-i", str(DATA / p["動画"]), "-loop", "1", "-i", str(before), "-loop", "1", "-i", str(after),
-                    "-filter_complex", graph, "-map", "[v]", *encode_flags(), "-f", "mpegts", str(out)], check=True)
+                    "-filter_complex", graph, "-map", "[v]", *(web_flags() if web else encode_flags()), "-f", "mpegts", str(out)], check=True)
 
 
 def player_info(player: str) -> dict:
@@ -634,9 +648,82 @@ def cmd_render(player: str, kind: str) -> None:
         build_reel(player, "奪三振集", f"奪三振集 {len(strikeouts)}個（決め球）", [(f"{n}（{len(i)}個）", i) for n, i in sides], strikeout=True)
 
 
+def seconds_of(path: Path) -> float:
+    res = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
+                         capture_output=True, text=True).stdout.strip()
+    return float(res or 0)
+
+
+def join_clip(parts: list[Path], out: Path, work: Path) -> None:
+    listing = work / f"{out.stem}.txt"
+    listing.write_text("".join(f"file '{x}'\n" for x in parts), encoding="utf-8")
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(listing), "-map", "0:v",
+                    "-c", "copy", "-movflags", "+faststart", str(out)], check=True)
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-an", "-ss", "0.5", "-i", str(out), "-frames:v", "1",
+                    "-vf", "scale=480:-2", "-q:v", "5", str(out.with_suffix(".jpg"))], check=True)
+
+
+def web_scene(p: dict, stem: str, work: Path, strikeout: bool = False) -> Path:
+    before, after, ts = work / f"{stem}_a.png", work / f"{stem}_b.png", work / f"{stem}.ts"
+    caption(p, before, False)
+    caption(p, after, True, strikeout)
+    render_pitch(p, before, after, ts, web=True)
+    return ts
+
+
+def web_at_bat(group: list[dict], folder: Path, work: Path) -> dict:
+    """1打席を1つの動画にする。奪三振の打席は、決め球だけの動画も作る。"""
+    first = group[0]
+    stem = f"{first['試合']}_{int(first['打席番号']):03d}"
+    parts = [web_scene(p, f"{stem}_{i}", work) for i, p in enumerate(group)]
+    join_clip(parts, folder / f"{stem}.mp4", work)
+    scenes, at = [], 0.0
+    for p, part in zip(group, parts):
+        scenes.append({"t": round(at, 1), "kmh": p["球速"], "kind": p["球種"]})
+        at += seconds_of(part)
+    item = {
+        "game": first["試合"], "no": int(first["打席番号"]), "date": first["日付"], "opp": team_ja(first["相手"]),
+        "inning": inning_ja(first["回"]), "batter": first["打者"], "hand": first["左右"], "result": result_ja(first["打席結果"]),
+        "class": result_class(first["打席結果"]), "pitches": int(first["打席の球数"]), "complete": len(group) == int(first["打席の球数"]),
+        "file": f"{stem}.mp4", "jpg": f"{stem}.jpg", "seconds": round(at, 1), "scenes": scenes,
+    }
+    last = next((p for p in group if p["打席の最後"] == "1"), None)
+    if last and item["result"] == "三振":
+        join_clip([web_scene(last, f"{stem}_k", work, strikeout=True)], folder / f"{stem}_k.mp4", work)
+        item.update({"k_file": f"{stem}_k.mp4", "k_jpg": f"{stem}_k.jpg", "k_kmh": last["球速"], "k_kind": last["球種"],
+                     "k_word": {"W": "空振り三振", "S": "見逃し三振"}.get(last["最後の球"], "三振")})
+    for name in work.glob(f"{stem}_*"):
+        name.unlink()
+    return item
+
+
+def cmd_web(player: str) -> None:
+    picks = list(csv.DictReader(open(OUT / f"{player}_1球.csv", encoding="utf-8-sig")))
+    for p in picks:
+        p["始まり"], p["終わり"] = float(p["始まり"]), float(p["終わり"])
+    info = player_info(player)
+    latin = next(r["bass"] for r in csv.DictReader(open(DATA / "選手.csv", encoding="utf-8-sig")) if r["name"] == player)
+    slug = re.sub(r"[^a-z]+", "-", latin.lower()).strip("-")
+    folder = OUT / "web" / slug
+    folder.mkdir(parents=True, exist_ok=True)
+    work = Path(tempfile.mkdtemp(prefix="web", dir=CACHE / player))
+    groups = at_bat_groups(picks)
+    with ThreadPoolExecutor(4) as ex:
+        items = list(ex.map(lambda g: web_at_bat(g, folder, work), groups))
+    work.rmdir()
+    index = {"player": player, "kana": info["kana"], "club": info["team"], "throw": info["throw"], "style": info["style"], "slug": slug,
+             "games": len({i["game"] for i in items}), "sides": {},  "at_bats": items}
+    for name, side in (("left", [g for g in groups if g[0]["左右"] != "우"]), ("right", [g for g in groups if g[0]["左右"] == "우"])):
+        index["sides"][name] = [[g[0]["試合"], int(g[0]["打席番号"])] for g in choose_at_bats([p for g in side for p in g], AT_BATS_PER_SIDE)]
+    (folder / "index.json").write_text(json.dumps(index, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    size = sum(f.stat().st_size for f in folder.glob("*.mp4")) / 1e6
+    biggest = max(f.stat().st_size for f in folder.glob("*.mp4")) / 1024 / 1024
+    print(f"{player}: {len(items)}打席 {sum('k_file' in i for i in items)}三振 動画{size:.0f}MB 最大{biggest:.1f}MiB")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=["hands", "scan", "pick", "render"])
+    parser.add_argument("command", choices=["hands", "scan", "pick", "render", "web"])
     parser.add_argument("--player")
     parser.add_argument("--kind", choices=["all", "every", "sides", "k"], default="all")
     args = parser.parse_args()
@@ -646,6 +733,8 @@ def main() -> None:
         cmd_scan(args.player)
     elif args.command == "pick":
         cmd_pick(args.player)
+    elif args.command == "web":
+        cmd_web(args.player)
     else:
         cmd_render(args.player, args.kind)
 
