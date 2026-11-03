@@ -921,3 +921,4 @@
 - 2026-11-02 23:12 · subaru · account/note · ChromeでterakoyaのGmailを開けることを確認（11/2夜の時点でログイン中、今日の受信あり）。10/26の期限のあとも動いているが、止まる日は不明。これまでの一覧になかったInstagramのお知らせがterakoya宛てに届いているのを見つけた
 - 2026-11-02 23:15 · subaru · account/note · terakoyaのメール本体の書き出しをTakeoutに依頼（メールだけ、1回、zip、知らせはterakoya宛て）。未完了で、できたら ~/Documents/terakoya-ai-退避-20261026 に保存して通数を照合する。ダウンロードにはterakoyaのパスワードが要る見込み
 - 2026-11-02 23:53 · subaru · account/ship · terakoyaのメール本体をTakeoutで書き出して ~/Documents/terakoya-ai-退避-20261026/zip に保存（2,086通、2025-04〜今日の19:43）。スレッド数はGmail側1,907に対し書き出し1,905で、差の2つは書き出しの依頼後に届いたGoogleの通知2通と確認。ドライブには上げていない
+- 2026-11-03 11:34 · subaru · account/research · terakoyaのGmailに今も入れることを確認。保存したメールの差出人と件名を調べ、terakoya宛てのInstagram通知に3アカウント（shigauniv_alc、terakoya.ai、shigau_businessideacontest）の名前を確認。AWSとOpenAIは請求のメールが0通なので優先を下げた（カードの有無はログインしないと不明）。パスワードの控えはまだ
