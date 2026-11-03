@@ -59,6 +59,7 @@ VW, VH, STRIP = 1280, 720, 64
 BITRATE = "4500k"
 
 SPEED = re.compile(r"(1[0-6]\d)\s*[kK]")
+SPEED_UNIT = re.compile(r"[kKc][mM]|/h")
 KINDS = {
     "패스트볼": "速球", "직구": "速球", "포심": "速球", "슬라이더": "スライダー", "커브": "カーブ",
     "체인지업": "チェンジアップ", "포크": "フォーク", "스플리터": "スプリット", "투심": "ツーシーム",
@@ -155,8 +156,10 @@ def ocr(paths: list[str]) -> list[list[dict]]:
 
 
 def pitch_kind(lines: list[dict]) -> str:
-    """球速の枠の文字から球種を拾う。1文字の読み違いは許す。"""
+    """球速と同じ行の文字から球種を拾う。1文字の読み違いは許す。ほかの行は広告（포크밸리 など）を拾うので見ない。"""
     for item in lines:
+        if not SPEED_UNIT.search(item["text"]):
+            continue
         for word in re.findall(r"[가-힣]{2,}", item["text"]):
             hit = difflib.get_close_matches(word, KINDS, n=1, cutoff=0.6)
             if hit:
