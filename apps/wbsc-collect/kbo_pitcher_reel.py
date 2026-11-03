@@ -1,0 +1,612 @@
+#!/usr/bin/env python3
+"""韓国U-23代表の投手ごとの対策映像を、kbo_clips.py で切った打席の動画から作る道具。
+
+打席の動画（約30秒に1球）から投球の場面だけを抜き、対右打者・対左打者に分けて1本につなぐ。
+動画は ~/野球/U23ワールドカップ2026/04_対戦国/韓国/投手別映像/ に書く（選手の映像なのでリポジトリに入れない）。
+
+    python3 kbo_pitcher_reel.py hands                 # 対戦した打者の左右をKBO公式から取る → 打者の左右.json
+    python3 kbo_pitcher_reel.py scan --player 최우석    # 打席の動画を読む（球速と球種の表示、センター映像の区間）
+    python3 kbo_pitcher_reel.py pick --player 최우석    # 1球ずつの場面を決める → <投手>_1球.csv
+    python3 kbo_pitcher_reel.py render --player 최우석  # 動画にする
+
+1球の並びの正解はKBO公式の文字中継（kbo_clips.py の 打席_KBO.csv）で、映像からは場面だけを取る。
+球速の表示が出た時刻を第一の目印にし、球速が読めた場面を手本にしてセンターカメラの映像を見分け、
+球速が出なかった球（ファウルの直後にカメラが替わるなど）はその区間で補う。作業中に動画は再生しない。
+"""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import difflib
+import html
+import json
+import re
+import subprocess
+import tempfile
+import time
+from collections import Counter, defaultdict
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+from kbo_clips import BASS_LIST, DATA, KBO, ROOT, TEAMS, fetch, ocr_bin
+
+OUT = ROOT / "04_対戦国" / "韓国" / "投手別映像"
+READINGS = ROOT / "07_出場選手情報" / "サイト用" / "名簿_読み.csv"
+CACHE = Path.home() / ".cache" / "kbo_clips" / "reel"
+HANDS = OUT / "打者の左右.json"
+
+# 映像を読むときの大きさ（10コマ/秒の小さな白黒）
+FPS = 10
+GW, GH = 160, 90
+# センター映像の見分けに使う範囲（マウンドと芝。帯と球速の枠は入らない）
+REGION = (slice(int(GH * 0.45), int(GH * 0.88)), slice(int(GW * 0.05), int(GW * 0.65)))
+# 動きを見る範囲（投手と打者）
+MOVE = (slice(int(GH * 0.15), int(GH * 0.90)), slice(int(GW * 0.05), int(GW * 0.70)))
+
+# 1球の切り方（秒）。球速の表示は放送局によって投球の0〜3秒後に出る
+BEFORE_MARK = 8.0
+AFTER_MARK = 2.5
+AFTER_HIT = 6.0
+LONGEST_NO_MARK = 10.0
+
+# 映像の形：放送の画面（720p）の上に字幕の帯を足す
+VW, VH, STRIP = 1280, 720, 64
+BITRATE = "4500k"
+
+SPEED = re.compile(r"(1[0-6]\d)\s*[kK]")
+COUNT = re.compile(r"^([0-3])\s*[-–—]\s*([0-2])$")
+KINDS = {
+    "패스트볼": "速球", "직구": "速球", "포심": "速球", "슬라이더": "スライダー", "커브": "カーブ",
+    "체인지업": "チェンジアップ", "포크": "フォーク", "스플리터": "スプリット", "투심": "ツーシーム",
+    "싱커": "シンカー", "커터": "カット",
+}
+PITCH = {"B": "ボール", "S": "見逃し", "W": "空振り", "F": "ファウル", "X": "打った"}
+RESULT_WORDS = [
+    ("스트라이크 낫 아웃", "振り逃げ"), ("땅볼로 출루", "ゴロで出塁"), ("실책으로 출루", "失策で出塁"), ("맞고", "に当たり"),
+    ("희생번트", "犠牲バント"), ("출루", "出塁"),
+    ("좌중간", "左中間"), ("우중간", "右中間"), ("1루수", "一塁"), ("2루수", "二塁"), ("3루수", "三塁"),
+    ("유격수", "遊撃"), ("좌익수", "左翼"), ("중견수", "中堅"), ("우익수", "右翼"), ("투수", "投手"), ("포수", "捕手"),
+    ("땅볼", "ゴロ"), ("플라이", "フライ"), ("라인드라이브", "ライナー"), ("파울", "ファウル"), ("번트", "バント"),
+    ("병살타", "併殺打"), ("병살", "併殺"), ("희생", "犠牲"), ("내야안타", "内野安打"), ("안타", "安打"),
+    ("1루타", "安打"), ("2루타", "二塁打"), ("3루타", "三塁打"), ("홈런", "本塁打"), ("삼진", "三振"), ("볼넷", "四球"),
+    ("몸에 맞는 볼", "死球"), ("고의4구", "敬遠"), ("실책", "失策"), ("야수선택", "野選"), ("아웃", "アウト"),
+    ("앞", "前"), ("뒤", "後方"), ("왼쪽", "左"), ("오른쪽", "右"),
+]
+
+
+# ---------------------------------------------------------------- 打席の並び
+
+
+def at_bats(player: str) -> list[dict]:
+    """一覧.csv のこの投手の打席に、文字中継の打席（打者のチーム・結果）を足す。"""
+    rows = [r for r in csv.DictReader(open(DATA / "一覧.csv", encoding="utf-8-sig"))
+            if r["選手"] == player and r["区分"] == "投手" and r["動画"]]
+    relay: dict[str, dict] = {}
+    for game in {r["試合"] for r in rows}:
+        relay[game] = {x["no"]: x for x in csv.DictReader(open(DATA / game / "打席_KBO.csv", encoding="utf-8-sig"))}
+    for r in rows:
+        kbo = relay[r["試合"]][r["打席番号"]]
+        r["bat_team"] = kbo["bat_team"]
+        r["seq"] = r["1球の並び"].split()
+        r["game_batters"] = sorted({x["batter"] for x in relay[r["試合"]].values()})
+        r["stem"] = Path(r["動画"]).stem
+    return rows
+
+
+def team_ja(code: str) -> str:
+    return next(t[2] for t in TEAMS if t[0] == code)
+
+
+def team_ko(code: str) -> str:
+    return next(t[1] for t in TEAMS if t[0] == code)
+
+
+# ---------------------------------------------------------------- 打者の左右
+
+
+def form_value(page: str, name: str) -> str:
+    m = re.search(rf'name="{re.escape(name)}"[^>]*value="([^"]*)"', page)
+    return html.unescape(m.group(1)) if m else ""
+
+
+def batter_hand(name: str, team: str) -> str:
+    """KBO公式の選手検索で、そのチームの同じ名前の選手の打席（우・좌・양）を取る。"""
+    ui = "ctl00$ctl00$ctl00$cphContents$cphContents$cphContents$"
+    url = f"{KBO}/Player/Search.aspx"
+    page = fetch(url).decode("utf-8", "replace")
+    form = {k: form_value(page, k) for k in ("__VIEWSTATE", "__EVENTVALIDATION", "__VIEWSTATEGENERATOR")}
+    form[ui + "txtSearchPlayerName"] = name
+    form[ui + "btnSearch"] = "검색"
+    res = fetch(url, form).decode("utf-8", "replace")
+    for row in re.findall(r"<tr>(.*?)</tr>", res, re.S):
+        link = re.search(r"""href=['"][^'"]*Detail[^'"]*playerId=(\d+)['"][^>]*>([^<]+)<""", row)
+        if not link or link.group(2).strip() != name or team_ko(team) not in row:
+            continue
+        detail = fetch(f"{KBO}/Record/Player/HitterDetail/Basic.aspx?playerId={link.group(1)}").decode("utf-8", "replace")
+        m = re.search(r"[우좌양]투([우좌양])타", detail)
+        return m.group(1) if m else ""
+    return ""
+
+
+def cmd_hands() -> None:
+    OUT.mkdir(parents=True, exist_ok=True)
+    done = json.loads(HANDS.read_text()) if HANDS.exists() else {}
+    rows = [r for r in csv.DictReader(open(DATA / "一覧.csv", encoding="utf-8-sig")) if r["区分"] == "投手"]
+    players = {r["選手"] for r in rows}
+    wanted = {(r["打者"], r["bat_team"]) for p in players for r in at_bats(p)}
+    for name, team in sorted(wanted):
+        if not done.get(f"{name}|{team}"):
+            done[f"{name}|{team}"] = batter_hand(name, team)
+            HANDS.write_text(json.dumps(done, ensure_ascii=False, indent=0))
+            time.sleep(0.5)
+    blank = [k for k, v in done.items() if not v]
+    print(f"打者 {len(done)}人、取れなかった {len(blank)}人 {blank}")
+
+
+# ---------------------------------------------------------------- 読む（scan）
+
+
+def ocr(paths: list[str]) -> list[list[dict]]:
+    res = subprocess.run([str(ocr_bin()), *paths], capture_output=True, text=True).stdout
+    return [json.loads(line)["lines"] for line in res.splitlines()]
+
+
+def pitch_kind(lines: list[dict]) -> str:
+    """球速の枠の文字から球種を拾う。1文字の読み違いは許す。"""
+    for item in lines:
+        for word in re.findall(r"[가-힣]{2,}", item["text"]):
+            hit = difflib.get_close_matches(word, KINDS, n=1, cutoff=0.6)
+            if hit:
+                return KINDS[hit[0]]
+    return ""
+
+
+def read_marks(clip: Path) -> list[list]:
+    """1秒おきに右下を読み、球速が出た時刻を [秒, 球速, 球種] で返す。続けて見えている間は1回に数える。"""
+    with tempfile.TemporaryDirectory() as tmp:
+        subprocess.run(["ffmpeg", "-v", "error", "-an", "-i", str(clip), "-vf",
+                        "fps=1,crop=iw*0.4:ih*0.5:iw*0.6:ih*0.5", "-q:v", "3", f"{tmp}/%05d.jpg"], check=True)
+        frames = sorted(str(p) for p in Path(tmp).glob("*.jpg"))
+        pages = ocr(frames)
+    groups: list[dict] = []
+    for sec, lines in enumerate(pages):
+        kmh = next((int(m.group(1)) for x in lines for m in [SPEED.search(x["text"])] if m), 0)
+        if not kmh:
+            continue
+        if groups and sec - groups[-1]["last"] <= 4:
+            groups[-1]["last"] = sec
+        else:
+            groups.append({"first": sec, "last": sec, "kmh": [], "kind": []})
+        groups[-1]["kmh"].append(kmh)
+        groups[-1]["kind"].append(pitch_kind(lines))
+    marks = []
+    for g in groups:
+        kinds = [k for k in g["kind"] if k]
+        marks.append([g["first"], Counter(g["kmh"]).most_common(1)[0][0], Counter(kinds).most_common(1)[0][0] if kinds else ""])
+    return marks
+
+
+def read_gray(clip: Path) -> np.ndarray:
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-an", "-i", str(clip), "-vf", f"fps={FPS},scale={GW}:{GH}",
+                          "-pix_fmt", "gray", "-f", "rawvideo", "-"], capture_output=True, check=True).stdout
+    return np.frombuffer(raw, np.uint8).reshape(-1, GH, GW)
+
+
+def scan_one(row: dict, folder: Path) -> None:
+    clip = DATA / row["動画"]
+    marks_file = folder / f"{row['stem']}.json"
+    gray_file = folder / f"{row['stem']}.npy"
+    if not marks_file.exists():
+        marks_file.write_text(json.dumps(read_marks(clip), ensure_ascii=False))
+    if not gray_file.exists():
+        np.save(gray_file, read_gray(clip))
+
+
+def cmd_scan(player: str) -> None:
+    folder = CACHE / player
+    folder.mkdir(parents=True, exist_ok=True)
+    rows = at_bats(player)
+    with ThreadPoolExecutor(4) as ex:
+        list(ex.map(lambda r: scan_one(r, folder), rows))
+    print(f"{player}: {len(rows)}打席を読んだ")
+
+
+# ---------------------------------------------------------------- 場面を決める（pick）
+
+
+def center_runs(dist: np.ndarray, thr: float) -> list[tuple[float, float]]:
+    """手本との差が小さいコマの続きを、センター映像の区間（秒）にする。1秒未満は捨て、0.5秒以内の切れ目はつなぐ。"""
+    runs: list[list[int]] = []
+    start = None
+    for i, ok in enumerate(dist < thr):
+        if ok and start is None:
+            start = i
+        if not ok and start is not None:
+            runs.append([start, i])
+            start = None
+    if start is not None:
+        runs.append([start, len(dist)])
+    joined: list[list[int]] = []
+    for r in runs:
+        if joined and r[0] - joined[-1][1] <= FPS // 2:
+            joined[-1][1] = r[1]
+        else:
+            joined.append(r)
+    return [(a / FPS, b / FPS) for a, b in joined if b - a >= FPS]
+
+
+def game_runs(rows: list[dict], folder: Path) -> dict[str, list[tuple[float, float]]]:
+    """試合ごとに、球速が読めた場面の中央値を手本にして、打席ごとのセンター映像の区間を返す。"""
+    out: dict[str, list[tuple[float, float]]] = {}
+    games = defaultdict(list)
+    for r in rows:
+        games[r["試合"]].append(r)
+    for rs in games.values():
+        grays = {r["stem"]: np.load(folder / f"{r['stem']}.npy") for r in rs}
+        refs = []
+        for r in rs:
+            gray = grays[r["stem"]]
+            for sec, _, _ in json.loads((folder / f"{r['stem']}.json").read_text()):
+                if sec >= 3 and sec * FPS < len(gray):
+                    refs.append(gray[sec * FPS][REGION].astype(np.int16))
+        if not refs:
+            for r in rs:
+                out[r["stem"]] = []
+            continue
+        model = np.median(np.stack(refs), axis=0)
+        gaps = [float(np.abs(x - model).mean()) for x in refs]
+        thr = max(14.0, float(np.percentile(gaps, 90)) * 1.3)
+        for r in rs:
+            region = grays[r["stem"]][(slice(None),) + REGION].astype(np.int16)
+            out[r["stem"]] = center_runs(np.abs(region - model).mean(axis=(1, 2)), thr)
+    return out
+
+
+def near_name(name: str, text: str) -> bool:
+    """文字認識の行に名前が入っているか。3文字以上の名前は1文字違いまで許す（kbo_clips.py と同じ考え方）。"""
+    if name in text:
+        return True
+    if len(name) < 3:
+        return False
+    for word in re.findall(r"[가-힣]{%d}" % len(name), text):
+        if sum(a != b for a, b in zip(word, name)) <= 1:
+            return True
+    return False
+
+
+def read_band(clip: Path, times: list[float]) -> list[dict]:
+    """その時刻の画面全体を読み、カウントと帯の文字を返す。"""
+    with tempfile.TemporaryDirectory() as tmp:
+        paths = []
+        for i, t in enumerate(times):
+            p = f"{tmp}/{i:04d}.jpg"
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-an", "-ss", f"{t:.2f}", "-i", str(clip),
+                            "-frames:v", "1", "-q:v", "2", p], check=True)
+            paths.append(p)
+        pages = ocr(paths) if paths else []
+    out = []
+    for lines in pages:
+        count = ""
+        for x in lines:
+            m = COUNT.match(x["text"].strip())
+            if m:
+                count = f"{m.group(1)}-{m.group(2)}"
+                break
+        out.append({"count": count, "text": " ".join(x["text"] for x in lines)})
+    return out
+
+
+def pitch_counts(seq: list[str]) -> list[str]:
+    """1球の並びから、各球の投げる前のカウント（ボール-ストライク）を出す。"""
+    balls = strikes = 0
+    out = []
+    for p in seq:
+        out.append(f"{balls}-{strikes}")
+        if p == "B":
+            balls += 1
+        elif p in "SW" or (p == "F" and strikes < 2):
+            strikes += 1
+    return out
+
+
+def align(events: list[dict], counts: list[str]) -> list[int]:
+    """場面の並びと球の並びを、順番を保ったまま結ぶ。帯のカウントが合えば強く、食い違えば弱く数える。"""
+    m, n = len(events), len(counts)
+    score = np.full((m + 1, n + 1), -1e9)
+    score[0, :] = [-1.0 * j for j in range(n + 1)]
+    back: dict[tuple[int, int], tuple[int, int, bool]] = {}
+    for i in range(1, m + 1):
+        for j in range(n + 1):
+            best = score[i - 1, j] - 2.0  # この場面は使わない
+            how = (i - 1, j, False)
+            if j > 0 and score[i, j - 1] - 1.0 > best:  # この球の場面はない
+                best = score[i, j - 1] - 1.0
+                how = (i, j - 1, False)
+            if j > 0:
+                seen = events[i - 1]["count"]
+                gain = 1.0 if not seen else (3.0 if seen == counts[j - 1] else -4.0)
+                if score[i - 1, j - 1] + gain > best:
+                    best = score[i - 1, j - 1] + gain
+                    how = (i - 1, j - 1, True)
+            score[i, j] = best
+            back[(i, j)] = how
+    out = [-1] * m
+    i, j = m, n
+    while i > 0:
+        pi, pj, used = back[(i, j)]
+        if used:
+            out[i - 1] = j - 1
+        i, j = pi, pj
+    return out
+
+
+def pick_clip(row: dict, runs: list[tuple[float, float]], folder: Path, hands: dict) -> list[dict]:
+    clip = DATA / row["動画"]
+    seq = row["seq"]
+    duration = len(np.load(folder / f"{row['stem']}.npy", mmap_mode="r")) / FPS
+    marks = [m for m in json.loads((folder / f"{row['stem']}.json").read_text()) if m[0] > 2]
+
+    # 候補：球速が読めた場面と、球速の出なかったセンター映像の区間
+    events = []
+    used_runs = set()
+    for sec, kmh, kind in marks:
+        run = next((r for r in runs if r[0] - 1 <= sec <= r[1] + 1), None)
+        if run:
+            used_runs.add(run)
+        floor = run[0] if run else max(0.0, sec - 6)
+        events.append({"mark": sec, "kmh": kmh, "kind": kind, "start": max(floor, sec - BEFORE_MARK), "end": sec + AFTER_MARK})
+    for run in runs:
+        if run not in used_runs and run[0] > 2:
+            events.append({"mark": None, "kmh": 0, "kind": "", "start": max(run[0], run[1] - LONGEST_NO_MARK), "end": run[1] + 1.0})
+    events.sort(key=lambda e: e["start"])
+
+    # 帯を読む：別の打者の場面を落とし、カウントを控える
+    bands = read_band(clip, [min(e["start"] + 0.3, duration - 0.1) for e in events])
+    others = [b for b in row["game_batters"] if b != row["打者"]]
+    kept = []
+    for e, b in zip(events, bands):
+        e["count"] = b["count"]
+        e["target"] = near_name(row["打者"], b["text"])
+        e["other"] = any(o in b["text"] for o in others)
+        if e["other"] and not e["target"]:
+            continue
+        kept.append(e)
+
+    # 球数に合わせる：球速の読めた場面を先に、足りない分を球速のない区間から補う
+    marked = [e for e in kept if e["mark"] is not None]
+    blanks = [e for e in kept if e["mark"] is None]
+    if len(marked) > len(seq):
+        marked = sorted(marked, key=lambda e: not e["target"])[:len(seq)]
+    room = len(seq) - len(marked)
+    blanks = sorted(blanks, key=lambda e: (not e["target"], not e["count"], e["start"]))[:max(room, 0)]
+    chosen = sorted(marked + blanks, key=lambda e: e["start"])
+
+    # 球の並びに結ぶ。結べた場面だけ、何球目かと結果を字幕に出す
+    counts = pitch_counts(seq)
+    link = align(chosen, counts)
+    clash = any(e["count"] and j >= 0 and e["count"] != counts[j] for e, j in zip(chosen, link))
+    whole = len(chosen) == len(seq) and not clash
+    hand = hands.get(f"{row['打者']}|{row['bat_team']}", "")
+    out = []
+    for e, j in zip(chosen, link):
+        sure = j >= 0 and (whole or e["count"] == counts[j])
+        hit = sure and seq[j] == "X"
+        last = j == len(seq) - 1
+        end = e["end"] + (AFTER_HIT - AFTER_MARK if hit or (last and seq[-1] == "X") else 0)
+        out.append({
+            "投手": row["選手"], "試合": row["試合"], "打席番号": row["打席番号"], "日付": row["日付"], "相手": row["bat_team"],
+            "回": row["回"], "打者": row["打者"], "左右": hand, "球番号": j + 1 if sure else "", "カウント": counts[j] if sure else "",
+            "1球": seq[j] if sure else "", "打席結果": row["結果"], "球速": e["kmh"] or "", "球種": e["kind"],
+            "目印": "球速" if e["mark"] is not None else "区間", "動画": row["動画"],
+            "始まり": round(e["start"], 1), "終わり": round(min(end, duration), 1), "打席の球数": len(seq),
+        })
+    return out
+
+
+def cmd_pick(player: str) -> None:
+    folder = CACHE / player
+    rows = at_bats(player)
+    hands = json.loads(HANDS.read_text()) if HANDS.exists() else {}
+    runs = game_runs(rows, folder)
+    with ThreadPoolExecutor(4) as ex:
+        parts = list(ex.map(lambda r: pick_clip(r, runs[r["stem"]], folder, hands), rows))
+    picks = [p for part in parts for p in part]
+    path = OUT / f"{player}_1球.csv"
+    OUT.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8-sig", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(picks[0]))
+        w.writeheader()
+        w.writerows(picks)
+    total = sum(len(r["seq"]) for r in rows)
+    even = sum(1 for r, part in zip(rows, parts) if len(part) == len(r["seq"]))
+    sure = sum(1 for p in picks if p["球番号"] != "")
+    kinds = Counter(p["球種"] for p in picks if p["球種"])
+    seconds = sum(p["終わり"] - p["始まり"] for p in picks)
+    print(f"{player}: 球数 {total}、場面 {len(picks)}（球速あり {sum(p['目印'] == '球速' for p in picks)}）、"
+          f"球数がそろった打席 {even}/{len(rows)}、何球目か言える場面 {sure}、球種 {dict(kinds)}、約{seconds / 60:.0f}分")
+
+
+# ---------------------------------------------------------------- 動画にする（render）
+
+
+FONT_JA = next(Path("/System/Library/Fonts").glob("*W6.ttc"))
+FONT_KO = Path("/System/Library/Fonts/AppleSDGothicNeo.ttc")
+
+
+def draw_text(draw: ImageDraw.ImageDraw, xy: tuple[int, int], text: str, size: int, fill: str) -> int:
+    """日本語とハングルでフォントを替えながら書き、書き終わりのxを返す。"""
+    ja, ko = ImageFont.truetype(str(FONT_JA), size), ImageFont.truetype(str(FONT_KO), size)
+    x, y = xy
+    for part in re.findall(r"[가-힣]+|[^가-힣]+", text):
+        font = ko if re.match(r"[가-힣]", part) else ja
+        draw.text((x, y), part, font=font, fill=fill)
+        x += int(draw.textlength(part, font=font))
+    return x
+
+
+def text_width(text: str, size: int) -> int:
+    probe = ImageDraw.Draw(Image.new("RGB", (1, 1)))
+    ja, ko = ImageFont.truetype(str(FONT_JA), size), ImageFont.truetype(str(FONT_KO), size)
+    return sum(int(probe.textlength(p, font=ko if re.match(r"[가-힣]", p) else ja)) for p in re.findall(r"[가-힣]+|[^가-힣]+", text))
+
+
+def result_ja(text: str) -> str:
+    text = re.sub(r"[(（].*?[)）]", "", text).strip()
+    for ko, ja in RESULT_WORDS:
+        text = text.replace(ko, ja)
+    return re.sub(r"\s+", "", text)
+
+
+def inning_ja(text: str) -> str:
+    return text.replace("회초", "回表").replace("회말", "回裏")
+
+
+def hand_ja(hand: str) -> str:
+    return {"우": "右打者", "좌": "左打者", "양": "左打者（両打ち）"}.get(hand, "左右不明")
+
+
+def caption(p: dict, path: Path) -> None:
+    img = Image.new("RGB", (VW, STRIP), "#111418")
+    draw = ImageDraw.Draw(img)
+    head = f"{hand_ja(p['左右'])}　{int(p['日付'][:2])}/{int(p['日付'][3:])} {team_ja(p['相手'])}戦 {inning_ja(p['回'])}　"
+    x = draw_text(draw, (20, 16), head, 26, "#FFFFFF")
+    draw_text(draw, (x, 19), p["打者"], 22, "#AEB6C2")
+    pieces = []
+    if p["球番号"] != "":
+        word = PITCH[p["1球"]] if p["1球"] != "X" else result_ja(p["打席結果"])
+        if p["1球"] != "X" and int(p["球番号"]) == int(p["打席の球数"]):
+            word += "".join(f"（{ja}）" for ko, ja in (("삼진", "三振"), ("볼넷", "四球")) if ko in p["打席結果"])
+        pieces.append(f"{p['球番号']}球目 {p['カウント']} {word}")
+    if p["球速"] != "":
+        pieces.append(f"{p['球速']}km/h")
+    if p["球種"]:
+        pieces.append(p["球種"])
+    right = "　".join(pieces)
+    draw_text(draw, (VW - 20 - text_width(right, 26), 16), right, 26, "#FFD76A")
+    img.save(path)
+
+
+def card(lines: list[tuple[str, int, str]], path: Path) -> None:
+    img = Image.new("RGB", (VW, VH + STRIP), "#111418")
+    draw = ImageDraw.Draw(img)
+    y = (VH + STRIP - sum(size + 26 for _, size, _ in lines)) // 2
+    for text, size, color in lines:
+        draw_text(draw, ((VW - text_width(text, size)) // 2, y), text, size, color)
+        y += size + 26
+    img.save(path)
+
+
+def encode_flags() -> list[str]:
+    return ["-c:v", "h264_videotoolbox", "-b:v", BITRATE, "-profile:v", "high", "-pix_fmt", "yuv420p",
+            "-r", "60000/1001", "-video_track_timescale", "90000", "-an"]
+
+
+def render_card(image: Path, seconds: float, out: Path) -> None:
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-loop", "1", "-i", str(image), "-t", str(seconds),
+                    *encode_flags(), "-f", "mpegts", str(out)], check=True)
+
+
+def render_pitch(p: dict, cap: Path, out: Path) -> None:
+    graph = (f"[0:v]fps=60000/1001,scale={VW}:{VH},setsar=1,pad={VW}:{VH + STRIP}:0:{STRIP}:black[b];"
+             "[b][1:v]overlay=0:0:shortest=1[v]")
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", str(p["始まり"]), "-t", f"{p['終わり'] - p['始まり']:.2f}",
+                    "-i", str(DATA / p["動画"]), "-loop", "1", "-i", str(cap), "-filter_complex", graph, "-map", "[v]",
+                    *encode_flags(), "-f", "mpegts", str(out)], check=True)
+
+
+def player_info(player: str) -> dict:
+    kana = next(r["reading"] for r in csv.DictReader(open(READINGS, encoding="utf-8-sig")) if r["roster_name"] == player)
+    row = next(r for r in csv.reader(open(BASS_LIST, encoding="utf-8-sig")) if player in r)
+    return {"kana": kana, "throw": row[5], "style": row[7], "team": row[8]}
+
+
+def cmd_render(player: str) -> None:
+    picks = list(csv.DictReader(open(OUT / f"{player}_1球.csv", encoding="utf-8-sig")))
+    for p in picks:
+        p["始まり"], p["終わり"] = float(p["始まり"]), float(p["終わり"])
+    info = player_info(player)
+    newest = lambda p: (-int(p["日付"].replace("/", "")), int(p["打席番号"]), p["始まり"])
+    right = sorted((p for p in picks if p["左右"] == "우"), key=newest)
+    left = sorted((p for p in picks if p["左右"] != "우"), key=newest)
+    games = len({p["試合"] for p in picks})
+    batters = len({(p["試合"], p["打席番号"]) for p in picks})
+    style = f"・{info['style']}" if info["style"] else ""
+
+    work = Path(tempfile.mkdtemp(prefix="reel", dir=CACHE / player))
+    title = work / "title.png"
+    card([(f"{player}　{info['kana']}", 64, "#FFFFFF"),
+          (f"{info['team']}・{info['throw']}投げ{style}", 34, "#AEB6C2"),
+          (f"2026年KBO1軍 {games}試合 {batters}打者 {len(picks)}球", 34, "#AEB6C2"),
+          ("映像は新しい試合から順に並べています", 26, "#AEB6C2")], title)
+    sections = [(f"対 右打者（{len(right)}球）", right), (f"対 左打者（{len(left)}球）", left)]
+    jobs = []
+    render_card(title, 3.0, work / "title.ts")
+    chapters = [("はじめに", work / "title.ts")]
+    order = [work / "title.ts"]
+    for i, (name, items) in enumerate(sections):
+        if not items:
+            continue
+        image = work / f"section{i}.png"
+        card([(f"{player}　{name}", 56, "#FFD76A")], image)
+        ts = work / f"section{i}.ts"
+        render_card(image, 2.0, ts)
+        chapters.append((name, ts))
+        order.append(ts)
+        for k, p in enumerate(items):
+            cap = work / f"{i}_{k:04d}.png"
+            caption(p, cap)
+            out = work / f"{i}_{k:04d}.ts"
+            jobs.append((p, cap, out))
+            order.append(out)
+    with ThreadPoolExecutor(4) as ex:
+        list(ex.map(lambda j: render_pitch(*j), jobs))
+
+    durations = {}
+    for ts in order:
+        durations[ts] = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(ts)],
+                                             capture_output=True, text=True).stdout.strip() or 0)
+    meta = [";FFMETADATA1"]
+    position = 0.0
+    starts = {ts: name for name, ts in chapters}
+    marks = []
+    for ts in order:
+        if ts in starts:
+            marks.append((position, starts[ts]))
+        position += durations[ts]
+    for k, (begin, name) in enumerate(marks):
+        finish = marks[k + 1][0] if k + 1 < len(marks) else position
+        meta += ["[CHAPTER]", "TIMEBASE=1/1000", f"START={int(begin * 1000)}", f"END={int(finish * 1000)}", f"title={name}"]
+    (work / "meta.txt").write_text("\n".join(meta) + "\n", encoding="utf-8")
+    (work / "list.txt").write_text("".join(f"file '{ts}'\n" for ts in order), encoding="utf-8")
+    final = OUT / f"{player}_{info['kana'].replace('・', '')}_対策映像.mp4"
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(work / "list.txt"),
+                    "-i", str(work / "meta.txt"), "-map", "0:v", "-map_metadata", "1", "-c", "copy",
+                    "-movflags", "+faststart", str(final)], check=True)
+    for ts in work.iterdir():
+        ts.unlink()
+    work.rmdir()
+    size = final.stat().st_size / 1e6
+    print(f"{final} {position / 60:.1f}分 {size:.0f}MB 右{len(right)}球 左{len(left)}球")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("command", choices=["hands", "scan", "pick", "render"])
+    parser.add_argument("--player")
+    args = parser.parse_args()
+    if args.command == "hands":
+        cmd_hands()
+    elif args.command == "scan":
+        cmd_scan(args.player)
+    elif args.command == "pick":
+        cmd_pick(args.player)
+    else:
+        cmd_render(args.player)
+
+
+if __name__ == "__main__":
+    main()

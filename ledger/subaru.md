@@ -922,3 +922,4 @@
 - 2026-11-02 23:15 · subaru · account/note · terakoyaのメール本体の書き出しをTakeoutに依頼（メールだけ、1回、zip、知らせはterakoya宛て）。未完了で、できたら ~/Documents/terakoya-ai-退避-20261026 に保存して通数を照合する。ダウンロードにはterakoyaのパスワードが要る見込み
 - 2026-11-02 23:53 · subaru · account/ship · terakoyaのメール本体をTakeoutで書き出して ~/Documents/terakoya-ai-退避-20261026/zip に保存（2,086通、2025-04〜今日の19:43）。スレッド数はGmail側1,907に対し書き出し1,905で、差の2つは書き出しの依頼後に届いたGoogleの通知2通と確認。ドライブには上げていない
 - 2026-11-03 11:34 · subaru · account/research · terakoyaのGmailに今も入れることを確認。保存したメールの差出人と件名を調べ、terakoya宛てのInstagram通知に3アカウント（shigauniv_alc、terakoya.ai、shigau_businessideacontest）の名前を確認。AWSとOpenAIは請求のメールが0通なので優先を下げた（カードの有無はログインしないと不明）。パスワードの控えはまだ
+- 2026-11-03 12:05 · subaru · u23/build · 韓国の投手の対策映像を作る kbo_pitcher_reel.py を書いた（作業中）。KBO打席の切り抜きから球速表示とセンター映像の区間で投球の場面だけを抜き、対右・対左に分けて字幕つきで1本につなぐ。SPOTV系の中継は球種も画面に出ると判明。서준오で試作（58球中56場面、7.4分）。최우석を処理中で、仕上がりはまだ確かめていない
