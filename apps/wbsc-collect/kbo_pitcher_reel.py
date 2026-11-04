@@ -13,6 +13,7 @@
     python3 kbo_pitcher_reel.py pick --player 최우석    # 1球ずつの場面を決める → <投手>_1球.csv
     python3 kbo_pitcher_reel.py render --player 최우석  # 3種類の動画にする（--kind all / sides / k で1種類だけ）
     python3 kbo_pitcher_reel.py web --player 최우석     # 共有サイト用の打席ごとの動画（投手別映像/web/）。site_video_kor.py が読む
+    python3 kbo_pitcher_reel.py share                 # 選手共有用の1本と、YouTubeの説明欄に貼るタイムスタンプ（選手共有用/）。render のあとに流す
 
 1球の並びの正解はKBO公式の文字中継（kbo_clips.py の 打席_KBO.csv）で、映像からは場面だけを取る。
 球速の表示が出た時刻を第一の目印にし、球速が読めた場面を手本にしてセンターカメラの映像を見分け、
@@ -44,6 +45,12 @@ READINGS = ROOT / "07_出場選手情報" / "サイト用" / "名簿_読み.csv"
 CACHE = Path.home() / ".cache" / "kbo_clips" / "reel"
 HANDS = OUT / "打者の左右.json"
 BAT_OUT = ROOT / "04_対戦国" / "韓国" / "打者別映像"
+SHARE_OUT = ROOT / "04_対戦国" / "韓国" / "選手共有用"
+# 選手共有用の1本の順番。投手は起用の見込みの順、打者は打席の多い順
+SHARE_ORDER = (("최우석", ("左右別まとめ", "奪三振集")), ("원종혁", ("左右別まとめ", "奪三振集")),
+               ("신상연", ("左右別まとめ", "奪三振集")), ("서준오", ("左右別まとめ", "奪三振集")),
+               ("어준서", ("左右別まとめ", "安打集", "三振集")), ("유민", ("左右別まとめ", "安打集", "三振集")),
+               ("양현종", ("左右別まとめ", "安打集", "三振集")), ("김건", ("三振集",)))
 PITCHER_HANDS = BAT_OUT / "投手の左右.json"
 
 # 映像を読むときの大きさ（10コマ/秒の小さな白黒）
@@ -716,6 +723,83 @@ def cmd_render(player: str, kind: str) -> None:
         build_reel(player, "安打集", f"安打集 {len(hits)}本", sections)
 
 
+def clock(sec: float) -> str:
+    """YouTubeのタイムスタンプの形（0:00、12:34、1:02:03）。"""
+    whole = int(sec)
+    hours, rest = divmod(whole, 3600)
+    minutes, seconds = divmod(rest, 60)
+    return f"{hours}:{minutes:02d}:{seconds:02d}" if hours else f"{minutes}:{seconds:02d}"
+
+
+def file_chapters(path: Path) -> list[tuple[float, str]]:
+    res = subprocess.run(["ffprobe", "-v", "error", "-show_chapters", "-of", "json", str(path)], capture_output=True, text=True).stdout
+    return [(float(c["start_time"]), c["tags"]["title"]) for c in json.loads(res)["chapters"]]
+
+
+def cmd_share() -> None:
+    """render で作った動画を1本につなぎ、YouTubeの説明欄に貼るタイムスタンプを書く。
+
+    YouTubeのチャプターは 0:00 から始まり、1つ10秒以上が決まり。題の画面は最初の選手のチャプターに含め、10秒未満は前につなぐ。
+    左右別まとめは対左と対右に分け、三振集と安打集は1つにする。
+    """
+    SHARE_OUT.mkdir(parents=True, exist_ok=True)
+    work = Path(tempfile.mkdtemp(prefix="share", dir=CACHE))
+    names = [player_info(p)["kana"] for p, _ in SHARE_ORDER]
+    pitchers = "・".join(n for (p, _), n in zip(SHARE_ORDER, names) if not is_batter(p))
+    batters = "・".join(n for (p, _), n in zip(SHARE_ORDER, names) if is_batter(p))
+    title = work / "title.png"
+    card([("韓国代表 KBO1軍の映像", 60, "#FFFFFF"), ("U-23W杯 2026", 34, "#AEB6C2"),
+          (f"投手　{pitchers}", 26, "#FFD76A"), (f"打者　{batters}", 26, "#FFD76A"),
+          ("チャプターから選手へ飛べます。音はありません", 26, "#AEB6C2")], title)
+    opening = work / "title.ts"
+    render_card(title, 4.0, opening)
+    head = work / "title.mp4"
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(opening), "-c", "copy", "-movflags", "+faststart", str(head)], check=True)
+    order = [head]
+    at = seconds_of(head)
+    stamps: list[tuple[float, str]] = []
+    for player, kinds in SHARE_ORDER:
+        info = player_info(player)
+        role = "打者" if is_batter(player) else "投手"
+        for kind in kinds:
+            path = out_dir(player) / f"{player}_{info['kana'].replace('・', '')}_{kind}.mp4"
+            parts = [c for c in file_chapters(path) if c[1] != "はじめに"]
+            if kind == "左右別まとめ":
+                for k, (start, name) in enumerate(parts):
+                    side = name.split("（")[0].replace(" ", "")
+                    stamps.append((at if k == 0 else at + start, f"{info['kana']}（{role}）{side}"))
+            else:
+                count = sum(int(n) for _, name in parts for n in re.findall(r"（(\d+)[個本]）", name))
+                unit = "本" if kind == "安打集" else "個"
+                stamps.append((at, f"{info['kana']}（{role}）{kind} {count}{unit}"))
+            order.append(path)
+            at += seconds_of(path)
+    stamps[0] = (0.0, stamps[0][1])
+    kept: list[tuple[float, str]] = []
+    for k, (start, name) in enumerate(stamps):
+        finish = stamps[k + 1][0] if k + 1 < len(stamps) else at
+        if finish - start < 10 and kept:
+            print(f"10秒未満なのでチャプターにしません: {name}")
+            continue
+        kept.append((start, name))
+    final = SHARE_OUT / "韓国代表KBO映像まとめ.mp4"
+    meta = [";FFMETADATA1"]
+    for k, (start, name) in enumerate(kept):
+        finish = kept[k + 1][0] if k + 1 < len(kept) else at
+        meta += ["[CHAPTER]", "TIMEBASE=1/1000", f"START={int(start * 1000)}", f"END={int(finish * 1000)}", f"title={name}"]
+    (work / "meta.txt").write_text("\n".join(meta) + "\n", encoding="utf-8")
+    (work / "list.txt").write_text("".join(f"file '{x}'\n" for x in order), encoding="utf-8")
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(work / "list.txt"), "-i", str(work / "meta.txt"),
+                    "-map", "0:v", "-map_metadata", "1", "-map_chapters", "1", "-c", "copy", "-movflags", "+faststart", str(final)], check=True)
+    lines = [f"{clock(start)} {name}" for start, name in kept]
+    (SHARE_OUT / "タイムスタンプ.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    for item in work.iterdir():
+        item.unlink()
+    work.rmdir()
+    print(f"{final.name} {seconds_of(final) / 60:.1f}分（足し算 {at / 60:.1f}分） {final.stat().st_size / 1e9:.2f}GB チャプター{len(kept)}")
+    print("\n".join(lines))
+
+
 def seconds_of(path: Path) -> float:
     res = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
                          capture_output=True, text=True).stdout.strip()
@@ -795,7 +879,7 @@ def cmd_web(player: str) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=["hands", "scan", "pick", "render", "web"])
+    parser.add_argument("command", choices=["hands", "scan", "pick", "render", "web", "share"])
     parser.add_argument("--player")
     parser.add_argument("--kind", choices=["all", "every", "sides", "k", "hits"], default="all")
     args = parser.parse_args()
@@ -807,6 +891,8 @@ def main() -> None:
         cmd_pick(args.player)
     elif args.command == "web":
         cmd_web(args.player)
+    elif args.command == "share":
+        cmd_share()
     else:
         cmd_render(args.player, args.kind)
 
