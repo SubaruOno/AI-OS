@@ -144,12 +144,13 @@ def player_hand(name: str, team: str, pitcher: bool = False) -> str:
             same.append(link.group(1))
             if team_ko(team) in row:
                 here.append(link.group(1))
-    chosen = here or (same if len(same) == 1 else [])
-    if not chosen:
-        return ""
-    detail = fetch(f"{KBO}{chosen[0]}").decode("utf-8", "replace")
-    m = re.search(r"([우좌])[투언]([우좌양])타", detail)
-    return (m.group(1) if pitcher else m.group(2)) if m else ""
+    found = set()
+    for link in here or (same if len(same) == 1 else []):
+        detail = fetch(f"{KBO}{link}").decode("utf-8", "replace")
+        m = re.search(r"([우좌])[투언]([우좌양])타", detail)
+        found.add((m.group(1) if pitcher else m.group(2)) if m else "")
+    # 同じチームに同じ名前が2人いて左右が違うとき（サムスンの이승현）は、どちらか分からないので空にする
+    return found.pop() if len(found) == 1 else ""
 
 
 def fill_hands(path: Path, wanted: set, pitcher: bool) -> None:
