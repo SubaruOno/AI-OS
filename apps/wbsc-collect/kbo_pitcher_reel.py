@@ -360,6 +360,11 @@ def pick_clip(row: dict, runs: list[tuple[float, float]], folder: Path, hands: d
     if seq and seq[-1] != "X" and marked:
         finish = max(e["start"] for e in marked)
         chosen = [e for e in chosen if e["start"] <= finish]
+    # 中継に球速が1回も出ず、場面の取れなかった打席は、目で決めた秒を 手直し.json から使う（[始まり, 終わり, 字幕を出す秒]）
+    manual = out_dir(row["選手"]) / "手直し.json"
+    if not chosen and manual.exists():
+        for start, end, reveal in json.loads(manual.read_text(encoding="utf-8")).get(row["stem"], []):
+            chosen.append({"mark": reveal, "kmh": 0, "kind": "", "start": start, "end": end})
 
     batting = row["区分"] == "打者"
     hand = hands.get(f"{row['last_pitcher']}|{row['pit_team']}" if batting else f"{row['打者']}|{row['bat_team']}", "")
@@ -609,7 +614,10 @@ def at_bat_card(g: list[dict]) -> list[tuple[str, int, str]]:
 
 
 def build_reel(player: str, kind_name: str, subtitle: str, sections: list[tuple[str, list]], strikeout: bool = False) -> None:
-    """sections は [(章の名前, [場面 または 打席の札の行, ...])]。題の画面と章の札を足して1本につなぐ。"""
+    """sections は [(章の名前, [場面 または 打席の札の行, ...])]。題の画面と章の札を足して1本につなぐ。中身がなければ作らない。"""
+    if not any(items for _, items in sections):
+        print(f"{player}の{kind_name}: 場面がないので作りません")
+        return
     info = player_info(player)
     style = f"・{info['style']}" if info["style"] else ""
     who = f"{info['team']}・{info['bat']}打ち" if is_batter(player) else f"{info['team']}・{info['throw']}投げ{style}"

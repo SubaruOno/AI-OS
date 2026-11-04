@@ -211,9 +211,10 @@ def player_page(person: dict, page_fn) -> str:
         tabs_list = (("sides", "左右別まとめ", sides), ("h", f"安打集（{len(hits)}）", hit), ("k", f"三振集（{len(strikeouts)}）", kay))
     else:
         tabs_list = (("sides", "左右別まとめ", sides), ("k", f"奪三振集（{len(strikeouts)}）", kay))
+    tabs_list = tuple(t for t in tabs_list if t[2])  # 中身のない欄は出さない（김건は2打席だけ）
     tabs = '<div class="vtabs" role="tablist">' + "".join(
         f'<button type="button" role="tab" data-open="{k}" aria-selected="false">{label}</button>'
-        for k, label in tabs_list + (("all", tab_all, ""),)) + "</div>"
+        for k, label, _ in tabs_list + (("all", tab_all, ""),)) + "</div>"
     panels = "".join(f'<section data-tab="{k}" hidden>{html}</section>' for k, _, html in tabs_list) + (
         f'<section data-tab="all" data-vscope hidden>{lead}{fil}{games}</section>')
     body = (f'<div class="vkor">{head}{notes}{STYLE}{EXTRA_STYLE}{tabs}{panels}{TAB_SCRIPT}{SCRIPT}</div>')
