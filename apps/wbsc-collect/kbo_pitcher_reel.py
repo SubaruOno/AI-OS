@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""韓国U-23代表の投手ごとの対策映像を、kbo_clips.py で切った打席の動画から作る道具。
+"""韓国U-23代表の投手と打者の対策映像を、kbo_clips.py で切った打席の動画から作る道具。
 
-打席の動画（約30秒に1球）から投球の場面だけを抜き、投手ごとに3種類の動画にする：
-全球（全部の場面）、左右別まとめ（対左・対右の数打席を通しで）、奪三振集（三振の決め球）。
+打席の動画（約30秒に1球）から投球の場面だけを抜き、選手ごとに動画にする：
+投手は全球（全部の場面）、左右別まとめ（対左・対右の数打席を通しで）、奪三振集（三振の決め球）。
+打者は左右別まとめ（対左投手・対右投手の数打席を通しで）、三振集、安打集。
 字幕に出すのは、打者の左右・試合・打者名と、投げた後に読めた球速と球種、打席の最後の球の結果。
 何球目かは読み違いが出るので字幕にしない（カウントと累計球数は中継の画面に映っている）。
-動画は ~/野球/U23ワールドカップ2026/04_対戦国/韓国/投手別映像/ に書く（選手の映像なのでリポジトリに入れない）。
+動画は ~/野球/U23ワールドカップ2026/04_対戦国/韓国/ の 投手別映像/ と 打者別映像/ に書く（選手の映像なのでリポジトリに入れない）。
 
-    python3 kbo_pitcher_reel.py hands                 # 対戦した打者の左右をKBO公式から取る → 打者の左右.json
+    python3 kbo_pitcher_reel.py hands                 # 対戦した打者と投手の左右をKBO公式から取る → 打者の左右.json・投手の左右.json
     python3 kbo_pitcher_reel.py scan --player 최우석    # 打席の動画を読む（球速と球種の表示、センター映像の区間）
     python3 kbo_pitcher_reel.py pick --player 최우석    # 1球ずつの場面を決める → <投手>_1球.csv
     python3 kbo_pitcher_reel.py render --player 최우석  # 3種類の動画にする（--kind all / sides / k で1種類だけ）
@@ -42,6 +43,8 @@ OUT = ROOT / "04_対戦国" / "韓国" / "投手別映像"
 READINGS = ROOT / "07_出場選手情報" / "サイト用" / "名簿_読み.csv"
 CACHE = Path.home() / ".cache" / "kbo_clips" / "reel"
 HANDS = OUT / "打者の左右.json"
+BAT_OUT = ROOT / "04_対戦国" / "韓国" / "打者別映像"
+PITCHER_HANDS = BAT_OUT / "投手の左右.json"
 
 # 映像を読むときの大きさ（10コマ/秒の小さな白黒）
 FPS = 10
@@ -80,16 +83,25 @@ RESULT_MIX = {"三振": 2, "安打": 1, "四死球": 1, "凡打": 1}
 # ---------------------------------------------------------------- 打席の並び
 
 
+def is_batter(player: str) -> bool:
+    return any(r["name"] == player and r["kind"] == "打者" for r in csv.DictReader(open(DATA / "選手.csv", encoding="utf-8-sig")))
+
+
+def out_dir(player: str) -> Path:
+    return BAT_OUT if is_batter(player) else OUT
+
+
 def at_bats(player: str) -> list[dict]:
-    """一覧.csv のこの投手の打席に、文字中継の打席（打者のチーム・結果）を足す。"""
-    rows = [r for r in csv.DictReader(open(DATA / "一覧.csv", encoding="utf-8-sig"))
-            if r["選手"] == player and r["区分"] == "投手" and r["動画"]]
+    """一覧.csv のこの選手の打席に、文字中継の打席（両チーム・結果）を足す。"""
+    rows = [r for r in csv.DictReader(open(DATA / "一覧.csv", encoding="utf-8-sig")) if r["選手"] == player and r["動画"]]
     relay: dict[str, dict] = {}
     for game in {r["試合"] for r in rows}:
         relay[game] = {x["no"]: x for x in csv.DictReader(open(DATA / game / "打席_KBO.csv", encoding="utf-8-sig"))}
     for r in rows:
         kbo = relay[r["試合"]][r["打席番号"]]
         r["bat_team"] = kbo["bat_team"]
+        r["pit_team"] = kbo["pit_team"]
+        r["last_pitcher"] = r["投手"].split("→")[-1]  # 打席の途中で替わったら、最後の投手の左右で分ける
         r["seq"] = r["1球の並び"].split()
         r["game_batters"] = sorted({x["batter"] for x in relay[r["試合"]].values()})
         r["stem"] = Path(r["動画"]).stem
@@ -112,8 +124,12 @@ def form_value(page: str, name: str) -> str:
     return html.unescape(m.group(1)) if m else ""
 
 
-def batter_hand(name: str, team: str) -> str:
-    """KBO公式の選手検索で、そのチームの同じ名前の選手の打席（우・좌・양）を取る。"""
+def player_hand(name: str, team: str, pitcher: bool = False) -> str:
+    """KBO公式の選手検索で、同じ名前の選手の打席（우・좌・양）か投げる手（우・좌）を取る。
+
+    そのチームにいなければ（移籍など）、同じ名前が1人だけのときに限ってその人とする。
+    「우언우타」のように下手投げは 언 と書かれる。
+    """
     ui = "ctl00$ctl00$ctl00$cphContents$cphContents$cphContents$"
     url = f"{KBO}/Player/Search.aspx"
     page = fetch(url).decode("utf-8", "replace")
@@ -121,29 +137,39 @@ def batter_hand(name: str, team: str) -> str:
     form[ui + "txtSearchPlayerName"] = name
     form[ui + "btnSearch"] = "검색"
     res = fetch(url, form).decode("utf-8", "replace")
+    same, here = [], []
     for row in re.findall(r"<tr>(.*?)</tr>", res, re.S):
-        link = re.search(r"""href=['"][^'"]*Detail[^'"]*playerId=(\d+)['"][^>]*>([^<]+)<""", row)
-        if not link or link.group(2).strip() != name or team_ko(team) not in row:
-            continue
-        detail = fetch(f"{KBO}/Record/Player/HitterDetail/Basic.aspx?playerId={link.group(1)}").decode("utf-8", "replace")
-        m = re.search(r"[우좌양]투([우좌양])타", detail)
-        return m.group(1) if m else ""
-    return ""
+        link = re.search(r"""href=['"]([^'"]*Detail[^'"]*playerId=\d+)['"][^>]*>([^<]+)<""", row)
+        if link and link.group(2).strip() == name:
+            same.append(link.group(1))
+            if team_ko(team) in row:
+                here.append(link.group(1))
+    chosen = here or (same if len(same) == 1 else [])
+    if not chosen:
+        return ""
+    detail = fetch(f"{KBO}{chosen[0]}").decode("utf-8", "replace")
+    m = re.search(r"([우좌])[투언]([우좌양])타", detail)
+    return (m.group(1) if pitcher else m.group(2)) if m else ""
+
+
+def fill_hands(path: Path, wanted: set, pitcher: bool) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    done = json.loads(path.read_text()) if path.exists() else {}
+    for name, team in sorted(wanted):
+        if not done.get(f"{name}|{team}"):
+            done[f"{name}|{team}"] = player_hand(name, team, pitcher)
+            path.write_text(json.dumps(done, ensure_ascii=False, indent=0))
+            time.sleep(0.5)
+    blank = [k for k, v in done.items() if not v]
+    print(f"{path.name}: {len(done)}人、取れなかった {len(blank)}人 {blank}")
 
 
 def cmd_hands() -> None:
-    OUT.mkdir(parents=True, exist_ok=True)
-    done = json.loads(HANDS.read_text()) if HANDS.exists() else {}
-    rows = [r for r in csv.DictReader(open(DATA / "一覧.csv", encoding="utf-8-sig")) if r["区分"] == "投手"]
-    players = {r["選手"] for r in rows}
-    wanted = {(r["打者"], r["bat_team"]) for p in players for r in at_bats(p)}
-    for name, team in sorted(wanted):
-        if not done.get(f"{name}|{team}"):
-            done[f"{name}|{team}"] = batter_hand(name, team)
-            HANDS.write_text(json.dumps(done, ensure_ascii=False, indent=0))
-            time.sleep(0.5)
-    blank = [k for k, v in done.items() if not v]
-    print(f"打者 {len(done)}人、取れなかった {len(blank)}人 {blank}")
+    rows = list(csv.DictReader(open(DATA / "一覧.csv", encoding="utf-8-sig")))
+    pitchers = {r["選手"] for r in rows if r["区分"] == "投手"}
+    batters = {r["選手"] for r in rows if r["区分"] == "打者"}
+    fill_hands(HANDS, {(r["打者"], r["bat_team"]) for p in pitchers for r in at_bats(p)}, False)
+    fill_hands(PITCHER_HANDS, {(r["last_pitcher"], r["pit_team"]) for p in batters for r in at_bats(p)}, True)
 
 
 # ---------------------------------------------------------------- 読む（scan）
@@ -334,13 +360,15 @@ def pick_clip(row: dict, runs: list[tuple[float, float]], folder: Path, hands: d
         finish = max(e["start"] for e in marked)
         chosen = [e for e in chosen if e["start"] <= finish]
 
-    hand = hands.get(f"{row['打者']}|{row['bat_team']}", "")
+    batting = row["区分"] == "打者"
+    hand = hands.get(f"{row['last_pitcher']}|{row['pit_team']}" if batting else f"{row['打者']}|{row['bat_team']}", "")
     out = []
     for k, e in enumerate(chosen):
         # 打って終わった打席は、最後の場面だけ打球の行方まで残す
         end = e["end"] + (AFTER_HIT - AFTER_MARK if k == len(chosen) - 1 and seq[-1] == "X" else 0)
         out.append({
-            "投手": row["選手"], "試合": row["試合"], "打席番号": row["打席番号"], "日付": row["日付"], "相手": row["bat_team"],
+            "選手": row["選手"], "立場": row["区分"], "相手の選手": row["投手"] if batting else row["打者"],
+            "試合": row["試合"], "打席番号": row["打席番号"], "日付": row["日付"], "相手": row["pit_team"] if batting else row["bat_team"],
             "回": row["回"], "打者": row["打者"], "左右": hand, "打席結果": row["結果"], "球速": e["kmh"] or "", "球種": e["kind"],
             "目印": "球速" if e["mark"] is not None else "区間", "動画": row["動画"],
             "始まり": round(e["start"], 1), "終わり": round(min(end, duration), 1), "打席の球数": len(seq),
@@ -352,13 +380,14 @@ def pick_clip(row: dict, runs: list[tuple[float, float]], folder: Path, hands: d
 def cmd_pick(player: str) -> None:
     folder = CACHE / player
     rows = at_bats(player)
-    hands = json.loads(HANDS.read_text()) if HANDS.exists() else {}
+    hand_file = PITCHER_HANDS if is_batter(player) else HANDS
+    hands = json.loads(hand_file.read_text()) if hand_file.exists() else {}
     runs = game_runs(rows, folder)
     with ThreadPoolExecutor(4) as ex:
         parts = list(ex.map(lambda r: pick_clip(r, runs[r["stem"]], folder, hands), rows))
     picks = [p for part in parts for p in part]
-    path = OUT / f"{player}_1球.csv"
-    OUT.mkdir(parents=True, exist_ok=True)
+    path = out_dir(player) / f"{player}_1球.csv"
+    path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8-sig", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(picks[0]))
         w.writeheader()
@@ -445,17 +474,36 @@ def inning_ja(text: str) -> str:
     return text.replace("회초", "回表").replace("회말", "回裏")
 
 
-def hand_ja(hand: str) -> str:
-    return {"우": "右打者", "좌": "左打者", "양": "左打者（両打ち）"}.get(hand, "左右不明")
+def batting_view(p: dict) -> bool:
+    return p.get("立場") == "打者"
+
+
+def rival(p: dict) -> str:
+    return p.get("相手の選手") or p["打者"]
+
+
+def hand_ja(p: dict) -> str:
+    if batting_view(p):
+        return {"우": "右投手", "좌": "左投手"}.get(p["左右"], "左右不明")
+    return {"우": "右打者", "좌": "左打者", "양": "左打者（両打ち）"}.get(p["左右"], "左右不明")
+
+
+def is_left(p: dict) -> bool:
+    """対左の章に入れるか。4人の投手はみな右投手なので、両打ちの打者は左打者に入れる。"""
+    return p["左右"] == "좌" if batting_view(p) else p["左右"] != "우"
+
+
+def is_right(p: dict) -> bool:
+    return p["左右"] == "우"
 
 
 def caption(p: dict, path: Path, after_pitch: bool, strikeout: bool = False) -> None:
     """字幕の帯。after_pitch のときだけ、投げた後に分かること（球速・球種・打席の結果）も書く。"""
     img = Image.new("RGB", (VW, STRIP), "#111418")
     draw = ImageDraw.Draw(img)
-    head = f"{hand_ja(p['左右'])}　{int(p['日付'][:2])}/{int(p['日付'][3:])} {team_ja(p['相手'])}戦 {inning_ja(p['回'])}　"
+    head = f"{hand_ja(p)}　{int(p['日付'][:2])}/{int(p['日付'][3:])} {team_ja(p['相手'])}戦 {inning_ja(p['回'])}　"
     x = draw_text(draw, (20, 16), head, 26, "#FFFFFF")
-    x = draw_text(draw, (x, 19), p["打者"], 22, "#AEB6C2")
+    x = draw_text(draw, (x, 19), rival(p), 22, "#AEB6C2")
     if after_pitch:
         pieces = []
         if p["球速"] != "":
@@ -517,7 +565,7 @@ def render_pitch(p: dict, before: Path, after: Path, out: Path, web: bool = Fals
 def player_info(player: str) -> dict:
     kana = next(r["reading"] for r in csv.DictReader(open(READINGS, encoding="utf-8-sig")) if r["roster_name"] == player)
     row = next(r for r in csv.reader(open(BASS_LIST, encoding="utf-8-sig")) if player in r)
-    return {"kana": kana, "throw": row[5], "style": row[7], "team": row[8]}
+    return {"kana": kana, "throw": row[5], "bat": row[6], "style": row[7], "team": row[8]}
 
 
 def newest(p: dict) -> tuple:
@@ -534,7 +582,7 @@ def at_bat_groups(scenes: list[dict]) -> list[list[dict]]:
 
 def choose_at_bats(scenes: list[dict], count: int) -> list[list[dict]]:
     """全球そろった3球以上の打席から、新しい順に、結果の内訳の目安どおりに選ぶ。1試合からは2打席まで。"""
-    groups = [g for g in at_bat_groups(scenes) if len(g) == int(g[0]["打席の球数"])]
+    groups = [g for g in at_bat_groups(scenes) if len(g) == int(g[0]["打席の球数"]) and result_ja(g[0]["打席結果"])]
     long_ones = [g for g in groups if len(g) >= 3]
     chosen: list[list[dict]] = []
     room = dict(RESULT_MIX)
@@ -555,7 +603,7 @@ def choose_at_bats(scenes: list[dict], count: int) -> list[list[dict]]:
 
 def at_bat_card(g: list[dict]) -> list[tuple[str, int, str]]:
     p = g[0]
-    return [(f"{hand_ja(p['左右'])}　{p['打者']}", 46, "#FFFFFF"),
+    return [(f"{hand_ja(p)}　{rival(p)}", 46, "#FFFFFF"),
             (f"{int(p['日付'][:2])}/{int(p['日付'][3:])} {team_ja(p['相手'])}戦 {inning_ja(p['回'])}　{len(g)}球", 30, "#AEB6C2")]
 
 
@@ -563,10 +611,11 @@ def build_reel(player: str, kind_name: str, subtitle: str, sections: list[tuple[
     """sections は [(章の名前, [場面 または 打席の札の行, ...])]。題の画面と章の札を足して1本につなぐ。"""
     info = player_info(player)
     style = f"・{info['style']}" if info["style"] else ""
+    who = f"{info['team']}・{info['bat']}打ち" if is_batter(player) else f"{info['team']}・{info['throw']}投げ{style}"
     work = Path(tempfile.mkdtemp(prefix="reel", dir=CACHE / player))
     title = work / "title.png"
     card([(f"{player}　{info['kana']}", 64, "#FFFFFF"),
-          (f"{info['team']}・{info['throw']}投げ{style}", 34, "#AEB6C2"),
+          (who, 34, "#AEB6C2"),
           (subtitle, 34, "#FFD76A"),
           ("新しい試合から順に並べています。球速と球種は中継の表示を読んだものです", 26, "#AEB6C2")], title)
     render_card(title, 3.0, work / "title.ts")
@@ -611,7 +660,7 @@ def build_reel(player: str, kind_name: str, subtitle: str, sections: list[tuple[
         meta += ["[CHAPTER]", "TIMEBASE=1/1000", f"START={int(begin * 1000)}", f"END={int(finish * 1000)}", f"title={name}"]
     (work / "meta.txt").write_text("\n".join(meta) + "\n", encoding="utf-8")
     (work / "list.txt").write_text("".join(f"file '{ts}'\n" for ts in order), encoding="utf-8")
-    final = OUT / f"{player}_{info['kana'].replace('・', '')}_{kind_name}.mp4"
+    final = out_dir(player) / f"{player}_{info['kana'].replace('・', '')}_{kind_name}.mp4"
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(work / "list.txt"),
                     "-i", str(work / "meta.txt"), "-map", "0:v", "-map_metadata", "1", "-c", "copy",
                     "-movflags", "+faststart", str(final)], check=True)
@@ -621,31 +670,41 @@ def build_reel(player: str, kind_name: str, subtitle: str, sections: list[tuple[
     print(f"{final.name} {position / 60:.1f}分 {final.stat().st_size / 1e6:.0f}MB {[(n, sum(not isinstance(x, list) for x in i)) for n, i in sections]}")
 
 
+def by_side(scenes: list[dict], names: tuple) -> list[tuple[str, list[dict]]]:
+    return [(names[0], sorted((p for p in scenes if is_left(p)), key=newest)),
+            (names[1], sorted((p for p in scenes if is_right(p)), key=newest))]
+
+
 def cmd_render(player: str, kind: str) -> None:
-    picks = list(csv.DictReader(open(OUT / f"{player}_1球.csv", encoding="utf-8-sig")))
+    picks = list(csv.DictReader(open(out_dir(player) / f"{player}_1球.csv", encoding="utf-8-sig")))
     for p in picks:
         p["始まり"], p["終わり"] = float(p["始まり"]), float(p["終わり"])
-    left = [p for p in picks if p["左右"] != "우"]
-    right = [p for p in picks if p["左右"] == "우"]
-    if kind in ("all", "every"):
-        build_reel(player, "全球", f"全球 {len(picks)}場面（{len({(p['試合'], p['打席番号']) for p in picks})}打者）",
-                   [(f"対 左打者（{len(left)}場面）", sorted(left, key=newest)), (f"対 右打者（{len(right)}場面）", sorted(right, key=newest))])
+    batter = is_batter(player)
+    names = ("対 左投手", "対 右投手") if batter else ("対 左打者", "対 右打者")
+    if kind == "every" or (kind == "all" and not batter):
+        sections = [(f"{n}（{len(i)}場面）", i) for n, i in by_side(picks, names)]
+        build_reel(player, "全球", f"全球 {len(picks)}場面（{len({(p['試合'], p['打席番号']) for p in picks})}打席）", sections)
     if kind in ("all", "sides"):
         sections = []
-        for name, side in (("対 左打者", left), ("対 右打者", right)):
+        for name, side in by_side(picks, names):
             groups = choose_at_bats(side, AT_BATS_PER_SIDE)
             items: list = []
             for g in groups:
                 items.append(at_bat_card(g))
                 items.extend(g)
             sections.append((f"{name}（{len(groups)}打席）", items))
-            print(name, [(g[0]["日付"], g[0]["打者"], len(g), result_ja(g[0]["打席結果"])) for g in groups])
-        build_reel(player, "左右別まとめ", f"対左・対右 各{AT_BATS_PER_SIDE}打席", sections)
+            print(name, [(g[0]["日付"], rival(g[0]), len(g), result_ja(g[0]["打席結果"])) for g in groups])
+        build_reel(player, "左右別まとめ", f"{names[0][2:]}・{names[1][2:]} 各{AT_BATS_PER_SIDE}打席", sections)
+    lasts = [p for p in picks if p["打席の最後"] == "1"]
     if kind in ("all", "k"):
-        strikeouts = [p for p in picks if p["打席の最後"] == "1" and result_ja(p["打席結果"]) == "三振"]
-        sides = [(n, sorted((p for p in strikeouts if test(p)), key=newest))
-                 for n, test in (("対 左打者", lambda p: p["左右"] != "우"), ("対 右打者", lambda p: p["左右"] == "우"))]
-        build_reel(player, "奪三振集", f"奪三振集 {len(strikeouts)}個（決め球）", [(f"{n}（{len(i)}個）", i) for n, i in sides], strikeout=True)
+        strikeouts = [p for p in lasts if result_ja(p["打席結果"]) == "三振"]
+        title = "三振集" if batter else "奪三振集"
+        sections = [(f"{n}（{len(i)}個）", i) for n, i in by_side(strikeouts, names)]
+        build_reel(player, title, f"{title} {len(strikeouts)}個（決め球）", sections, strikeout=True)
+    if batter and kind in ("all", "hits"):
+        hits = [p for p in lasts if result_class(p["打席結果"]) == "安打"]
+        sections = [(f"{n}（{len(i)}本）", i) for n, i in by_side(hits, names)]
+        build_reel(player, "安打集", f"安打集 {len(hits)}本", sections)
 
 
 def seconds_of(path: Path) -> float:
@@ -683,7 +742,7 @@ def web_at_bat(group: list[dict], folder: Path, work: Path) -> dict:
         at += seconds_of(part)
     item = {
         "game": first["試合"], "no": int(first["打席番号"]), "date": first["日付"], "opp": team_ja(first["相手"]),
-        "inning": inning_ja(first["回"]), "batter": first["打者"], "hand": first["左右"], "result": result_ja(first["打席結果"]),
+        "inning": inning_ja(first["回"]), "batter": first["打者"], "rival": rival(first), "hand": first["左右"], "result": result_ja(first["打席結果"]),
         "class": result_class(first["打席結果"]), "pitches": int(first["打席の球数"]), "complete": len(group) == int(first["打席の球数"]),
         "file": f"{stem}.mp4", "jpg": f"{stem}.jpg", "seconds": round(at, 1), "scenes": scenes,
     }
@@ -692,28 +751,32 @@ def web_at_bat(group: list[dict], folder: Path, work: Path) -> dict:
         join_clip([web_scene(last, f"{stem}_k", work, strikeout=True)], folder / f"{stem}_k.mp4", work)
         item.update({"k_file": f"{stem}_k.mp4", "k_jpg": f"{stem}_k.jpg", "k_kmh": last["球速"], "k_kind": last["球種"],
                      "k_word": {"W": "空振り三振", "S": "見逃し三振"}.get(last["最後の球"], "三振")})
+    if last and batting_view(last) and item["class"] == "安打":  # 打者の安打集。打った球だけの動画
+        join_clip([web_scene(last, f"{stem}_h", work)], folder / f"{stem}_h.mp4", work)
+        item.update({"h_file": f"{stem}_h.mp4", "h_jpg": f"{stem}_h.jpg", "h_kmh": last["球速"], "h_kind": last["球種"]})
     for name in work.glob(f"{stem}*"):
         name.unlink()
     return item
 
 
 def cmd_web(player: str) -> None:
-    picks = list(csv.DictReader(open(OUT / f"{player}_1球.csv", encoding="utf-8-sig")))
+    picks = list(csv.DictReader(open(out_dir(player) / f"{player}_1球.csv", encoding="utf-8-sig")))
     for p in picks:
         p["始まり"], p["終わり"] = float(p["始まり"]), float(p["終わり"])
     info = player_info(player)
     latin = next(r["bass"] for r in csv.DictReader(open(DATA / "選手.csv", encoding="utf-8-sig")) if r["name"] == player)
     slug = re.sub(r"[^a-z]+", "-", latin.lower()).strip("-")
-    folder = OUT / "web" / slug
+    folder = out_dir(player) / "web" / slug
     folder.mkdir(parents=True, exist_ok=True)
     work = Path(tempfile.mkdtemp(prefix="web", dir=CACHE / player))
     groups = at_bat_groups(picks)
     with ThreadPoolExecutor(4) as ex:
         items = list(ex.map(lambda g: web_at_bat(g, folder, work), groups))
     work.rmdir()
-    index = {"player": player, "kana": info["kana"], "club": info["team"], "throw": info["throw"], "style": info["style"], "slug": slug,
+    index = {"player": player, "view": "打者" if is_batter(player) else "投手", "kana": info["kana"], "club": info["team"],
+             "throw": info["throw"], "bat": info["bat"], "style": info["style"], "slug": slug,
              "games": len({i["game"] for i in items}), "sides": {},  "at_bats": items}
-    for name, side in (("left", [g for g in groups if g[0]["左右"] != "우"]), ("right", [g for g in groups if g[0]["左右"] == "우"])):
+    for name, side in (("left", [g for g in groups if is_left(g[0])]), ("right", [g for g in groups if is_right(g[0])])):
         index["sides"][name] = [[g[0]["試合"], int(g[0]["打席番号"])] for g in choose_at_bats([p for g in side for p in g], AT_BATS_PER_SIDE)]
     (folder / "index.json").write_text(json.dumps(index, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     size = sum(f.stat().st_size for f in folder.glob("*.mp4")) / 1e6
@@ -725,7 +788,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("command", choices=["hands", "scan", "pick", "render", "web"])
     parser.add_argument("--player")
-    parser.add_argument("--kind", choices=["all", "every", "sides", "k"], default="all")
+    parser.add_argument("--kind", choices=["all", "every", "sides", "k", "hits"], default="all")
     args = parser.parse_args()
     if args.command == "hands":
         cmd_hands()

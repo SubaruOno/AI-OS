@@ -34,7 +34,7 @@ URL はフォルダ形式（team/cuba/ → team/cuba/index.html）。Cloudflare 
     site_find.py    サイト内の検索と、使い方とTipsのページ
     site_japan.py   日本代表のページ（japan/・japan/pitching/・japan/p/<背番号>/）
     site_video.py   台湾の日本遠征の打席ごとの映像（team/chinese-taipei/v/<背番号>/ と media/）
-    site_video_kor.py 韓国の投手のKBO1軍の打席ごとの映像（team/korea/v/<投手>/ と media/kor/）
+    site_video_kor.py 韓国の投手と打者のKBO1軍の打席ごとの映像（team/korea/v/<選手>/ と media/kor/）
 URL に ?now=2026-11-08T12:00:00-06:00 を付けると「今」を差し替えて試せる。
 """
 
@@ -75,7 +75,7 @@ try:  # 台湾の日本遠征の映像ページ（別の部品）。なければ
 except Exception as _error:
     print(f"注意: site_video.py が読めないので、映像ページは出しません（{_error}）", file=sys.stderr)
     site_video = None
-try:  # 韓国の投手の映像ページ（別の部品）。なければ映像を出さないだけ
+try:  # 韓国の投手と打者の映像ページ（別の部品）。なければ映像を出さないだけ
     import site_video_kor
 except Exception as _error:
     print(f"注意: site_video_kor.py が読めないので、韓国の映像ページは出しません（{_error}）", file=sys.stderr)
@@ -2187,16 +2187,16 @@ def search_index(d: dict, pages: dict[str, str]) -> str:
                             "y": (reading_of(d, TEAM_CODE["Chinese Taipei"], name).get("reading") or "").strip(),
                             "w": "台湾 チャイニーズタイペイ 映像 動画 打席 日本遠征", "r": 5})
     if "team/korea/" in pages and site_video_kor is not None and site_video_kor.team_section(""):
-        entries.append({"k": "映像", "t": "韓国の投手のKBOの投球の映像", "s": "韓国",
+        entries.append({"k": "映像", "t": "韓国のKBOの映像（投手・打者）", "s": "韓国",
                         "u": "team/korea/#video", "r": 8,
-                        "w": "韓国 コリア KOR 映像 動画 打席 投手 KBO 奪三振 左右"})
-    for url, content in pages.items():  # 韓国の投手ごとの映像ページ
+                        "w": "韓国 コリア KOR 映像 動画 打席 投手 打者 KBO 奪三振 三振 安打 左右"})
+    for url, content in pages.items():  # 韓国の選手ごとの映像ページ
         title = re.search(r"<title>(.+?)の映像｜", content) if url.startswith("team/korea/v/") else None
         if title:
             name = html.unescape(title.group(1))
-            entries.append({"k": "映像", "t": f"{name}の投球の映像", "s": "韓国・KBOの打席ごとの動画", "u": url,
+            entries.append({"k": "映像", "t": f"{name}の映像", "s": "韓国・KBOの打席ごとの動画", "u": url,
                             "y": (reading_of(d, TEAM_CODE["Korea"], name).get("reading") or "").strip(),
-                            "w": "韓国 コリア 映像 動画 打席 投手 KBO 奪三振 左右", "r": 5})
+                            "w": "韓国 コリア 映像 動画 打席 投手 打者 KBO 奪三振 三振 安打 左右", "r": 5})
     days: dict[str, str] = {}
     for game in d["games"]:
         jst = sl.jst_dt(game)
@@ -2257,7 +2257,7 @@ def build() -> tuple[dict[str, str], list[dict], str]:
 
 
 def video_pages() -> dict[str, str]:
-    """台湾の選手と韓国の投手の映像ページ（site_video.py・site_video_kor.py）。読めない・失敗したときは出さない。"""
+    """台湾の選手と韓国の選手の映像ページ（site_video.py・site_video_kor.py）。読めない・失敗したときは出さない。"""
     out: dict[str, str] = {}
     for part in (site_video, site_video_kor):
         if part is None:
