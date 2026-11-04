@@ -1238,6 +1238,17 @@ def card_sub(hand, pos: str, club: str) -> str:
     return "・".join(x for x in (hand, pos, club if len(club) <= SHORT_ENOUGH else "") if x)
 
 
+def kbo_video_url(code: str, name) -> str:
+    """韓国の選手のKBOの映像ページの URL（根元から）。なければ空。失敗しても止めない。"""
+    if code != "KOR" or site_video_kor is None or not name:
+        return ""
+    try:
+        return site_video_kor.player_url(name)
+    except Exception as error:
+        print(f"注意: 映像ページの URL を作れませんでした（{error!r}）", file=sys.stderr)
+        return ""
+
+
 def person_card(d: dict, key: str, kind: str, root: str, code: str, npb: set,
                 roster_row: dict | None = None) -> str:
     """記録のある選手のカード。選手ページへのリンク。
@@ -1265,7 +1276,8 @@ def person_card(d: dict, key: str, kind: str, root: str, code: str, npb: set,
               if event else "")
     out = "離脱" in (row.get("status") or "")
     marks = [("warn", "離脱報道" if out else ""),
-             ("npb", "日本の球団" if in_japan_league(npb, key, roster_row) else "")]
+             ("npb", "日本の球団" if in_japan_league(npb, key, roster_row) else ""),
+             ("ok", "▶ 映像" if kbo_video_url(code, row.get("name")) else "")]  # 映像へは選手ページのボタンから
     native = row.get("name") if row.get("name") and code in ("KOR", "TPE") else ""
     name = native or person["name"]
     title = f' title="{esc(person["name"])}"' if native else ""
@@ -1275,8 +1287,8 @@ def person_card(d: dict, key: str, kind: str, root: str, code: str, npb: set,
 
 
 def roster_only_card(d: dict, row: dict, code: str, warn: bool = False,
-                     npb: set | None = None) -> str:
-    """名簿にいるが、記録（選手ページ）のない選手のカード。リンクにしない。
+                     npb: set | None = None, root: str = "") -> str:
+    """名簿にいるが、記録（選手ページ）のない選手のカード。KBOの映像があればそのページへのリンク、なければリンクにしない。
 
     warn は、名簿の選手と結んだ記録の生年が年齢超過で、選手ページを作っていないとき。
     npb は japan_league_keys の戻り値（日本の球団にいる注目選手と名前で照らす）。
@@ -1291,8 +1303,13 @@ def roster_only_card(d: dict, row: dict, code: str, warn: bool = False,
              ("npb", "日本の球団" if in_japan_league(npb or set(), None, row) else ""),
              ("warn", "記録の生年が年齢超過" if warn else "")]
     norec = "" if warn else '<small class="ev">国際大会の記録なし</small>'
-    return (f'<div class="pcard{" out" if out else ""}"><b class="nm">{esc(row.get("name"))}</b>{yomi}'
-            f'<small class="sub">{esc(sub)}</small>{norec}{badges(marks)}</div>')
+    video = kbo_video_url(code, row.get("name"))
+    inner = (f'<b class="nm">{esc(row.get("name"))}</b>{yomi}'
+             f'<small class="sub">{esc(sub)}</small>{norec}')
+    if video:
+        marks.append(("ok", "▶ 映像"))
+        return f'<a class="pcard{" out" if out else ""}" href="{root}{video}">{inner}{badges(marks)}</a>'
+    return f'<div class="pcard{" out" if out else ""}">{inner}{badges(marks)}</div>'
 
 
 def volume(person: dict, kind: str) -> float:
@@ -1375,7 +1392,7 @@ def player_grid(d: dict, team: str, info: dict, root: str) -> str:
         else:
             kind = "pit" if row.get("position") == "P" else "bat"
             top[side_of(kind)].append(((3 if gone else 2, i, 0), roster_only_card(
-                d, row, code, warn=bool(key) and key not in d["paged"], npb=npb)))
+                d, row, code, warn=bool(key) and key not in d["paged"], npb=npb, root=root)))
     for k, person in d["people"].items():
         if person["team"] != team or k not in d["paged"] or k in used:
             continue
@@ -1465,7 +1482,7 @@ def team_page(d: dict, label: str, team: str, group: str) -> str:
     body = "".join([
         page_head([f'<a href="{root}teams/">相手国</a>', esc(label)], esc(label), meta),
         team_tiles(d, team, info), jump_nav(jump), notes_block(info),
-        section("players", "選手", player_grid(d, team, info, root)),
+        section("players", "選手", kbo_video_note(team) + player_grid(d, team, info, root)),
         video,
         section("notable", "注目選手", notable_block(d, info, root, TEAM_CODE.get(team, ""))),
         section("vsjapan", "日本との対戦<small>参考値</small>", vs_japan_block(info)),
@@ -1476,15 +1493,24 @@ def team_page(d: dict, label: str, team: str, group: str) -> str:
 
 
 def video_section(team: str, root: str) -> str:
-    """台湾と韓国の相手国ページに、映像の入口（site_video.py・site_video_kor.py）。失敗しても止めない。"""
-    part = {"Chinese Taipei": site_video, "Korea": site_video_kor}.get(team)
-    if part is None:
+    """台湾の相手国ページだけに、日本遠征の映像の入口（site_video.py）。失敗しても止めない。
+
+    韓国の映像は別の節にせず、選手カードからつなぐ（roster_only_card・person_card）。
+    """
+    if site_video is None or team != "Chinese Taipei":
         return ""
     try:
-        return part.team_section(root)
+        return site_video.team_section(root)
     except Exception as error:
         print(f"注意: 映像の入口を作れませんでした（{error!r}）", file=sys.stderr)
         return ""
+
+
+def kbo_video_note(team: str) -> str:
+    """韓国の選手一覧の上の一言。映像がなければ空。"""
+    if team != "Korea" or site_video_kor is None or not site_video_kor.data():
+        return ""
+    return '<p class="note">「▶ 映像」の付いた選手は、押すとKBOの映像が見られます。</p>'
 
 
 # ---------------------------------------------------------------- 選手ページ
@@ -1613,7 +1639,9 @@ def player_page(d: dict, key: str, person: dict) -> str:
     elif team != "Japan":
         facts.append("今大会の名簿では未確認")
     blocks = "".join(player_block(kind, event, line) for kind, event, line in person["blocks"])
-    body = (page_head(crumbs, title, esc("・".join(facts)))
+    video = kbo_video_url(code, roster_name)
+    button = f'<p><a class="go" href="{root}{video}">▶ KBOの映像を見る →</a></p>' if video else ""
+    body = (page_head(crumbs, title, esc("・".join(facts))) + button
             + player_head_tiles(person) + player_notes(d, key, team) + player_apps(d, person)
             + section("seasons", "大会ごとの成績", blocks)
             + player_clips(person))
@@ -2186,9 +2214,9 @@ def search_index(d: dict, pages: dict[str, str]) -> str:
             entries.append({"k": "映像", "t": f"{name}の打席の映像", "s": "台湾・日本遠征の打席ごとの動画", "u": url,
                             "y": (reading_of(d, TEAM_CODE["Chinese Taipei"], name).get("reading") or "").strip(),
                             "w": "台湾 チャイニーズタイペイ 映像 動画 打席 日本遠征", "r": 5})
-    if "team/korea/" in pages and site_video_kor is not None and site_video_kor.team_section(""):
+    if "team/korea/" in pages and site_video_kor is not None and site_video_kor.data():
         entries.append({"k": "映像", "t": "韓国のKBOの映像（投手・打者）", "s": "韓国",
-                        "u": "team/korea/#video", "r": 8,
+                        "u": "team/korea/#players", "r": 8,
                         "w": "韓国 コリア KOR 映像 動画 打席 投手 打者 KBO 奪三振 三振 安打 左右"})
     for url, content in pages.items():  # 韓国の選手ごとの映像ページ
         title = re.search(r"<title>(.+?)の映像｜", content) if url.startswith("team/korea/v/") else None

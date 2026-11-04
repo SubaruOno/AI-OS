@@ -6,7 +6,7 @@ kbo_pitcher_reel.py web が作った動画と一覧（投手別映像/web/<選�
 
     pages(page_fn)        {URL: HTML}。team/korea/v/<選手>/ を、動画のある選手に1つずつ
                           全打席の欄は新しい順に RECENT_LIMIT 打席まで
-    team_section(root)    韓国の相手国ページに入れる節（選手のリンク）。映像がなければ空
+    player_url(name)      その選手の映像ページの URL（根元から）。相手国ページの選手カードと成績ページからつなぐ。なければ空
     media()               サイトに置くファイル [(元のパス, サイトの根元からのパス)]
 
 投手のページは「左右別まとめ・奪三振集・最近の打席」、打者のページは「左右別まとめ・安打集・三振集・最近の打席」を切り替えて見る。
@@ -225,24 +225,9 @@ def pages(page_fn) -> dict[str, str]:
     return {page_url(p): player_page(p, page_fn) for p in data()}
 
 
-def team_section(root: str) -> str:
-    """韓国の相手国ページの節。動画のある選手のカードを、投手と打者に分ける。"""
-    people = data()
-    if not people:
-        return ""
-
-    def cards(hitter: bool) -> str:
-        unit = "打席" if hitter else "打者"
-        return "".join(
-            f'<a class="pcard" href="{root}{page_url(p)}"><b class="nm">{esc(p["player"])}</b>'
-            f'<small class="sub">{esc(p["kana"])}・{len(p["at_bats"])}{unit}</small></a>' for p in people if batting(p) == hitter)
-
-    lead = ('<p class="note">今季KBOの1軍に出た選手の、投球の場面だけを抜いた動画です。選手を押すと、'
-            '投手は左右別まとめ・奪三振集・最近の打席を、打者は左右別まとめ・安打集・三振集・最近の打席を切り替えて見られます。'
-            '1軍に出ていない選手の映像はありません。</p>')
-    hitters = cards(True)
-    part = f'<h3 class="vgame">打者</h3><div class="pgrid">{hitters}</div>' if hitters else ""
-    return (f'<section id="video"><h2>KBOの映像</h2>{lead}<h3 class="vgame">投手</h3><div class="pgrid">{cards(False)}</div>{part}</section>')
+def player_url(name: str) -> str:
+    """その選手の映像ページの URL（根元から）。なければ空。"""
+    return next((page_url(p) for p in data() if p["player"] == name), "")
 
 
 def media() -> list[tuple[Path, str]]:
