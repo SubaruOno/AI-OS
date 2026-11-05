@@ -1295,7 +1295,9 @@ def roster_only_card(d: dict, row: dict, code: str, warn: bool = False,
     """
     extra = reading_of(d, code, row.get("name"))
     club = (extra.get("club_ja") or "").strip() or (row.get("club") or "").strip()
-    sub = card_sub("", POS_JA.get(row.get("position"), ""), club)
+    pitcher = row.get("position") == "P"
+    hand = HAND.get(row.get("throws") if pitcher else row.get("bats"))
+    sub = card_sub(f"{hand}{'投' if pitcher else '打'}" if hand else "", POS_JA.get(row.get("position"), ""), club)
     reading = (extra.get("reading") or "").strip()
     yomi = f'<small class="yomi">{esc(reading)}</small>' if reading else ""
     out = "離脱" in (row.get("status") or "")
