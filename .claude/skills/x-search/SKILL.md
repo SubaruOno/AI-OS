@@ -256,6 +256,8 @@ Pay-per-use plan: sign up at https://developer.x.com, select "Pay as you go" bil
 
 10. The built-in browser does not load X's images (2026-11-05): `article` has `/photo/` links but no `img`. `https://api.fxtwitter.com/<user>/status/<id>` returns the full text and image URLs without login; open the `pbs.twimg.com` URL in the browser and screenshot it. Search results stop at about 10 posts, so narrow by `from:` or date rather than scrolling. A 1000x1800 viewport loads more posts per scroll.
 
+11. MLB and minor league player video is not on X search: use the MLB Film Room search (`fastball-gateway.mlb.com/graphql`, query `PitcherId = [id]`) and Baseball Savant `sporty-videos?playId=` (MLB games only, 0 of 12 minor league games tested in 2026). See `~/野球/U23ワールドカップ2026/10_情報収集/_MLB集計/`. Unescape `&#x3D;` in Savant URLs or about 1 in 8 returns 404.
+
 ### Improvement Backlog
 
 - Add X API v2 setup when bearer token is available (validate test_3, test_4, test_5)
