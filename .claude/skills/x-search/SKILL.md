@@ -254,6 +254,8 @@ Pay-per-use plan: sign up at https://developer.x.com, select "Pay as you go" bil
 8. Tweet ID extraction from x.com URLs: match `/status/(\d+)` to get the numeric ID.
 9. If `XAI_API_KEY` is empty in `.env` (checked 2026-10-28), use the desktop app's built-in browser instead: it is signed in to X, so `x.com/search?q=...&f=top` with `since:YYYY-MM-DD min_faves:N lang:ja` works. `get_page_text` returns nothing on X; read `article[data-testid="tweet"]` with javascript_tool, and define the extractor inside each call because navigation clears `window`. Wait about 5 seconds after navigating before reading: with a 2.5-second wait, several searches in a row came back empty (2026-10-28).
 
+10. The built-in browser does not load X's images (2026-11-05): `article` has `/photo/` links but no `img`. `https://api.fxtwitter.com/<user>/status/<id>` returns the full text and image URLs without login; open the `pbs.twimg.com` URL in the browser and screenshot it. Search results stop at about 10 posts, so narrow by `from:` or date rather than scrolling. A 1000x1800 viewport loads more posts per scroll.
+
 ### Improvement Backlog
 
 - Add X API v2 setup when bearer token is available (validate test_3, test_4, test_5)
