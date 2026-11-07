@@ -109,8 +109,13 @@ def plate_appearances(rows: list[dict]) -> list:
 
 
 def players() -> dict[str, dict]:
-    """選手ID → {name: 表示名, folder: フォルダ名, hangul}。名簿照合.csv と 名簿_読み.csv から。"""
+    """選手ID → {name: 表示名, folder: フォルダ名, roster, num: 背番号}。名簿照合.csv と 名簿_読み.csv、背番号は今大会の登録名簿 rosters.csv から。"""
     reading = {(r["team"], r["roster_name"]): r["reading"] for r in csv.DictReader(open(SITE / "名簿_読み.csv", encoding="utf-8-sig"))}
+    nums = {r["playerid"]: r["uniform"] for r in csv.DictReader(open(DATA / "rosters.csv", encoding="utf-8-sig")) if r["uniform"]}
+    for f in ("batting.csv", "pitching.csv"):
+        for r in csv.DictReader(open(DATA / f, encoding="utf-8-sig")):
+            if r["uniform"] and r["playerid"] not in nums:
+                nums[r["playerid"]] = r["uniform"]
     out = {}
     for r in csv.DictReader(open(SITE / "名簿照合.csv", encoding="utf-8-sig")):
         if not r["playerid"]:
@@ -127,7 +132,15 @@ def players() -> dict[str, dict]:
             last = r["lastname"].replace("\\'", "'").split()
             nm = " ".join(first[:1] + [last[0].title()] if last else first[:1])
             out[r["playerid"]] = {"name": nm, "folder": nm.replace(" ", ""), "roster": nm}
+    for pid, v in out.items():
+        v["num"] = nums.get(pid, "")
     return out
+
+
+def tagged(p: dict, name: str | None = None) -> str:
+    """背番号つきの名前（#51 イ・ドウ）。背番号が分からなければ名前だけ。"""
+    n = p["name"] if name is None else name
+    return f"#{p['num']} {n}" if p.get("num") else n
 
 
 def short_name(p: dict) -> str:
@@ -386,7 +399,8 @@ def pa_items(game: str, ioc: str, role: str, nm: dict) -> list[dict]:
         me = r0["pitcherid"] if role == "投手" else bid
         other_id = bid if role == "投手" else r0["pitcherid"]
         res = result_ja(group[-1]["narrative"].strip())
-        other = short_name(nm.get(other_id, {"name": ""}))
+        other_p = nm.get(other_id, {"name": "", "num": ""})
+        other = short_name(other_p)
         folder = out_root(ioc) / role / nm[me]["folder"] / f"{mmdd}_{rival}"
         if role == "打者":
             side = r0["pitcher_throws"]
@@ -402,7 +416,7 @@ def pa_items(game: str, ioc: str, role: str, nm: dict) -> list[dict]:
                              "type": types.get(r["id"], ""), "speed": speed.get(r["id"])})
         out.append({"game": game, "date": date, "rival": rival, "me": me, "inning": int(inning), "half": half,
                     "order": int(r0["playorder"] or 0), "slot": int(r0["lineuporder"] or 9), "side": side, "res": res,
-                    "other": other, "folder": folder, "pitches": pitches_, "hand": r0["pitcher_throws"] if role == "投手" else r0["batter_bats"],
+                    "other": other, "other_tag": tagged(other_p, other), "me_tag": tagged(nm[me]), "folder": folder, "pitches": pitches_, "hand": r0["pitcher_throws"] if role == "投手" else r0["batter_bats"],
                     "complete": all(p["path"].exists() for p in pitches_)})
     return out
 
@@ -421,7 +435,7 @@ def cmd_cut(game: str, ioc: str, video: Path) -> None:
             pa["folder"].mkdir(parents=True, exist_ok=True)
             hand = ({"L": "左打者", "R": "右打者", "S": "両打ち"} if role == "投手" else {"L": "左投手", "R": "右投手"}).get(
                 pa["pitches"][0]["bats"] if role == "投手" else pa["pitches"][0]["throws"], "")
-            head = f"{hand}　{pa['date']} {pa['rival']} {pa['inning']}回{'表' if pa['half'] == 'top' else '裏'}　"
+            head = f"{pa['me_tag']}　{hand}　{pa['date']} {pa['rival']} {pa['inning']}回{'表' if pa['half'] == 'top' else '裏'}　"
             for p in pa["pitches"]:
                 r = p["row"]
                 pitch_t = rel[r["id"]]
@@ -436,7 +450,7 @@ def cmd_cut(game: str, ioc: str, video: Path) -> None:
                 length = min(pitch_t + (AFTER_HIT if in_play else AFTER), vlen) - start
                 count = f"{r['balls']}-{r['strikes']}"
                 after = "　".join(x for x in (p["call"], f"→ {pa['res']}" if p["final"] and pa["res"] else "") if x)
-                jobs.append((p["path"], head, f"{pa['other']}　{count}", after, start, length, entry - start, pa))
+                jobs.append((p["path"], head, f"vs {pa['other_tag']}　{count}", after, start, length, entry - start, pa))
     with tempfile.TemporaryDirectory(prefix="gtcut") as tmp:
         work = Path(tmp)
 
@@ -586,7 +600,7 @@ def cmd_reel(ioc: str, name: str, only: list[str]) -> None:
                 print(fname, "0球なので作らない")
                 continue
             png, head = work / f"{fname}.png", work / f"{fname}.ts"
-            card(me["name"], hand, title, lines, games_line(pas), png)
+            card(tagged(me), hand, title, lines, games_line(pas), png)
             card_ts(png, head, FLAGS)
             files = [head]
             for i, p in enumerate(chosen):
@@ -595,7 +609,7 @@ def cmd_reel(ioc: str, name: str, only: list[str]) -> None:
                     same = [q for q in chosen if q["type"] == p["type"]]
                     sp = [q["speed"] for q in same if q.get("speed")]
                     sub_lines = [f"{len(same)}球"] + ([f"平均 {round(sum(sp) / len(sp))}km　最速 {max(sp)}km（球速が出た{len(sp)}球）"] if sp else [])
-                    card(me["name"], hand, p["type"], sub_lines, games_line(pas), sub)
+                    card(tagged(me), hand, p["type"], sub_lines, games_line(pas), sub)
                     card_ts(sub, sub.with_suffix(".ts"), FLAGS)
                     files.append(sub.with_suffix(".ts"))
                 files.append(p["path"])
@@ -674,12 +688,12 @@ def cmd_youtube(ioc: str, kind_: str, starter: str | None, first: list[str] | No
                 reels = sorted(p for p in (out_root(ioc) / "投手" / sp["folder"] / "対策").glob("*_[0-9]_*.mp4") if "スマホ用" not in p.name)
                 if reels:
                     hand = hand_label(by[sid][0]["hand"], "投手")
-                    chapters.append((len(pieces), f"{sp['name']}（{hand}・先発）" + reels[0].stem.rsplit("_", 1)[1]))
-                    add_card(sp["name"], hand, "日本戦の先発", ["このあと5つの場面に分けて見せます",
+                    chapters.append((len(pieces), f"{tagged(sp)}（{hand}・先発）" + reels[0].stem.rsplit("_", 1)[1]))
+                    add_card(tagged(sp), hand, "日本戦の先発", ["このあと5つの場面に分けて見せます",
                                                            "初球 → 追い込んでから → 走者あり → 左打者 → 右打者"], games_line(by[sid]))
                     for i, r in enumerate(reels):
                         if i:
-                            chapters.append((len(pieces), f"　{sp['name']} {r.stem.rsplit('_', 1)[1]}"))
+                            chapters.append((len(pieces), f"　{tagged(sp)} {r.stem.rsplit('_', 1)[1]}"))
                         pieces.append(r)
                     order = [m for m in order if m != sid]
             if first:
@@ -699,7 +713,7 @@ def cmd_youtube(ioc: str, kind_: str, starter: str | None, first: list[str] | No
 
         for m in order:
             mine = by[m]
-            who = nm[m]["name"]
+            who = tagged(nm[m])
             role_hand = hand_label(mine[0]["hand"], "投手" if role == "投手" else "打者")
             chapters.append((len(pieces), f"{who}（{role_hand}）"))
             add_card(who, role_hand, who, [summary([p for p in mine if p["side"] == s]) + f"（{t}）" for s, t, _ in sides],
