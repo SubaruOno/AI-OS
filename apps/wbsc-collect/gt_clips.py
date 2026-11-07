@@ -91,10 +91,17 @@ def team_name(ioc: str) -> str:
     raise SystemExit(f"{ioc} が名簿にない")
 
 
+# WBSCの登録と打席が違う打者（映像で確かめたもの）。김건は登録が右打ちだが、11/6 の映像で左打席（KBOの登録も左）
+BATS_FIX = {"809943": "L"}
+
+
 def pitches(game: str) -> list[dict]:
-    return [r for r in csv.DictReader(open(DATA / "plays.csv", encoding="utf-8-sig"))
+    rows = [r for r in csv.DictReader(open(DATA / "plays.csv", encoding="utf-8-sig"))
             if r["gameid"] == str(game) and r["nopitch"] in ("0", "") and not NOT_PITCH.match(r["narrative"].strip())
             and not IBB.match(r["narrative"].strip())]
+    for r in rows:
+        r["batter_bats"] = BATS_FIX.get(r["batterid"], r["batter_bats"])
+    return rows
 
 
 def plate_appearances(rows: list[dict]) -> list:
