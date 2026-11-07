@@ -586,10 +586,11 @@ def games_line(items: list[dict]) -> str:
 
 def find_player(name: str) -> tuple[str, dict]:
     nm = players()
-    for pid, p in nm.items():
-        if name in (p["roster"], p["name"], p["folder"]):
-            return pid, p
-    raise SystemExit(f"{name} が見つからない")
+    hits = [(pid, p) for pid, p in nm.items() if name in (p["roster"], p["name"], p["folder"])]
+    if not hits:
+        raise SystemExit(f"{name} が見つからない")
+    # 名簿照合に過去の大会のIDもある選手（キューバの予選組など）は、今大会の背番号があるほう
+    return max(hits, key=lambda x: bool(x[1].get("num")))
 
 
 def cmd_reel(ioc: str, name: str, only: list[str]) -> None:
