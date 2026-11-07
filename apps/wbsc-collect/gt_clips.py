@@ -6,7 +6,7 @@
     python3 gt_clips.py align <試合ID> <映像.mp4>               # 記録の時刻と映像の秒のずれを決める → <映像>.align.json
     python3 gt_clips.py cut <試合ID> <国> <映像.mp4>            # その国の投手と打者を1球ずつに切り、試合ごとのまとめを作る
     python3 gt_clips.py reel <国> <投手> [番号 ...]             # 投手の対策映像（走者あり・対右打者・対左打者・球種別）
-    python3 gt_clips.py youtube <国> 投手|野手 [--starter 投手] [--order 投手,投手,...]
+    python3 gt_clips.py youtube <国> 投手|野手 [--starter 投手 [--starter-games 試合]] [--order 投手,投手,...]
                                                                # YouTube（限定公開）に上げる1本と章の説明文
     python3 gt_clips.py types <試合ID> <BASSの書き出し.txt> <映像.mp4>  # BASSの球種を記録の1球に付ける → <映像>.types.json
     python3 gt_clips.py phone <まとめ.mp4> ...                  # スマホで見る軽い版と、送れる大きさに分けたもの
@@ -118,7 +118,9 @@ def plate_appearances(rows: list[dict]) -> list:
 def players() -> dict[str, dict]:
     """選手ID → {name: 表示名, folder: フォルダ名, roster, num: 背番号}。名簿照合.csv と 名簿_読み.csv、背番号は今大会の登録名簿 rosters.csv から。"""
     reading = {(r["team"], r["roster_name"]): r["reading"] for r in csv.DictReader(open(SITE / "名簿_読み.csv", encoding="utf-8-sig"))}
-    nums = {r["playerid"]: r["uniform"] for r in csv.DictReader(open(DATA / "rosters.csv", encoding="utf-8-sig")) if r["uniform"]}
+    roster = list(csv.DictReader(open(DATA / "rosters.csv", encoding="utf-8-sig")))
+    nums = {r["playerid"]: r["uniform"] for r in roster if r["uniform"]}
+    throws = {r["playerid"]: r["throws"] for r in roster}
     for f in ("batting.csv", "pitching.csv"):
         for r in csv.DictReader(open(DATA / f, encoding="utf-8-sig")):
             if r["uniform"] and r["playerid"] not in nums:
@@ -141,6 +143,7 @@ def players() -> dict[str, dict]:
             out[r["playerid"]] = {"name": nm, "folder": nm.replace(" ", ""), "roster": nm}
     for pid, v in out.items():
         v["num"] = nums.get(pid, "")
+        v["throws"] = throws.get(pid, "")
     return out
 
 
@@ -668,7 +671,7 @@ def duration(path: Path) -> float:
                                 capture_output=True, text=True, check=True).stdout)
 
 
-def cmd_youtube(ioc: str, kind_: str, starter: str | None, first: list[str] | None = None) -> None:
+def cmd_youtube(ioc: str, kind_: str, starter: str | None, first: list[str] | None = None, starter_games: str | None = None) -> None:
     role = "投手" if kind_ == "投手" else "打者"
     nm = players()
     pas = all_pas(ioc, role)
@@ -692,12 +695,17 @@ def cmd_youtube(ioc: str, kind_: str, starter: str | None, first: list[str] | No
             order = sorted(by, key=lambda m: -sum(len(pa["pitches"]) for pa in by[m]))
             if starter:
                 sid, sp = find_player(starter)
-                reels = sorted(p for p in (out_root(ioc) / "投手" / sp["folder"] / "対策").glob("*_[0-9]_*.mp4") if "スマホ用" not in p.name)
+                rdir = out_root(ioc) / "投手" / sp["folder"] / "対策"
+                if not rdir.exists():
+                    # 今大会に投げていない先発は、別に作った対策映像（<国>/<名前>_映像/対策/。박준성は park_reels.py）
+                    rdir = out_root(ioc).parent / f"{sp['roster']}_映像" / "対策"
+                reels = sorted(p for p in rdir.glob("*_[0-9]_*.mp4") if "スマホ用" not in p.name)
                 if reels:
-                    hand = hand_label(by[sid][0]["hand"], "投手")
-                    chapters.append((len(pieces), f"{tagged(sp)}（{hand}・先発）" + reels[0].stem.rsplit("_", 1)[1]))
-                    add_card(tagged(sp), hand, "日本戦の先発", ["このあと5つの場面に分けて見せます",
-                                                           "初球 → 追い込んでから → 走者あり → 左打者 → 右打者"], games_line(by[sid]))
+                    hand = hand_label(by[sid][0]["hand"] if sid in by else sp.get("throws", ""), "投手")
+                    scenes = [r.stem.rsplit("_", 1)[1] for r in reels]
+                    chapters.append((len(pieces), f"{tagged(sp)}（{hand}・先発）" + scenes[0]))
+                    add_card(tagged(sp), hand, "日本戦の先発", [f"このあと{len(reels)}つの場面に分けて見せます", " → ".join(scenes)],
+                             games_line(by[sid]) if sid in by else (starter_games or ""))
                     for i, r in enumerate(reels):
                         if i:
                             chapters.append((len(pieces), f"　{tagged(sp)} {r.stem.rsplit('_', 1)[1]}"))
@@ -813,7 +821,8 @@ def main() -> None:
     elif a[0] == "youtube":
         starter = a[a.index("--starter") + 1] if "--starter" in a else None
         first = a[a.index("--order") + 1].split(",") if "--order" in a else None
-        cmd_youtube(a[1], a[2], starter, first)
+        sg = a[a.index("--starter-games") + 1] if "--starter-games" in a else None
+        cmd_youtube(a[1], a[2], starter, first, sg)
     elif a[0] == "types":
         cmd_types(a[1], Path(a[2]), Path(a[3]))
     elif a[0] == "phone":
