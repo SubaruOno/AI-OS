@@ -98,6 +98,11 @@ EVENTS = {
         "2026-xx-aichi-nagoya-asian-games-2026-mens-baseball",
         "第20回アジア競技大会（愛知・名古屋）。台湾の王宇傑・林佾葳が出場",
     ),
+    "u18-wc-2025": (
+        "www.wbsc.org",
+        "2025-u18-baseball-world-cup",
+        "2025年U-18W杯（沖縄）。韓国の박준성（2026年U-23の日本戦の先発）が登板",
+    ),
 }
 
 
