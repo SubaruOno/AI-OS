@@ -5,7 +5,7 @@
     python3 gt_clips.py ocr <映像.mp4>                         # 右下の得点表示（回・カウント・アウト・球速）を毎秒1回読む → <映像>.bug.json
     python3 gt_clips.py align <試合ID> <映像.mp4>               # 記録の時刻と映像の秒のずれを決める → <映像>.align.json
     python3 gt_clips.py cut <試合ID> <国> <映像.mp4>            # その国の投手と打者を1球ずつに切り、試合ごとのまとめを作る
-    python3 gt_clips.py reel <国> <投手> [番号 ...]             # 投手の対策映像5本（初球・追い込んでから・走者あり・左打者・右打者）
+    python3 gt_clips.py reel <国> <投手> [番号 ...]             # 投手の対策映像（走者あり・対右打者・対左打者・球種別）
     python3 gt_clips.py youtube <国> 投手|野手 [--starter 投手] [--order 投手,投手,...]
                                                                # YouTube（限定公開）に上げる1本と章の説明文
     python3 gt_clips.py phone <まとめ.mp4> ...                  # スマホで見る軽い版と、送れる大きさに分けたもの
@@ -364,6 +364,9 @@ def team_rows(game: str, ioc: str, role: str) -> list[dict]:
 def pa_items(game: str, ioc: str, role: str, nm: dict) -> list[dict]:
     """その国の投手（または打者）の打席。1打席ごとに、全球のファイルの置き場所と、場面分けに使う値。"""
     date, mmdd, rival = game_label(game, ioc)
+    types = {}
+    for f in (out_root(ioc) / "収録").glob(f"{mmdd}_*.mp4.types.json"):
+        types.update(json.load(open(f)))
     out = []
     for i, ((inning, half, bid), group) in enumerate(plate_appearances(team_rows(game, ioc, role))):
         r0 = group[0]
@@ -382,7 +385,8 @@ def pa_items(game: str, ioc: str, role: str, nm: dict) -> list[dict]:
             pitches_.append({"row": r, "k": k, "final": final, "path": folder / (clip_stem(r, k, final, res, other) + ".mp4"),
                              "call": pitch_call(r["narrative"].strip()), "count": (r["balls"], r["strikes"]),
                              "res": res if final else "", "bats": r["batter_bats"], "throws": r["pitcher_throws"],
-                             "runners": any(r[f"runner{j}"] not in ("", "0") for j in (1, 2, 3)), "pa": (game, i), "game": game, "date": date})
+                             "runners": any(r[f"runner{j}"] not in ("", "0") for j in (1, 2, 3)), "pa": (game, i), "game": game, "date": date,
+                             "type": types.get(r["id"], "")})
         out.append({"game": game, "date": date, "rival": rival, "me": me, "inning": int(inning), "half": half,
                     "order": int(r0["playorder"] or 0), "slot": int(r0["lineuporder"] or 9), "side": side, "res": res,
                     "other": other, "folder": folder, "pitches": pitches_, "hand": r0["pitcher_throws"] if role == "投手" else r0["batter_bats"],
@@ -488,28 +492,38 @@ def pa_line(chosen: list[dict]) -> str:
 
 
 def sections(ps: list[dict]) -> list:
+    """対策映像の場面分け（2026-11-07 にすばるの指示で、初球と2ストライクからの2本を外した）。
+    1_走者あり・2_対右打者・3_対左打者・4_球種別。球種別は球種の分かった球があるときだけ（BASSの入力を <収録>.types.json に置く）。
+    初球と追い込んでからの数字は、対右・対左の表紙に入れる。"""
     strike = lambda p: p["call"] != "ボール" and p["res"] not in ("四球", "死球")
-    swing = lambda p: p["call"] in ("空振り", "ファウル") or (p["call"] == "" and p["res"] not in ("", "四球", "死球", "見逃し三振"))
-    first = [p for p in ps if p["count"] == ("0", "0")]
-    two = [p for p in ps if p["count"][1] == "2"]
     runners = [p for p in ps if p["runners"]]
     left = [p for p in ps if p["bats"] == "L" or (p["bats"] == "S" and p["throws"] == "R")]
     right = [p for p in ps if p["bats"] == "R" or (p["bats"] == "S" and p["throws"] == "L")]
     lefty = ps[0]["throws"] == "L"
-    k_two = [p for p in two if "三振" in p["res"]]
-    return [
-        ("1_初球", "初球", [f"ストライク {rate(sum(strike(p) for p in first), len(first))}",
-                           f"見逃しストライク {rate(sum(p['call'] == '見逃し' for p in first), len(first))}",
-                           f"打者が振った {rate(sum(swing(p) for p in first), len(first))}"], first),
-        ("2_追い込んでから", "2ストライクから", [f"{len(two)}球、三振 {len(k_two)}（空振り {sum('空振り' in p['res'] for p in k_two)}・見逃し {sum('見逃し' in p['res'] for p in k_two)}）",
-                                                f"ストライク {rate(sum(strike(p) for p in two), len(two))}",
-                                                f"2ストライクまで行った打席 {rate(len({p['pa'] for p in two}), len({p['pa'] for p in ps}))}"], two),
-        ("3_走者あり", "走者がいるとき", [f"{len(runners)}球（全{len(ps)}球のうち）", "セットの間合いとけん制の様子を見る"], runners),
-        ("4_左打者", "左打者への球", [f"{len(left)}球" + ("（両打ちは右打席に入るので含まない）" if lefty else "（両打ちが左打席に入った球を含む）"),
-                                      f"ストライク {rate(sum(strike(p) for p in left), len(left))}", pa_line(left)], left),
-        ("5_右打者", "右打者への球", [f"{len(right)}球" + ("（両打ちが右打席に入った球を含む）" if lefty else "（両打ちは左打席に入るので含まない）"),
-                                      f"ストライク {rate(sum(strike(p) for p in right), len(right))}", pa_line(right)], right),
+
+    def side_lines(chosen: list[dict], note: str) -> list[str]:
+        first = [p for p in chosen if p["count"] == ("0", "0")]
+        two = [p for p in chosen if p["count"][1] == "2"]
+        return [f"{len(chosen)}球{note}",
+                f"ストライク {rate(sum(strike(p) for p in chosen), len(chosen))}　初球ストライク {rate(sum(strike(p) for p in first), len(first))}",
+                f"2ストライクから {len(two)}球、三振 {sum(p['final'] and '三振' in p['res'] for p in two)}",
+                pa_line(chosen)]
+
+    out = [
+        ("1_走者あり", "走者がいるとき", [f"{len(runners)}球（全{len(ps)}球のうち）",
+                                         f"ストライク {rate(sum(strike(p) for p in runners), len(runners))}",
+                                         "セットの間合いとけん制の様子を見る"], runners),
+        ("2_対右打者", "右打者への球", side_lines(right, "（両打ちが右打席に入った球を含む）" if lefty else "（両打ちは左打席に入るので含まない）"), right),
+        ("3_対左打者", "左打者への球", side_lines(left, "（両打ちは右打席に入るので含まない）" if lefty else "（両打ちが左打席に入った球を含む）"), left),
     ]
+    typed = [p for p in ps if p.get("type")]
+    if typed:
+        kinds = Counter(p["type"] for p in typed)
+        order = [k for k, _ in kinds.most_common()]
+        chosen = sorted(typed, key=lambda p: order.index(p["type"]))
+        out.append(("4_球種別", "球種ごと", [f"{len(typed)}球（全{len(ps)}球のうち球種が分かった球）",
+                                             "、".join(f"{k} {v}" for k, v in kinds.most_common())], chosen))
+    return out
 
 
 def card(who: str, hand: str, title: str, lines: list[str], games: str, path: Path) -> None:
@@ -558,8 +572,17 @@ def cmd_reel(ioc: str, name: str, only: list[str]) -> None:
             png, head = work / f"{fname}.png", work / f"{fname}.ts"
             card(me["name"], hand, title, lines, games_line(pas), png)
             card_ts(png, head, FLAGS)
+            files = [head]
+            for i, p in enumerate(chosen):
+                if fname.endswith("球種別") and (i == 0 or chosen[i - 1]["type"] != p["type"]):
+                    sub = work / f"{fname}_{len(files)}.png"
+                    n = sum(q["type"] == p["type"] for q in chosen)
+                    card(me["name"], hand, p["type"], [f"{n}球"], games_line(pas), sub)
+                    card_ts(sub, sub.with_suffix(".ts"), FLAGS)
+                    files.append(sub.with_suffix(".ts"))
+                files.append(p["path"])
             lst = work / f"{fname}.txt"
-            lst.write_text("".join(f"file '{f}'\n" for f in [head, *(p["path"] for p in chosen)]), encoding="utf-8")
+            lst.write_text("".join(f"file '{f}'\n" for f in files), encoding="utf-8")
             reel = out_dir / f"{me['folder']}_{fname}.mp4"
             subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(lst),
                             *FLAGS, "-movflags", "+faststart", str(reel)], check=True)
