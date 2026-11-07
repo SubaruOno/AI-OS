@@ -8,7 +8,11 @@
     python3 gt_clips.py reel <国> <投手> [番号 ...]             # 投手の対策映像（走者あり・対右打者・対左打者・球種別）
     python3 gt_clips.py youtube <国> 投手|野手 [--starter 投手] [--order 投手,投手,...]
                                                                # YouTube（限定公開）に上げる1本と章の説明文
+    python3 gt_clips.py types <試合ID> <BASSの書き出し.txt> <映像.mp4>  # BASSの球種を記録の1球に付ける → <映像>.types.json
     python3 gt_clips.py phone <まとめ.mp4> ...                  # スマホで見る軽い版と、送れる大きさに分けたもの
+
+BASSの書き出しは、U-23の入力画面（Chrome、ログイン済み）で、試合の1球の記録を「回・表裏・投げる前のボールとストライク・球種の記号・
+打席（1左2右）・9分割のコース」の7文字（例 1t01C23、けん制などは記号 -）に縮めて空白でつないだもの。作り方は docs/wbsc-collect.md。
 
 <国> は IOC の略号（KOR など）。<投手> は名簿の名前（최우석 など）。
 出力は ~/野球/U23ワールドカップ2026/04_対戦国/<国名>/大会2026_映像/。配信の規約上、チームの中だけで使う。
@@ -364,9 +368,18 @@ def team_rows(game: str, ioc: str, role: str) -> list[dict]:
 def pa_items(game: str, ioc: str, role: str, nm: dict) -> list[dict]:
     """その国の投手（または打者）の打席。1打席ごとに、全球のファイルの置き場所と、場面分けに使う値。"""
     date, mmdd, rival = game_label(game, ioc)
-    types = {}
+    types, speed = {}, {}
     for f in (out_root(ioc) / "収録").glob(f"{mmdd}_*.mp4.types.json"):
         types.update(json.load(open(f)))
+    for v in (out_root(ioc) / "収録").glob(f"{mmdd}_*.mp4"):
+        al_f, bug_f = Path(str(v) + ".align.json"), Path(str(v) + ".bug.json")
+        if al_f.exists() and bug_f.exists():
+            # 中継の「74 MPH」の表示を、1球の投げた瞬間に合わせて拾う（km/h に直す）
+            bug = {round(r[0]): r[4] for r in json.load(open(bug_f)) if len(r) > 4 and r[4]}
+            for i, t in json.load(open(al_f)).get("release", {}).items():
+                mph = next((bug[k] for k in (round(t + TAG_LAG), round(t + TAG_LAG) + 1, round(t + TAG_LAG) - 1) if k in bug), None)
+                if mph and 55 <= mph <= 100:
+                    speed[i] = round(mph * 1.609)
     out = []
     for i, ((inning, half, bid), group) in enumerate(plate_appearances(team_rows(game, ioc, role))):
         r0 = group[0]
@@ -386,7 +399,7 @@ def pa_items(game: str, ioc: str, role: str, nm: dict) -> list[dict]:
                              "call": pitch_call(r["narrative"].strip()), "count": (r["balls"], r["strikes"]),
                              "res": res if final else "", "bats": r["batter_bats"], "throws": r["pitcher_throws"],
                              "runners": any(r[f"runner{j}"] not in ("", "0") for j in (1, 2, 3)), "pa": (game, i), "game": game, "date": date,
-                             "type": types.get(r["id"], "")})
+                             "type": types.get(r["id"], ""), "speed": speed.get(r["id"])})
         out.append({"game": game, "date": date, "rival": rival, "me": me, "inning": int(inning), "half": half,
                     "order": int(r0["playorder"] or 0), "slot": int(r0["lineuporder"] or 9), "side": side, "res": res,
                     "other": other, "folder": folder, "pitches": pitches_, "hand": r0["pitcher_throws"] if role == "投手" else r0["batter_bats"],
@@ -521,8 +534,11 @@ def sections(ps: list[dict]) -> list:
         kinds = Counter(p["type"] for p in typed)
         order = [k for k, _ in kinds.most_common()]
         chosen = sorted(typed, key=lambda p: order.index(p["type"]))
-        out.append(("4_球種別", "球種ごと", [f"{len(typed)}球（全{len(ps)}球のうち球種が分かった球）",
-                                             "、".join(f"{k} {v}" for k, v in kinds.most_common())], chosen))
+        def avg(k):
+            sp = [p["speed"] for p in typed if p["type"] == k and p.get("speed")]
+            return f"（平均{round(sum(sp) / len(sp))}km）" if sp else ""
+        out.append(("4_球種別", "球種ごと", [f"{len(typed)}球（全{len(ps)}球のうち球種が分かった球。球種はBASSの入力）"]
+                    + [f"{k} {v}球{avg(k)}" for k, v in kinds.most_common()], chosen))
     return out
 
 
@@ -576,8 +592,10 @@ def cmd_reel(ioc: str, name: str, only: list[str]) -> None:
             for i, p in enumerate(chosen):
                 if fname.endswith("球種別") and (i == 0 or chosen[i - 1]["type"] != p["type"]):
                     sub = work / f"{fname}_{len(files)}.png"
-                    n = sum(q["type"] == p["type"] for q in chosen)
-                    card(me["name"], hand, p["type"], [f"{n}球"], games_line(pas), sub)
+                    same = [q for q in chosen if q["type"] == p["type"]]
+                    sp = [q["speed"] for q in same if q.get("speed")]
+                    sub_lines = [f"{len(same)}球"] + ([f"平均 {round(sum(sp) / len(sp))}km　最速 {max(sp)}km（球速が出た{len(sp)}球）"] if sp else [])
+                    card(me["name"], hand, p["type"], sub_lines, games_line(pas), sub)
                     card_ts(sub, sub.with_suffix(".ts"), FLAGS)
                     files.append(sub.with_suffix(".ts"))
                 files.append(p["path"])
@@ -711,6 +729,33 @@ def cmd_youtube(ioc: str, kind_: str, starter: str | None, first: list[str] | No
     print(text.read_text(encoding="utf-8"))
 
 
+BASS_KIND = {"F": "ストレート", "S": "スライダー", "C": "カーブ", "P": "スプリット", "H": "チェンジアップ", "T": "カット", "W": "ツーシーム", "K": "シンカー"}
+
+
+def cmd_types(game: str, bass_txt: Path, video: Path) -> None:
+    """BASSの球種を、回・表裏ごとに「投げる前のカウント」の並びでWBSCの記録と突き合わせて付ける。"""
+    import difflib
+    B, W = defaultdict(list), defaultdict(list)
+    for t in bass_txt.read_text().split():
+        if t[4] != "-":
+            B[(int(t[0]), "top" if t[1] == "t" else "bot")].append((t[2:4], t[4]))
+    for r in pitches(game):
+        W[(int(r["inning"]), r["half"])].append(r)
+    types, miss = {}, []
+    for key in sorted(set(B) | set(W)):
+        b, w = B.get(key, []), W.get(key, [])
+        sm = difflib.SequenceMatcher(a=[f"{r['balls']}{r['strikes']}" for r in w], b=[x[0] for x in b], autojunk=False)
+        got = 0
+        for blk in sm.get_matching_blocks():
+            for j in range(blk.size):
+                types[w[blk.a + j]["id"]] = BASS_KIND.get(b[blk.b + j][1], "その他")
+                got += 1
+        if got != len(w) or len(b) != len(w):
+            miss.append(f"{key[0]}回{'表' if key[1] == 'top' else '裏'} 記録{len(w)} BASS{len(b)} 一致{got}")
+    json.dump(types, open(str(video) + ".types.json", "w"), ensure_ascii=False)
+    print(f"記録 {sum(len(v) for v in W.values())}球のうち球種が付いた {len(types)}球", *miss, sep="\n  ")
+
+
 # ---------------------------------------------------------------- スマホ用
 
 def cmd_phone(srcs: list[Path]) -> None:
@@ -748,6 +793,8 @@ def main() -> None:
         starter = a[a.index("--starter") + 1] if "--starter" in a else None
         first = a[a.index("--order") + 1].split(",") if "--order" in a else None
         cmd_youtube(a[1], a[2], starter, first)
+    elif a[0] == "types":
+        cmd_types(a[1], Path(a[2]), Path(a[3]))
     elif a[0] == "phone":
         cmd_phone([Path(x) for x in a[1:]])
     else:
