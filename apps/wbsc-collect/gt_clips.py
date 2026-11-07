@@ -531,12 +531,11 @@ def pa_line(chosen: list[dict]) -> str:
 def sections(ps: list[dict]) -> list:
     """対策映像の場面分け（2026-11-07 にすばるの指示で、初球と2ストライクからの2本を外した）。
     1_走者あり・2_対右打者・3_対左打者・4_球種別。球種別は球種の分かった球があるときだけ（BASSの入力を <収録>.types.json に置く）。
-    初球と追い込んでからの数字は、対右・対左の表紙に入れる。"""
+    初球と追い込んでからの数字は、対右・対左の表紙に入れる。表紙はデータだけにし、提案や注記は入れない（11/7 すばるの指示）。"""
     strike = lambda p: p["call"] != "ボール" and p["res"] not in ("四球", "死球")
     runners = [p for p in ps if p["runners"]]
     left = [p for p in ps if p["bats"] == "L" or (p["bats"] == "S" and p["throws"] == "R")]
     right = [p for p in ps if p["bats"] == "R" or (p["bats"] == "S" and p["throws"] == "L")]
-    lefty = ps[0]["throws"] == "L"
 
     def side_lines(chosen: list[dict], note: str) -> list[str]:
         first = [p for p in chosen if p["count"] == ("0", "0")]
@@ -548,10 +547,9 @@ def sections(ps: list[dict]) -> list:
 
     out = [
         ("1_走者あり", "走者がいるとき", [f"{len(runners)}球（全{len(ps)}球のうち）",
-                                         f"ストライク {rate(sum(strike(p) for p in runners), len(runners))}",
-                                         "セットの間合いとけん制の様子を見る"], runners),
-        ("2_対右打者", "右打者への球", side_lines(right, "（両打ちが右打席に入った球を含む）" if lefty else "（両打ちは左打席に入るので含まない）"), right),
-        ("3_対左打者", "左打者への球", side_lines(left, "（両打ちは右打席に入るので含まない）" if lefty else "（両打ちが左打席に入った球を含む）"), left),
+                                         f"ストライク {rate(sum(strike(p) for p in runners), len(runners))}"], runners),
+        ("2_対右打者", "右打者への球", side_lines(right, ""), right),
+        ("3_対左打者", "左打者への球", side_lines(left, ""), left),
     ]
     typed = [p for p in ps if p.get("type")]
     if typed:
@@ -561,7 +559,7 @@ def sections(ps: list[dict]) -> list:
         def avg(k):
             sp = [p["speed"] for p in typed if p["type"] == k and p.get("speed")]
             return f"（平均{round(sum(sp) / len(sp))}km）" if sp else ""
-        out.append(("4_球種別", "球種ごと", [f"{len(typed)}球（全{len(ps)}球のうち球種が分かった球。球種はBASSの入力）"]
+        out.append(("4_球種別", "球種ごと", [f"{len(typed)}球"]
                     + [f"{k} {v}球{avg(k)}" for k, v in kinds.most_common()], chosen))
     return out
 
