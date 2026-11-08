@@ -459,6 +459,10 @@ def cmd_cut(game: str, ioc: str, video: Path) -> None:
                 # 投げた後の字幕（判定と打席の結果）は、カウントが変わった瞬間か、投げた2.5秒後の早いほうから
                 entry = min(anc[r["id"]], pitch_t + 2.5) if anc[r["id"]] > pitch_t else pitch_t + 2.5
                 length = min(pitch_t + (AFTER_HIT if in_play else AFTER), vlen) - start
+                if length < 2:
+                    # 録画が試合の終わりより前で切れている（11/6 南アフリカ対ベネズエラの最後の1球）
+                    print(f"  録画の外なので切らない: {p['path'].name}", flush=True)
+                    continue
                 count = f"{r['balls']}-{r['strikes']}"
                 after = "　".join(x for x in (p["call"], f"→ {pa['res']}" if p["final"] and pa["res"] else "") if x)
                 jobs.append((p["path"], head, f"vs {pa['other_tag']}　{count}", after, start, length, entry - start, pa))
