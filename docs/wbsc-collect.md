@@ -1096,6 +1096,7 @@ python3 gt_clips.py cut <試合ID> <国> <映像.mp4>            # その国の�
 python3 gt_clips.py reel <国> <投手>                        # 場面別の対策映像（走者あり・対右打者・対左打者・球種別）
 python3 gt_clips.py youtube <国> 投手 --order 投手,投手      # YouTube の投手の1本と章の説明文
 python3 gt_clips.py youtube <国> 野手                       # 野手の1本（最後の試合の打順）
+python3 gt_clips.py youtube <国> 投手 --starter 投手 --scenes 対右打者,対左打者 --pas 3,2 --bitrate 2000k   # 短くするとき（1人あたりの右・左の打席数、先発の場面、画質）
 python3 gt_clips.py phone <まとめ.mp4> ...                  # スマホ用
 ```
 

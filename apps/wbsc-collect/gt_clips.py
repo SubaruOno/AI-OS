@@ -7,6 +7,7 @@
     python3 gt_clips.py cut <試合ID> <国> <映像.mp4>            # その国の投手と打者を1球ずつに切り、試合ごとのまとめを作る
     python3 gt_clips.py reel <国> <投手> [番号 ...]             # 投手の対策映像（走者あり・対右打者・対左打者・球種別）
     python3 gt_clips.py youtube <国> 投手|野手 [--starter 投手 [--starter-games 試合]] [--order 投手,投手,...]
+                                [--pas 右,左] [--scenes 場面,場面] [--bitrate 2000k]   # 短くするとき
                                                                # YouTube（限定公開）に上げる1本と章の説明文
     python3 gt_clips.py types <試合ID> <BASSの書き出し.txt> <映像.mp4>  # BASSの球種を記録の1球に付ける → <映像>.types.json
     python3 gt_clips.py phone <まとめ.mp4> ...                  # スマホで見る軽い版と、送れる大きさに分けたもの
@@ -670,7 +671,10 @@ def duration(path: Path) -> float:
                                 capture_output=True, text=True, check=True).stdout)
 
 
-def cmd_youtube(ioc: str, kind_: str, starter: str | None, first: list[str] | None = None, starter_games: str | None = None) -> None:
+def cmd_youtube(ioc: str, kind_: str, starter: str | None, first: list[str] | None = None, starter_games: str | None = None,
+                pas_n: tuple[int | None, int | None] | None = None, scenes: list[str] | None = None) -> None:
+    """pas_n は1人あたりの (対右, 対左) の打席数（None は全部）。scenes は先発の対策映像のうち使う場面（例 対右打者,対左打者）。
+    2026-11-08 キューバ：2試合分で長くなり、アップロードが試合に間に合わないので、--pas と --scenes で短くした。"""
     role = "投手" if kind_ == "投手" else "打者"
     nm = players()
     pas = all_pas(ioc, role)
@@ -699,6 +703,8 @@ def cmd_youtube(ioc: str, kind_: str, starter: str | None, first: list[str] | No
                     # 今大会に投げていない先発は、別に作った対策映像（<国>/<名前>_映像/対策/。박준성は park_reels.py）
                     rdir = out_root(ioc).parent / f"{sp['roster']}_映像" / "対策"
                 reels = sorted(p for p in rdir.glob("*_[0-9]_*.mp4") if "スマホ用" not in p.name)
+                if scenes:
+                    reels = [r for r in reels if r.stem.rsplit("_", 1)[1] in scenes]
                 if reels:
                     hand = hand_label(by[sid][0]["hand"] if sid in by else sp.get("throws", ""), "投手")
                     scenes = [r.stem.rsplit("_", 1)[1] for r in reels]
@@ -714,7 +720,8 @@ def cmd_youtube(ioc: str, kind_: str, starter: str | None, first: list[str] | No
                 # 指定した投手を先に（日本戦で投げそうな順）。残りは球数の多い順
                 ids = [find_player(n)[0] for n in first]
                 order = [m for m in ids if m in by] + [m for m in order if m not in ids]
-            sides = (("R", "対右打者", PITCHER_PAS), ("L", "対左打者", PITCHER_PAS))
+            nR, nL = pas_n or (PITCHER_PAS, PITCHER_PAS)
+            sides = (("R", "対右打者", nR), ("L", "対左打者", nL))
         else:
             by = defaultdict(list)
             for pa in pas:
@@ -723,7 +730,8 @@ def cmd_youtube(ioc: str, kind_: str, starter: str | None, first: list[str] | No
             slot = {m: min((pa["slot"], pa["order"]) for pa in v if pa["game"] == last) if any(pa["game"] == last for pa in v)
                     else (10, 0) for m, v in by.items()}
             order = sorted(by, key=lambda m: slot[m])
-            sides = (("R", "対右投手", BATTER_PAS_R), ("L", "対左投手", None))
+            nR, nL = pas_n or (BATTER_PAS_R, None)
+            sides = (("R", "対右投手", nR), ("L", "対左投手", nL))
 
         for m in order:
             mine = by[m]
@@ -821,7 +829,11 @@ def main() -> None:
         starter = a[a.index("--starter") + 1] if "--starter" in a else None
         first = a[a.index("--order") + 1].split(",") if "--order" in a else None
         sg = a[a.index("--starter-games") + 1] if "--starter-games" in a else None
-        cmd_youtube(a[1], a[2], starter, first, sg)
+        pas_n = tuple(None if x == "全部" else int(x) for x in a[a.index("--pas") + 1].split(",")) if "--pas" in a else None
+        scenes = a[a.index("--scenes") + 1].split(",") if "--scenes" in a else None
+        if "--bitrate" in a:
+            YT_FLAGS[YT_FLAGS.index("-b:v") + 1] = a[a.index("--bitrate") + 1]
+        cmd_youtube(a[1], a[2], starter, first, sg, pas_n, scenes)
     elif a[0] == "types":
         cmd_types(a[1], Path(a[2]), Path(a[3]))
     elif a[0] == "phone":
