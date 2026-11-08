@@ -98,6 +98,11 @@ EVENTS = {
         "2026-xx-aichi-nagoya-asian-games-2026-mens-baseball",
         "第20回アジア競技大会（愛知・名古屋）。台湾の王宇傑・林佾葳が出場",
     ),
+    "u18-americas-2024": (
+        "www.wbscamericas.org",
+        "2024-campeonato-panamericano-u-18-pan-american-championship",
+        "2024年U-18パンアメリカン選手権（パナマ）。キューバの Rojas・Iturralde が先発",
+    ),
     "u18-wc-2025": (
         "www.wbsc.org",
         "2025-u18-baseball-world-cup",
