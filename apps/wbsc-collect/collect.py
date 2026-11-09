@@ -60,6 +60,17 @@ USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"
 SLEEP_SECONDS = 1.0
 OUT_ROOT = Path.home() / "野球" / "U23ワールドカップ2026" / "05_収集データ"
 
+# WBSCの登録と、映像で見た投打が違う選手。選手ID → 正しい値。取り込むたびに、名簿（rosters.csv）と
+# 1球の記録（plays.csv の batter_bats・pitcher_throws）にこの値を入れる。左右は投げる瞬間の映像で、
+# グラブの手と、投げた後に跳ね上がる足で決める（登録や記事、「登録どおり」という過去のメモでは決めない）
+HAND_FIX = {
+    # 南アフリカ #12 Shane Mc Quirk。登録は左投げだが、11/6 ベネズエラ戦・11/7 キューバ戦の映像で
+    # グラブは左手、投げた後に右足が上がる右投げ（11/9 すばるの指摘で、投げる瞬間を1球ずつ見て確認）
+    "799713": {"throws": "R"},
+    # 韓国 김건。登録は右打ちだが、11/6 キューバ戦の映像で左打席（KBOの登録も左）
+    "809943": {"bats": "L"},
+}
+
 # 大会キー: (ドメイン, 大会スラッグ, 説明)
 EVENTS = {
     "u23-wc-2026": (
@@ -243,6 +254,7 @@ def player_hands(game: dict) -> dict:
         hands[row.get("playerid")] = {
             "bats": player.get("bats") or "",
             "throws": player.get("throws") or "",
+            **HAND_FIX.get(str(row.get("playerid")), {}),
         }
     return hands
 
@@ -523,14 +535,15 @@ def parse_roster(page: str) -> dict | None:
                 link = re.search(r"/players/(\d+)", cell)
                 last, first = split_name(cell)
                 hands = (pick(cells, col, "B/T").upper().split("/") + ["", ""])[:2]
+                pid = link.group(1) if link else ""
                 players.append({
-                    "playerid": link.group(1) if link else "",
+                    "playerid": pid,
                     "uniform": pick(cells, col, "#"),
                     "lastname": last,
                     "firstname": first,
                     "position": pick(cells, col, "POS").upper(),
-                    "bats": hands[0].strip(),
-                    "throws": hands[1].strip(),
+                    "bats": HAND_FIX.get(pid, {}).get("bats", hands[0].strip()),
+                    "throws": HAND_FIX.get(pid, {}).get("throws", hands[1].strip()),
                     "yob": pick(cells, col, "YOB"),
                 })
         elif "NAME" in col:
