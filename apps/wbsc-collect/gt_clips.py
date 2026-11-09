@@ -587,8 +587,10 @@ def card(who: str, hand: str, title: str, lines: list[str], games: str, path: Pa
     draw = ImageDraw.Draw(img)
     draw_text(draw, (80, 150), f"{who}（{hand}）", 40, "#AEB6C2")
     draw_text(draw, (80, 220), title, 72, "#FFFFFF")
+    # 球種が5つあると6行になり、下の試合名に重なっていた（11/9 南アフリカの Tribe・White）。行が多いときは行の間を詰める
+    step = min(64, (VH + STRIP - 120 - 350) // max(len(lines), 1))
     for i, line in enumerate(lines):
-        draw_text(draw, (80, 350 + i * 64), line, 36, "#FFD76A")
+        draw_text(draw, (80, 350 + i * step), line, 36, "#FFD76A")
     draw_text(draw, (80, VH + STRIP - 90), games, 26, "#AEB6C2")
     img.save(path)
 
