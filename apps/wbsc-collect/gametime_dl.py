@@ -17,9 +17,9 @@ from __future__ import annotations
 
 import argparse
 import re
+import shutil
 import subprocess
 import sys
-import tempfile
 import time
 import urllib.parse
 import urllib.request
@@ -29,7 +29,8 @@ from pathlib import Path
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36"
 
 
-def get(url: str, tries: int = 6) -> bytes:
+def get(url: str, tries: int = 12) -> bytes:
+    # ホテルの回線は数十秒つながらないことがある（11/9 に握手の時間切れで6回とも失敗した）ので、待ちを長めにして12回まで試す
     for i in range(tries):
         try:
             req = urllib.request.Request(url, headers={"User-Agent": UA, "Referer": "https://gametime.sport/"})
@@ -38,7 +39,7 @@ def get(url: str, tries: int = 6) -> bytes:
         except Exception as e:  # noqa: BLE001
             if i == tries - 1:
                 raise
-            time.sleep(1.5 * (i + 1))
+            time.sleep(min(3 * (i + 1), 30))
     raise RuntimeError(url)
 
 
@@ -69,25 +70,34 @@ def fetch_track(url: str, out: Path, t0: float, t1: float | None, label: str) ->
             pick.append(u)
         pos += d
     print(f"{label}: {len(pick)}/{len(segs)} 個（全体 {pos:.0f} 秒）", flush=True)
-    with tempfile.TemporaryDirectory() as td:
-        tdp = Path(td)
+    # 落とした小さな映像は <出力>.parts/<映像|音>/ に残し、止まったら同じ命令で続きから落とす。書き出せたら消す
+    tdp = Path(str(out) + ".parts")
+    tdp.mkdir(parents=True, exist_ok=True)
+    have = len(list(tdp.glob("*.m4s")))
+    if have:
+        print(f"  {label} 前回の続きから（{have} 個は落としてある）", flush=True)
 
-        def one(i_u):
-            i, u = i_u
-            p = tdp / f"{i:06d}.m4s"
-            p.write_bytes(get(u))
+    def one(i_u):
+        i, u = i_u
+        p = tdp / f"{i:06d}.m4s"
+        if p.exists():
             return i
+        tmp = p.with_suffix(".tmp")
+        tmp.write_bytes(get(u))
+        tmp.rename(p)
+        return i
 
-        done = 0
-        with ThreadPoolExecutor(16) as ex:
-            for _ in ex.map(one, enumerate(pick)):
-                done += 1
-                if done % 500 == 0:
-                    print(f"  {label} {done}/{len(pick)}", flush=True)
-        with open(out, "wb") as f:
-            f.write(get(init))
-            for i in range(len(pick)):
-                f.write((tdp / f"{i:06d}.m4s").read_bytes())
+    done = 0
+    with ThreadPoolExecutor(16) as ex:
+        for _ in ex.map(one, enumerate(pick)):
+            done += 1
+            if done % 500 == 0:
+                print(f"  {label} {done}/{len(pick)}", flush=True)
+    with open(out, "wb") as f:
+        f.write(get(init))
+        for i in range(len(pick)):
+            f.write((tdp / f"{i:06d}.m4s").read_bytes())
+    shutil.rmtree(tdp)
 
 
 def main() -> None:
