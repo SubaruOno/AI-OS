@@ -313,6 +313,11 @@ def cmd_align(game: str, video: Path) -> None:
         entry = anchors.get(e["id"], e["utc"] + shift)
         if e["id"] in anchors:
             near = [t for t in tg if entry - 8 <= t <= entry + 0.5 and t > prev_tag + 4]
+            if not near:
+                # 打球になった球は、カウントが戻るまで10秒ほどかかることがある（11/8 南アフリカ対イギリスで5球）。
+                # 8秒前までに表示がないときだけ20秒前まで探す。前の球の入力より前には戻らない
+                lo = max(entry - 20, prev_tag + 4, prev_entry - 1 if prev_entry is not None else -99.0)
+                near = [t for t in tg if lo < t < entry - 8]
             pick = near[-1] if near else None
         else:
             lo = max(prev_entry - 1 if prev_entry is not None else entry - 40, prev_tag + 4)
