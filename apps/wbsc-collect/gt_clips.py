@@ -405,6 +405,7 @@ def pa_items(game: str, ioc: str, role: str, nm: dict) -> list[dict]:
                 if mph and 55 <= mph <= 100:
                     speed[i] = round(mph * 1.609)
     out = []
+    used: set[Path] = set()
     for i, ((inning, half, bid), group) in enumerate(plate_appearances(team_rows(game, ioc, role))):
         r0 = group[0]
         me = r0["pitcherid"] if role == "投手" else bid
@@ -420,7 +421,14 @@ def pa_items(game: str, ioc: str, role: str, nm: dict) -> list[dict]:
         pitches_ = []
         for k, r in enumerate(group, 1):
             final = k == len(group)
-            pitches_.append({"row": r, "k": k, "final": final, "path": folder / (clip_stem(r, k, final, res, other) + ".mp4"),
+            path = folder / (clip_stem(r, k, final, res, other) + ".mp4")
+            # 同じ回に同じ姓の相手が2人いると名前がぶつかる（11/7 キューバの Pérez 2人）。2つ目からは番号を足す
+            n = 2
+            while path in used:
+                path = folder / (clip_stem(r, k, final, res, other) + f"_{n}.mp4")
+                n += 1
+            used.add(path)
+            pitches_.append({"row": r, "k": k, "final": final, "path": path,
                              "call": pitch_call(r["narrative"].strip()), "count": (r["balls"], r["strikes"]),
                              "res": res if final else "", "bats": r["batter_bats"], "throws": r["pitcher_throws"],
                              "runners": any(r[f"runner{j}"] not in ("", "0") for j in (1, 2, 3)), "pa": (game, i), "game": game, "date": date,
