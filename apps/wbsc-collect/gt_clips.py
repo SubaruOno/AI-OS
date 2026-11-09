@@ -11,6 +11,7 @@
                                                                # YouTube（限定公開）に上げる1本と章の説明文
     python3 gt_clips.py types <試合ID> <BASSの書き出し.txt> <映像.mp4>  # BASSの球種を記録の1球に付ける → <映像>.types.json
     python3 gt_clips.py phone <まとめ.mp4> ...                  # スマホで見る軽い版と、送れる大きさに分けたもの
+    python3 gt_clips.py player <国>                             # 選手ごとに、試合ごとのまとめを全試合つないだ1本
 
 BASSの書き出しは、U-23の入力画面（Chrome、ログイン済み）で、試合の1球の記録を「回・表裏・投げる前のボールとストライク・球種の記号・
 打席（1左2右）・9分割のコース」の7文字（例 1t01C23、けん制などは記号 -）に縮めて空白でつないだもの。作り方は docs/wbsc-collect.md。
@@ -32,6 +33,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import re
 import subprocess
 import sys
@@ -133,6 +135,13 @@ def players() -> dict[str, dict]:
         rd = reading.get((r["team"], r["roster_name"]), "")
         name = r["roster_name"]
         out[r["playerid"]] = {"name": rd or name, "folder": f"{name}_{rd.replace('・', '')}" if rd else name, "roster": name}
+    # 日本の選手は公式発表の漢字の名前（背番号で結ぶ）。フォルダは「16_飯田真渚斗」にして背番号順に並べる
+    official = {r["number"]: r["name"] for r in csv.DictReader(open(SITE / "日本代表_公式発表.csv", encoding="utf-8-sig"))
+                if r["role"] == "選手"}
+    for r in roster:
+        if r["ioc"] == "JPN" and r["uniform"] in official:
+            name = official[r["uniform"]]
+            out[r["playerid"]] = {"name": name, "folder": f"{r['uniform']}_{name.replace(' ', '')}", "roster": name}
     # 名簿照合にいない選手は WBSC の名前（名の最初の語と姓の最初の語）
     for f in ("batting.csv", "pitching.csv"):
         for r in csv.DictReader(open(DATA / f, encoding="utf-8-sig")):
@@ -157,7 +166,7 @@ def tagged(p: dict, name: str | None = None) -> str:
 def short_name(p: dict) -> str:
     """字幕に出す相手の名前。ラテン文字は「J. Perez」の形に縮める。"""
     n = p["name"]
-    if re.search(r"[ァ-ヶ가-힣]", n):
+    if re.search(r"[ァ-ヶ가-힣一-鿿]", n):
         return n
     parts = n.split()
     return f"{parts[0][0]}. {parts[-1]}" if len(parts) >= 2 else n
@@ -348,6 +357,9 @@ def release_times(game: str, video: Path) -> dict[str, float]:
 # ---------------------------------------------------------------- 1球ずつに切る
 
 def out_root(ioc: str) -> Path:
+    # 日本は対戦国ではないので、選手へのフィードバック用に別の置き場にする（11/9）
+    if ioc == "JPN":
+        return ROOT / "11_日本代表_大会映像"
     return ROOT / "04_対戦国" / COUNTRY[ioc] / "大会2026_映像"
 
 
@@ -383,7 +395,8 @@ def render(video: Path, start: float, length: float, reveal: float, before: Path
 
 def clip_stem(r: dict, k: int, final: bool, res: str, other: str) -> str:
     call = pitch_call(r["narrative"].strip())
-    short = other.split()[-1] if other else ""
+    # ファイル名には姓を使う。漢字の名前（日本の選手）は姓が先
+    short = (other.split()[0] if re.search(r"[一-鿿]", other) else other.split()[-1]) if other else ""
     stem = f"{r['inning']}回_{short}_{k}球目_{r['balls']}-{r['strikes']}" + (f"_{res}" if final and res else (f"_{call}" if call else ""))
     return re.sub(r'[\\/:*?"<>|]', "", stem)
 
@@ -811,6 +824,30 @@ def cmd_types(game: str, bass_txt: Path, video: Path) -> None:
     print(f"記録 {sum(len(v) for v in W.values())}球のうち球種が付いた {len(types)}球", *miss, sep="\n  ")
 
 
+# ---------------------------------------------------------------- 選手ごとの全試合の1本
+
+def cmd_player(ioc: str) -> None:
+    """投手と打者の選手フォルダごとに、試合ごとのまとめ（<月日>_<相手>_まとめ.mp4）を日付の順につなぎ、<選手>_全試合.mp4 にする。
+    試合が増えたら cut のあとに流し直す。1試合だけの選手は、まとめと同じ中身なのでハードリンクにする。"""
+    for role in ("投手", "打者"):
+        base = out_root(ioc) / role
+        for d in sorted(p for p in base.iterdir() if p.is_dir()) if base.exists() else []:
+            parts = sorted(d.glob("[0-9][0-9][0-9][0-9]_*_まとめ.mp4"))
+            if not parts:
+                continue
+            out = d / f"{d.name}_全試合.mp4"
+            out.unlink(missing_ok=True)
+            if len(parts) == 1:
+                os.link(parts[0], out)
+            else:
+                with tempfile.TemporaryDirectory(prefix="player") as tmp:
+                    lst = Path(tmp) / "list.txt"
+                    lst.write_text("".join("file '{}'\n".format(str(p).replace("'", "'\\''")) for p in parts), encoding="utf-8")
+                    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(lst), "-c", "copy",
+                                    "-movflags", "+faststart", str(out)], check=True)
+            print(role, d.name, " + ".join(p.name.removesuffix("_まとめ.mp4") for p in parts), f"{duration(out) / 60:.1f}分")
+
+
 # ---------------------------------------------------------------- スマホ用
 
 def cmd_phone(srcs: list[Path]) -> None:
@@ -857,6 +894,8 @@ def main() -> None:
         cmd_types(a[1], Path(a[2]), Path(a[3]))
     elif a[0] == "phone":
         cmd_phone([Path(x) for x in a[1:]])
+    elif a[0] == "player":
+        cmd_player(a[1])
     else:
         sys.exit(__doc__)
 
