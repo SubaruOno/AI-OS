@@ -476,6 +476,10 @@ def cmd_cut(game: str, ioc: str, video: Path) -> None:
             for p in pa["pitches"]:
                 r = p["row"]
                 pitch_t = rel[r["id"]]
+                if pitch_t < 1:
+                    # 録画が試合の途中から始まっている（11/7 韓国対日本は配信が4回裏2死から）。その前の球は切らない
+                    print(f"  録画の始まりより前なので切らない: {p['path'].name}", flush=True)
+                    continue
                 in_play = p["final"] and not p["call"] and pa["res"] and "三振" not in pa["res"] and pa["res"] not in ("四球", "死球")
                 start = pitch_t - BEFORE
                 # 前の球の投げた瞬間の4秒後より前には戻らない（前の球の投球を入れないため）
@@ -519,6 +523,14 @@ def cmd_cut(game: str, ioc: str, video: Path) -> None:
             for i in items:
                 i.unlink()
             print(folder.parent.name, joined.name, len(items), "球")
+    # 1球も切れなかった打席のフォルダ（録画の外の球だけ）は消す。空のフォルダしか消さない
+    for role in ("投手", "打者"):
+        for d in sorted((out_root(ioc) / role).glob("*/*"), reverse=True):
+            if d.is_dir() and not any(d.iterdir()):
+                d.rmdir()
+        for d in (out_root(ioc) / role).glob("*"):
+            if d.is_dir() and not any(d.iterdir()):
+                d.rmdir()
 
 
 # ---------------------------------------------------------------- 対策映像（投手5本）
