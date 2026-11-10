@@ -163,13 +163,22 @@ def tagged(p: dict, name: str | None = None) -> str:
     return f"#{p['num']} {n}" if p.get("num") else n
 
 
+SURNAME_PREFIX = {"mc", "mac", "van", "von", "de", "da", "del", "della", "di", "du", "la", "le", "der", "den", "st."}
+
+
 def short_name(p: dict) -> str:
     """字幕に出す相手の名前。ラテン文字は「J. Perez」の形に縮める。"""
     n = p["name"]
     if re.search(r"[ァ-ヶ가-힣一-鿿]", n):
         return n
     parts = n.split()
-    return f"{parts[0][0]}. {parts[-1]}" if len(parts) >= 2 else n
+    if len(parts) < 2:
+        return n
+    # 姓の前に付く語（Mc Quirk、Van Duivenbooden、De La Cruz）は姓に含める。11/9 に「S. Quirk」と出ていたのを直した
+    k = len(parts) - 1
+    while k > 1 and parts[k - 1].lower() in SURNAME_PREFIX:
+        k -= 1
+    return f"{parts[0][0]}. {' '.join(parts[k:])}"
 
 
 def pitch_call(n: str) -> str:
@@ -279,6 +288,18 @@ def tags(video: Path) -> list[float]:
     return out
 
 
+def shown_counts(video: Path, tg: list[float]) -> dict[float, tuple[str | None, str | None]]:
+    """球速の表示が出た瞬間ごとの (表示が出る直前のカウント, そのあと14秒までに最初に変わったカウント)。"""
+    cnt = {round(r[0]): r[2] for r in json.load(open(str(video) + ".bug.json")) if r[2]}
+    out = {}
+    for t in tg:
+        s = round(t)
+        pre = next((cnt[k] for k in (s - 1, s - 2, s, s - 3) if k in cnt), None)
+        post = next((cnt[k] for k in range(s, s + 15) if k in cnt and cnt[k] != pre), None)
+        out[t] = (pre, post)
+    return out
+
+
 def expected(game: str) -> list[dict]:
     """各球の「前のカウント → 後のカウント」。打席の最後の球は 0-0 に戻る。"""
     rows = pitches(game)
@@ -317,7 +338,19 @@ def cmd_align(game: str, video: Path) -> None:
     # 投げた瞬間（球速の表示が出た瞬間から TAG_LAG 秒前）
     # 前の球の表示が残っているのを拾わないよう、前の球の目印から4秒以上後の表示だけを見る
     tg = tags(video)
-    release, prev_entry, prev_tag = {}, None, -99.0
+    seen = shown_counts(video, tg)
+
+    def fits(t: float, e: dict) -> bool:
+        """球速の表示が出たときの得点表示が、この球のカウント（投げる前 → 後）と合うか。"""
+        pre, post = seen[t]
+        if pre != e["pre"]:
+            return False
+        if post == e["post"]:
+            return True
+        # 打席の最後の球と、2ストライクからのファウルは、表示が変わらないか消えることがある
+        return post is None and (e["final"] or e["pre"] == e["post"])
+
+    release, prev_entry, prev_tag, odd = {}, None, -99.0, []
     for e in exp:
         entry = anchors.get(e["id"], e["utc"] + shift)
         if e["id"] in anchors:
@@ -332,14 +365,39 @@ def cmd_align(game: str, video: Path) -> None:
             lo = max(prev_entry - 1 if prev_entry is not None else entry - 40, prev_tag + 4)
             near = [t for t in tg if lo < t <= entry + 3]
             pick = near[0] if near else None
+            if pick is None or not fits(pick, e):
+                # 入力が遅れた球（数球まとめて入力したときなど）は、前の球の入力より前に投げている。
+                # 前の球の目印のあとで、得点表示のカウントがこの球と合う表示を探す（11/9 日本対南アフリカで9球）
+                same = [t for t in tg if prev_tag + 4 < t <= entry + 3 and fits(t, e)]
+                if same:
+                    pick = same[0]
+                elif pick is not None:
+                    odd.append(e["id"])   # 表示のカウントが記録と違う。位置は入力の時刻から決めたまま
         if pick is not None:
             release[e["id"]] = pick - TAG_LAG
         prev_tag = pick if pick is not None else entry - 2
         prev_entry = entry
-    json.dump({"offset": shift, "anchors": anchors, "release": release}, open(str(video) + ".align.json", "w"))
+    # 得点表示が隠れていて目印がない球は、映像を見て決めた投げた瞬間を <映像>.fix.json に書くと使う。
+    # {1球のID: 映像の秒}。直前がリプレイのときは {1球のID: {"t": 映像の秒, "before": 投げる何秒前から切るか}}
+    fix_f = Path(str(video) + ".fix.json")
+    fixed, lead = {}, {}
+    for k, v in (json.load(open(fix_f)) if fix_f.exists() else {}).items():
+        fixed[k] = float(v["t"] if isinstance(v, dict) else v)
+        if isinstance(v, dict) and "before" in v:
+            lead[k] = float(v["before"])
+    release.update(fixed)
+    json.dump({"offset": shift, "anchors": anchors, "release": release, "fixed": sorted(fixed), "before": lead},
+              open(str(video) + ".align.json", "w"))
     start = datetime.fromtimestamp(-shift, timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-    print(f"全{len(exp)}球のうち得点表示で入力の位置が分かった球 {len(anchors)}、球速の表示で投げた瞬間が分かった球 {len(release)}、"
-          f"映像の始まり {start} UTC")
+    print(f"全{len(exp)}球のうち得点表示で入力の位置が分かった球 {len(anchors)}、球速の表示で投げた瞬間が分かった球 {len(release) - len(fixed)}、"
+          f"映像を見て決めた球 {len(fixed)}、映像の始まり {start} UTC")
+    # 映像で確かめたい球（目印がなく入力の時刻から置いた球と、表示のカウントが記録と違う球）
+    for e in exp:
+        if e["id"] not in release:
+            t = anchors.get(e["id"], e["utc"] + shift) - NO_TAG_LEAD
+            print(f"  目印なし（入力の時刻から {t:.0f} 秒に置いた）: {e['id']} {e['inning']}回 {e['pre']}→{e['post']}")
+        elif e["id"] in odd:
+            print(f"  表示のカウントが記録と違う（{release[e['id']]:.0f} 秒）: {e['id']} {e['inning']}回 {e['pre']}→{e['post']}")
 
 
 def anchor_times(game: str, video: Path) -> dict[str, float]:
@@ -378,7 +436,7 @@ def caption(head: str, who: str, after: str, path: Path) -> None:
     x = draw_text(draw, (x, 19), who, 22, "#AEB6C2")
     if after:
         size = 26
-        while size > 16 and x + 24 + text_width(after, size) > VW - 20:
+        while size > 14 and x + 24 + text_width(after, size) > VW - 20:   # 相手の名前が長いとき（S. Van Duivenbooden）は14まで下げる
             size -= 2
         draw_text(draw, (VW - 20 - text_width(after, size), 16 + (26 - size) // 2), after, size, "#FFD76A")
     img.save(path)
@@ -462,6 +520,7 @@ def cmd_cut(game: str, ioc: str, video: Path) -> None:
     nm = players()
     anc = anchor_times(game, video)
     rel = release_times(game, video)
+    lead = json.load(open(str(video) + ".align.json")).get("before", {})
     order = [r["id"] for r in pitches(game)]
     prev_of = {rid: rel[order[i - 1]] if i else None for i, rid in enumerate(order)}
     vlen = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(video)],
@@ -481,7 +540,7 @@ def cmd_cut(game: str, ioc: str, video: Path) -> None:
                     print(f"  録画の始まりより前なので切らない: {p['path'].name}", flush=True)
                     continue
                 in_play = p["final"] and not p["call"] and pa["res"] and "三振" not in pa["res"] and pa["res"] not in ("四球", "死球")
-                start = pitch_t - BEFORE
+                start = pitch_t - lead.get(r["id"], BEFORE)
                 # 前の球の投げた瞬間の4秒後より前には戻らない（前の球の投球を入れないため）
                 prev = prev_of[r["id"]]
                 if prev is not None and prev < pitch_t - 1:
