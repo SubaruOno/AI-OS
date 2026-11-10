@@ -4,6 +4,7 @@
 
     python3 gt_clips.py ocr <映像.mp4>                         # 右下の得点表示（回・カウント・アウト・球速）を毎秒1回読む → <映像>.bug.json
     python3 gt_clips.py align <試合ID> <映像.mp4>               # 記録の時刻と映像の秒のずれを決める → <映像>.align.json
+    python3 gt_clips.py check <試合ID> <映像.mp4> [top|bot]     # align のあとに、ずれていそうな打席（目印のない球・使っていない球速の表示）を並べる
     python3 gt_clips.py cut <試合ID> <国> <映像.mp4>            # その国の投手と打者を1球ずつに切り、試合ごとのまとめを作る
     python3 gt_clips.py reel <国> <投手> [番号 ...]             # 投手の対策映像（走者あり・対右打者・対左打者・球種別）
     python3 gt_clips.py youtube <国> 投手|野手 [--starter 投手 [--starter-games 試合]] [--order 投手,投手,...]
@@ -368,7 +369,9 @@ def cmd_align(game: str, video: Path) -> None:
             if pick is None or not fits(pick, e):
                 # 入力が遅れた球（数球まとめて入力したときなど）は、前の球の入力より前に投げている。
                 # 前の球の目印のあとで、得点表示のカウントがこの球と合う表示を探す（11/9 日本対南アフリカで9球）
-                same = [t for t in tg if prev_tag + 4 < t <= entry + 3 and fits(t, e)]
+                # 探すのは、時刻で拾った表示より前だけ。後ろの表示は次の球のもので、得点表示が1球遅れているときに
+                # カウントが合ってしまう（11/6 ベネズエラ対南アフリカの1回裏：三塁打の球に、次の打者の初球の表示が付いた）
+                same = [t for t in tg if prev_tag + 4 < t <= entry + 3 and fits(t, e) and (pick is None or t < pick)]
                 if same:
                     pick = same[0]
                 elif pick is not None:
@@ -398,6 +401,46 @@ def cmd_align(game: str, video: Path) -> None:
             print(f"  目印なし（入力の時刻から {t:.0f} 秒に置いた）: {e['id']} {e['inning']}回 {e['pre']}→{e['post']}")
         elif e["id"] in odd:
             print(f"  表示のカウントが記録と違う（{release[e['id']]:.0f} 秒）: {e['id']} {e['inning']}回 {e['pre']}→{e['post']}")
+
+
+def cmd_check(game: str, video: Path, half: str | None = None) -> None:
+    """align のあとに、ずれていそうな打席を並べる。目印のない球がある打席と、打席の時間の中に使っていない球速の表示がある打席。
+
+    記録の入力が1球ぶん遅れ続けると、表示が1つずつ後ろの球に結ばれ、打席の最後の球が「目印なし」になる
+    （11/8 ベネズエラ対韓国の7回表：6球に表示が6つあり、3球目から1つずつ後ろにずれていた）。
+    表示の数と球数が同じで、使っていない表示が打席の途中にあるときは、その形を疑う。回の最初の表示は投球練習、
+    打席のあとの表示はリプレイのことが多い。映像で確かめてから <映像>.fix.json に書く。
+    half に top か bot を渡すと、表か裏だけを出す（その国の投手の球だけ見たいとき）。"""
+    exp = expected(game)
+    al = json.load(open(str(video) + ".align.json"))
+    rel, anc = al["release"], al["anchors"]
+    tg = tags(video)
+    bug = {round(r[0]): r[4] for r in json.load(open(str(video) + ".bug.json")) if len(r) > 4 and r[4]}
+    rows = {r["id"]: r for r in pitches(game)}
+    pas: list[list[dict]] = []
+    for (_, _, _), group in plate_appearances(list(rows.values())):
+        ids = {r["id"] for r in group}
+        pas.append([e for e in exp if e["id"] in ids])
+    entry = lambda e: anc.get(e["id"], e["utc"] + al["offset"])
+    est = lambda e: rel.get(e["id"], entry(e) - NO_TAG_LEAD)
+    used = {round(rel[i] + TAG_LAG) for i in rel if i not in al.get("fixed", [])} | {round(rel[i] + TAG_LAG - 0.3) for i in al.get("fixed", [])}
+    for n, pa in enumerate(pas):
+        r0 = rows[pa[0]["id"]]
+        if half and r0["half"] != half:
+            continue
+        lo = est(pas[n - 1][-1]) + 4 if n else 0
+        hi = est(pas[n + 1][0]) - 3 if n + 1 < len(pas) else est(pa[-1]) + 30
+        inwin = [t for t in tg if lo < t < hi]
+        free = [t for t in inwin if round(t) not in used]
+        if all(e["id"] in rel for e in pa) and not free:
+            continue
+        print(f"{r0['inning']}回{'表' if r0['half'] == 'top' else '裏'} {len(pa)}球 / 打席の時間の中の表示 {len(inwin)}（使っていない {len(free)}）")
+        for e in pa:
+            t = rel.get(e["id"])
+            mark = "映像で決めた" if e["id"] in al.get("fixed", []) else ""
+            print(f"   {e['id']} {e['pre']}→{e['post']}{' 終' if e['final'] else ''}  ", f"{t:.0f}秒" if t is not None else f"目印なし（{est(e):.0f}秒に置いた）",
+                  f"入力 {entry(e):.0f}秒{'' if e['id'] in anc else '（得点表示と結べず）'}", mark)
+        print("   表示:", " ".join(f"{t:.0f}秒({bug.get(round(t)) or bug.get(round(t) + 1)}MPH){'' if round(t) in used else '＊'}" for t in inwin))
 
 
 def anchor_times(game: str, video: Path) -> dict[str, float]:
@@ -871,28 +914,76 @@ def cmd_youtube(ioc: str, kind_: str, starter: str | None, first: list[str] | No
 BASS_KIND = {"F": "ストレート", "S": "スライダー", "C": "カーブ", "P": "スプリット", "H": "チェンジアップ", "T": "カット", "W": "ツーシーム", "K": "シンカー"}
 
 
-def cmd_types(game: str, bass_txt: Path, video: Path) -> None:
-    """BASSの球種を、回・表裏ごとに「投げる前のカウント」の並びでWBSCの記録と突き合わせて付ける。"""
-    import difflib
+def _lcs(a: list, b: list) -> list[tuple[int, int]]:
+    """2つの並びの、順番を保った一番長い対応（添字の組）。"""
+    n, m = len(a), len(b)
+    dp = [[0] * (m + 1) for _ in range(n + 1)]
+    for i in range(n - 1, -1, -1):
+        for j in range(m - 1, -1, -1):
+            dp[i][j] = dp[i + 1][j + 1] + 1 if a[i] == b[j] else max(dp[i + 1][j], dp[i][j + 1])
+    out, i, j = [], 0, 0
+    while i < n and j < m:
+        if a[i] == b[j]:
+            out.append((i, j)); i += 1; j += 1
+        elif dp[i + 1][j] >= dp[i][j + 1]:
+            i += 1
+        else:
+            j += 1
+    return out
+
+
+def match_types(game: str, bass_txt: Path) -> tuple[dict, list[str]]:
+    """BASSの球種を記録の1球に付ける。回・表裏ごとに、まず打席を順番に対応させ、打席の中は「投げる前のカウント」の並びで合わせる。
+
+    11/10 までは回・表裏の全球をひと続きの並びとして difflib で合わせていた。BASS の球数が記録より少ない回では、
+    「0-0、0-1、0-2、0-0、0-1」のような同じ並びが別の打席にもあると、いちばん長く一致する所（別の打席）に飛んで付いていた
+    （11/8 ベネズエラ対韓国の6回表：記録14・BASS11で、1人目の3球に4人目のスライダー3球が付いた）。
+    BASS の打席の切れ目は、カウントが 0-0 に戻るか、ボール・ストライクが減った所。球種が空でコースが入っている球（球種を入れ忘れた投球）は
+    並びに残し、球種もコースもない球（けん制）は外す。"""
     B, W = defaultdict(list), defaultdict(list)
     for t in bass_txt.read_text().split():
-        if t[4] != "-":
-            B[(int(t[0]), "top" if t[1] == "t" else "bot")].append((t[2:4], t[4]))
-    for r in pitches(game):
-        W[(int(r["inning"]), r["half"])].append(r)
+        if t[4] == "-" and t[6:7] in ("0", ""):
+            continue
+        pas, cnt = B[(int(t[0]), "top" if t[1] == "t" else "bot")], t[2:4]
+        if not pas or cnt == "00" or cnt[0] < pas[-1][-1][0][0] or cnt[1] < pas[-1][-1][0][1]:
+            pas.append([])
+        pas[-1].append((cnt, t[4]))
+    rows = pitches(game)
+    for (inning, half, _), group in plate_appearances(rows):
+        W[(int(inning), half)].append(group)
     types, miss = {}, []
     for key in sorted(set(B) | set(W)):
-        b, w = B.get(key, []), W.get(key, [])
-        sm = difflib.SequenceMatcher(a=[f"{r['balls']}{r['strikes']}" for r in w], b=[x[0] for x in b], autojunk=False)
-        got = 0
-        for blk in sm.get_matching_blocks():
-            for j in range(blk.size):
-                types[w[blk.a + j]["id"]] = BASS_KIND.get(b[blk.b + j][1], "その他")
-                got += 1
-        if got != len(w) or len(b) != len(w):
-            miss.append(f"{key[0]}回{'表' if key[1] == 'top' else '裏'} 記録{len(w)} BASS{len(b)} 一致{got}")
+        bp, wp = B.get(key, []), W.get(key, [])
+        n, m = len(wp), len(bp)
+        pair = [[_lcs([f"{r['balls']}{r['strikes']}" for r in wp[i]], [x[0] for x in bp[j]]) for j in range(m)] for i in range(n)]
+        # 打席どうしの対応：一致する球の数の合計がいちばん多くなるように、順番を保って結ぶ（同点なら1対1の並びを優先）
+        dp = [[0.0] * (m + 1) for _ in range(n + 1)]
+        for i in range(n - 1, -1, -1):
+            for j in range(m - 1, -1, -1):
+                dp[i][j] = max(dp[i + 1][j + 1] + len(pair[i][j]) + 0.01, dp[i + 1][j], dp[i][j + 1])
+        i = j = got = 0
+        while i < n and j < m:
+            if dp[i][j] == dp[i + 1][j + 1] + len(pair[i][j]) + 0.01:
+                for a, b in pair[i][j]:
+                    if bp[j][b][1] != "-":
+                        types[wp[i][a]["id"]] = BASS_KIND.get(bp[j][b][1], "その他")
+                        got += 1
+                i += 1; j += 1
+            elif dp[i][j] == dp[i + 1][j]:
+                i += 1
+            else:
+                j += 1
+        nw, nb = sum(len(x) for x in wp), sum(1 for pa in bp for x in pa if x[1] != "-")
+        if got != nw or nb != nw:
+            miss.append(f"{key[0]}回{'表' if key[1] == 'top' else '裏'} 記録{nw} BASS{nb} 一致{got}")
+    return types, miss
+
+
+def cmd_types(game: str, bass_txt: Path, video: Path) -> None:
+    """BASSの球種を記録の1球に付けて <映像>.types.json に書く（合わせ方は match_types）。"""
+    types, miss = match_types(game, bass_txt)
     json.dump(types, open(str(video) + ".types.json", "w"), ensure_ascii=False)
-    print(f"記録 {sum(len(v) for v in W.values())}球のうち球種が付いた {len(types)}球", *miss, sep="\n  ")
+    print(f"記録 {len(pitches(game))}球のうち球種が付いた {len(types)}球", *miss, sep="\n  ")
 
 
 # ---------------------------------------------------------------- 選手ごとの全試合の1本
@@ -948,6 +1039,8 @@ def main() -> None:
         cmd_ocr(Path(a[1]))
     elif a[0] == "align":
         cmd_align(a[1], Path(a[2]))
+    elif a[0] == "check":
+        cmd_check(a[1], Path(a[2]), a[3] if len(a) > 3 else None)
     elif a[0] == "cut":
         cmd_cut(a[1], a[2], Path(a[3]))
     elif a[0] == "reel":
