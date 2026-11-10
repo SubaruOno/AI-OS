@@ -11,6 +11,7 @@
                                 [--pas 右,左] [--scenes 場面,場面] [--bitrate 2000k]   # 短くするとき
                                                                # YouTube（限定公開）に上げる1本と章の説明文
     python3 gt_clips.py types <試合ID> <BASSの書き出し.txt> <映像.mp4>  # BASSの球種を記録の1球に付ける → <映像>.types.json
+    python3 gt_clips.py xy <試合ID> <BASSの座標つきの書き出し.txt> <映像.mp4>  # BASSのコースの座標を記録の1球に付ける → <映像>.xy.json
     python3 gt_clips.py phone <まとめ.mp4> ...                  # スマホで見る軽い版と、送れる大きさに分けたもの
     python3 gt_clips.py player <国>                             # 選手ごとに、試合ごとのまとめを全試合つないだ1本
 
@@ -511,9 +512,11 @@ def team_rows(game: str, ioc: str, role: str) -> list[dict]:
 def pa_items(game: str, ioc: str, role: str, nm: dict) -> list[dict]:
     """その国の投手（または打者）の打席。1打席ごとに、全球のファイルの置き場所と、場面分けに使う値。"""
     date, mmdd, rival = game_label(game, ioc)
-    types, speed = {}, {}
+    types, speed, xy = {}, {}, {}
     for f in (out_root(ioc) / "収録").glob(f"{mmdd}_*.mp4.types.json"):
         types.update(json.load(open(f)))
+    for f in (out_root(ioc) / "収録").glob(f"{mmdd}_*.mp4.xy.json"):
+        xy.update(json.load(open(f)))
     for v in (out_root(ioc) / "収録").glob(f"{mmdd}_*.mp4"):
         al_f, bug_f = Path(str(v) + ".align.json"), Path(str(v) + ".bug.json")
         if al_f.exists() and bug_f.exists():
@@ -551,7 +554,8 @@ def pa_items(game: str, ioc: str, role: str, nm: dict) -> list[dict]:
                              "call": pitch_call(r["narrative"].strip()), "count": (r["balls"], r["strikes"]),
                              "res": res if final else "", "bats": r["batter_bats"], "throws": r["pitcher_throws"],
                              "runners": any(r[f"runner{j}"] not in ("", "0") for j in (1, 2, 3)), "pa": (game, i), "game": game, "date": date,
-                             "type": types.get(r["id"], ""), "speed": speed.get(r["id"])})
+                             "type": types.get(r["id"], ""), "speed": speed.get(r["id"]),
+                             "xy": tuple(xy[r["id"]][:2]) if r["id"] in xy else None})
         out.append({"game": game, "date": date, "rival": rival, "me": me, "inning": int(inning), "half": half,
                     "order": int(r0["playorder"] or 0), "slot": int(r0["lineuporder"] or 9), "side": side, "res": res,
                     "other": other, "other_tag": tagged(other_p, other), "me_tag": tagged(nm[me]), "folder": folder, "pitches": pitches_, "hand": r0["pitcher_throws"] if role == "投手" else r0["batter_bats"],
@@ -936,26 +940,28 @@ def _lcs(a: list, b: list) -> list[tuple[int, int]]:
     return out
 
 
-def match_types(game: str, bass_txt: Path) -> tuple[dict, list[str]]:
-    """BASSの球種を記録の1球に付ける。回・表裏ごとに、まず打席を順番に対応させ、打席の中は「投げる前のカウント」の並びで合わせる。
+def match_rows(game: str, bass_txt: Path) -> tuple[dict[str, int], list[str], list[str]]:
+    """BASSの1球を記録の1球に結ぶ。返すのは ({記録の1球のID: BASSの書き出しの何番目か}, 書き出しの並び, 合わなかった回の一覧)。
+    回・表裏ごとに、まず打席を順番に対応させ、打席の中は「投げる前のカウント」の並びで合わせる。
 
     11/10 までは回・表裏の全球をひと続きの並びとして difflib で合わせていた。BASS の球数が記録より少ない回では、
     「0-0、0-1、0-2、0-0、0-1」のような同じ並びが別の打席にもあると、いちばん長く一致する所（別の打席）に飛んで付いていた
     （11/8 ベネズエラ対韓国の6回表：記録14・BASS11で、1人目の3球に4人目のスライダー3球が付いた）。
     BASS の打席の切れ目は、カウントが 0-0 に戻るか、ボール・ストライクが減った所。球種が空でコースが入っている球（球種を入れ忘れた投球）は
     並びに残し、球種もコースもない球（けん制）は外す。"""
+    toks = bass_txt.read_text().split()
     B, W = defaultdict(list), defaultdict(list)
-    for t in bass_txt.read_text().split():
+    for idx, t in enumerate(toks):
         if t[4] == "-" and t[6:7] in ("0", ""):
             continue
         pas, cnt = B[(int(t[0]), "top" if t[1] == "t" else "bot")], t[2:4]
         if not pas or cnt == "00" or cnt[0] < pas[-1][-1][0][0] or cnt[1] < pas[-1][-1][0][1]:
             pas.append([])
-        pas[-1].append((cnt, t[4]))
+        pas[-1].append((cnt, t[4], idx))
     rows = pitches(game)
     for (inning, half, _), group in plate_appearances(rows):
         W[(int(inning), half)].append(group)
-    types, miss = {}, []
+    rowmap, miss = {}, []
     for key in sorted(set(B) | set(W)):
         bp, wp = B.get(key, []), W.get(key, [])
         n, m = len(wp), len(bp)
@@ -968,10 +974,9 @@ def match_types(game: str, bass_txt: Path) -> tuple[dict, list[str]]:
         i = j = got = 0
         while i < n and j < m:
             if dp[i][j] == dp[i + 1][j + 1] + len(pair[i][j]) + 0.01:
-                for a, b in pair[i][j]:
-                    if bp[j][b][1] != "-":
-                        types[wp[i][a]["id"]] = BASS_KIND.get(bp[j][b][1], "その他")
-                        got += 1
+                for a_, b_ in pair[i][j]:
+                    rowmap[wp[i][a_]["id"]] = bp[j][b_][2]
+                    got += bp[j][b_][1] != "-"
                 i += 1; j += 1
             elif dp[i][j] == dp[i + 1][j]:
                 i += 1
@@ -980,7 +985,29 @@ def match_types(game: str, bass_txt: Path) -> tuple[dict, list[str]]:
         nw, nb = sum(len(x) for x in wp), sum(1 for pa in bp for x in pa if x[1] != "-")
         if got != nw or nb != nw:
             miss.append(f"{key[0]}回{'表' if key[1] == 'top' else '裏'} 記録{nw} BASS{nb} 一致{got}")
-    return types, miss
+    return rowmap, toks, miss
+
+
+def match_types(game: str, bass_txt: Path) -> tuple[dict, list[str]]:
+    """BASSの球種を記録の1球に付ける（合わせ方は match_rows）。"""
+    rowmap, toks, miss = match_rows(game, bass_txt)
+    return {i: BASS_KIND.get(toks[k][4], "その他") for i, k in rowmap.items() if toks[k][4] != "-"}, miss
+
+
+def cmd_xy(game: str, bass_xy: Path, video: Path) -> None:
+    """BASSのコースの座標を記録の1球に付けて <映像>.xy.json に書く。{1球のID: [横, 縦, BASSの球速]}。
+    書き出しは types と同じ7文字のあとに、横・縦・球速を36進2桁ずつ足した13文字（例 1t00F291u524a）。
+    座標は BASS の投球図と同じ：横 0〜200・縦 0〜250、ストライクゾーンは横 40〜160・縦 50〜200、捕手から見た図で、縦は小さいほど高い。
+    球速は試合や回によって km と マイルが混ざっている（11/8 韓国戦は5回からマイル）ので、そのまま置くだけで資料には使っていない。"""
+    rowmap, toks, miss = match_rows(game, bass_xy)
+    out = {}
+    for i, k in rowmap.items():
+        t = toks[k]
+        x, y, sp = int(t[7:9], 36), int(t[9:11], 36), int(t[11:13], 36)
+        if x or y:
+            out[i] = [x, y, sp]
+    json.dump(out, open(str(video) + ".xy.json", "w"))
+    print(f"記録 {len(pitches(game))}球のうち座標が付いた {len(out)}球", *miss, sep="\n  ")
 
 
 def cmd_types(game: str, bass_txt: Path, video: Path) -> None:
@@ -1060,6 +1087,8 @@ def main() -> None:
         cmd_youtube(a[1], a[2], starter, first, sg, pas_n, scenes)
     elif a[0] == "types":
         cmd_types(a[1], Path(a[2]), Path(a[3]))
+    elif a[0] == "xy":
+        cmd_xy(a[1], Path(a[2]), Path(a[3]))
     elif a[0] == "phone":
         cmd_phone([Path(x) for x in a[1:]])
     elif a[0] == "player":
