@@ -718,7 +718,11 @@ def card(who: str, hand: str, title: str, lines: list[str], games: str, path: Pa
     step = min(64, (VH + STRIP - 120 - 350) // max(len(lines), 1))
     for i, line in enumerate(lines):
         draw_text(draw, (80, 350 + i * step), line, 36, "#FFD76A")
-    draw_text(draw, (80, VH + STRIP - 90), games, 26, "#AEB6C2")
+    # 4試合ぶん並ぶと右端からはみ出す（11/10 ベネズエラの野手）。収まるまで文字を小さくする
+    size = 26
+    while size > 16 and 80 + text_width(games, size) > VW - 40:
+        size -= 1
+    draw_text(draw, (80, VH + STRIP - 90), games, size, "#AEB6C2")
     img.save(path)
 
 
