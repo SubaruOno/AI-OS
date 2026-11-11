@@ -574,9 +574,11 @@ def cmd_cut(game: str, ioc: str, video: Path) -> None:
     vlen = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(video)],
                                 capture_output=True, text=True, check=True).stdout)
     jobs = []
+    mine = set()   # この試合で作ったフォルダ。終わりの後片付けはここだけを見る
     for role in ("投手", "打者"):
         for pa in pa_items(game, ioc, role, nm):
             pa["folder"].mkdir(parents=True, exist_ok=True)
+            mine.add(pa["folder"])
             hand = ({"L": "左打者", "R": "右打者", "S": "両打ち"} if role == "投手" else {"L": "左投手", "R": "右投手"}).get(
                 pa["pitches"][0]["bats"] if role == "投手" else pa["pitches"][0]["throws"], "")
             head = f"{pa['me_tag']}　{hand}　{pa['date']} {pa['rival']} {pa['inning']}回{'表' if pa['half'] == 'top' else '裏'}　"
@@ -630,14 +632,13 @@ def cmd_cut(game: str, ioc: str, video: Path) -> None:
             for i in items:
                 i.unlink()
             print(folder.parent.name, joined.name, len(items), "球")
-    # 1球も切れなかった打席のフォルダ（録画の外の球だけ）は消す。空のフォルダしか消さない
-    for role in ("投手", "打者"):
-        for d in sorted((out_root(ioc) / role).glob("*/*"), reverse=True):
-            if d.is_dir() and not any(d.iterdir()):
-                d.rmdir()
-        for d in (out_root(ioc) / role).glob("*"):
-            if d.is_dir() and not any(d.iterdir()):
-                d.rmdir()
+    # 1球も切れなかった打席のフォルダ（録画の外の球だけ）は消す。空のフォルダしか消さない。
+    # この試合で作ったフォルダとその選手のフォルダだけを見る（11/11 プエルトリコ：11/7 と 11/9 の cut を同時に流したら、
+    # 11/7 の後片付けが、11/9 で作ったばかりでまだ空の Madero のフォルダを消し、11/9 の cut が止まった）
+    for d in sorted(mine, reverse=True):
+        for x in (d, d.parent):
+            if x.is_dir() and not any(x.iterdir()):
+                x.rmdir()
 
 
 # ---------------------------------------------------------------- 対策映像（投手5本）
