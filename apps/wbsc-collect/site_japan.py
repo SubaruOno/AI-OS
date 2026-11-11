@@ -401,13 +401,16 @@ def japan_page(d: dict, page, rec: Record) -> str:
     finished = [g for g in japan_games(d) if sl.is_final(g)]
     w, l, t = win_loss(d)
     record_text = f"{w}勝{l}敗" + (f"{t}分" if t else "") if finished else "大会前"
+    part = video()
+    movies = part.section_html(root) if part else ""
+    movie_tile = ('<a class="tile" href="#video"><i>選手ごとの映像</i><b>打席ごと</b><small>今大会の日本戦の動画</small></a>' if movies else "")
     tiles = (
         # 入口の2枚は横幅いっぱいに並べる（.tiles の既定は小さな数字のタイル向けの幅）
         '<div class="tiles" style="grid-template-columns:repeat(auto-fit,minmax(100px,1fr))">'
         f'<a class="tile" href="pitching/"><i>投手の登板表</i><b>{pitchers}人</b>'
         "<small>試合ごとの球数・投球回と中何日</small></a>"
         f'<a class="tile" href="#stats"><i>今大会の成績</i><b>{record_text}</b>'
-        f"<small>{len(finished)}試合・打者と投手の表へ</small></a></div>")
+        f"<small>{len(finished)}試合・打者と投手の表へ</small></a>{movie_tile}</div>")
     meta = (f"グループB・選手{len(players)}人と首脳陣{len(staff)}人・"
             f'{ext(OFFICIAL_JAPAN, "侍ジャパン公式の発表（2026年10月6日）")}の項目だけを載せています。'
             "年齢は発表時の値です。")
@@ -418,6 +421,7 @@ def japan_page(d: dict, page, rec: Record) -> str:
         next_block(d, root),
         section("players", f"選手<small>{len(players)}人</small>", roster_html),
         tiles,
+        section("video", "選手ごとの映像", movies) if movies else "",
         section("staff", "首脳陣", staff_cards(staff)),
         section("games", "日本戦の日程と結果", games_table(d, root, starters(d, names))),
         section("stats", "今大会の成績", stats_block(rec, names)),
@@ -616,6 +620,15 @@ def clips_part(rec: Record, number: str, pitcher: bool) -> str:
         return ""
 
 
+def video():
+    """日本代表の映像の部品（site_video_jpn）。読めないときは None。"""
+    try:
+        import site_video_jpn
+    except Exception:
+        return None
+    return site_video_jpn
+
+
 def player_page(d: dict, page, rec: Record, row: dict) -> str:
     root = "../../../"
     number = number_key(row.get("number"))
@@ -636,7 +649,12 @@ def player_page(d: dict, page, rec: Record, row: dict) -> str:
         now = ('<p class="empty">大会が始まると、試合ごとに自動で入ります。</p>' if not rec.started
                else '<p class="empty">今大会はまだ出場の記録がありません。</p>')
     link = ('<p class="note"><a href="../../pitching/">投手の登板表へ</a></p>' if pitcher else "")
+    part = video()
+    shown = part.count(number) if part else 0
+    movie = (f'<div class="tiles" style="grid-template-columns:minmax(100px,1fr)"><a class="tile" href="../../v/{esc(number)}/">'
+             f'<i>今大会の映像</i><b>{shown}{"打者" if pitcher else "打席"}</b><small>打席ごとの動画と1球ごとのボタン</small></a></div>' if shown else "")
     body = (head(crumbs, title, meta)
+            + movie
             + section("now", "今大会の成績", now + link)
             + clips_part(rec, number, pitcher))
     return page(str(row.get("name") or f"背番号{number}"), body, f"japan/p/{number}/", "japan")

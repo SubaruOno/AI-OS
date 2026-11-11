@@ -14,6 +14,7 @@
     python3 gt_clips.py xy <試合ID> <BASSの座標つきの書き出し.txt> <映像.mp4>  # BASSのコースの座標を記録の1球に付ける → <映像>.xy.json
     python3 gt_clips.py phone <まとめ.mp4> ...                  # スマホで見る軽い版と、送れる大きさに分けたもの
     python3 gt_clips.py player <国>                             # 選手ごとに、試合ごとのまとめを全試合つないだ1本
+    python3 gt_clips.py web JPN                                 # 共有サイト用に、打席ごとの動画と一覧を書き出す（作ってある打席は飛ばす）
 
 BASSの書き出しは、U-23の入力画面（Chrome、ログイン済み）で、試合の1球の記録を「回・表裏・投げる前のボールとストライク・球種の記号・
 打席（1左2右）・9分割のコース」の7文字（例 1t01C23、けん制などは記号 -）に縮めて空白でつないだもの。作り方は docs/wbsc-collect.md。
@@ -1041,6 +1042,97 @@ def cmd_player(ioc: str) -> None:
             print(role, d.name, " + ".join(p.name.removesuffix("_まとめ.mp4") for p in parts), f"{duration(out) / 60:.1f}分")
 
 
+# ---------------------------------------------------------------- サイト用（打席ごとの動画）
+
+WEB_LIMIT = 25 * 1024 * 1024  # Cloudflare Pages の1ファイルの上限
+# 投げる瞬間が映像にない球。サイトのカードに書く（<映像>.fix.json で位置を決めた球のうち、リプレイや場面の切り替えに重なったもの）
+NO_PITCH_SHOWN = {"709879502": "この打席の初球は、投げる瞬間が映っていません（捕球と判定から）",
+                  "709924272": "この打席の初球は、投げる瞬間が映っていません（捕球と判定から）",
+                  "709924348": "投球は映っていません（打球が転がる所から）"}
+
+
+def web_kind(res: str) -> str:
+    """サイトの絞り込みの区分。hit 安打・k 三振と四死球・out 凡打・etc その他"""
+    if any(w in res for w in ("ヒット", "内野安打", "ツーベース", "スリーベース", "ホームラン")):
+        return "hit"
+    if any(w in res for w in ("三振", "四球", "死球")):
+        return "k"
+    if not res or "エラー" in res or res == "野選":
+        return "etc"
+    return "out"
+
+
+def web_encode(clips: list[Path], offsets: list[float], mp4: Path, jpg: Path) -> None:
+    """1球ずつの映像を1本に焼き直す。1球ごとのボタンで飛べるよう、球の頭をキーフレームにする。"""
+    with tempfile.TemporaryDirectory(prefix="gtweb") as tmp:
+        lst = Path(tmp) / "list.txt"
+        lst.write_text("".join("file '{}'\n".format(str(c).replace("'", "'\\''")) for c in clips), encoding="utf-8")
+        part = mp4.with_suffix(".part.mp4")
+        for crf in ("28", "32"):
+            cmd = ["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(lst), "-vf", "scale=960:588,fps=30",
+                   "-c:v", "libx264", "-preset", "veryfast", "-crf", crf, "-profile:v", "high", "-pix_fmt", "yuv420p"]
+            if len(offsets) > 1:
+                cmd += ["-force_key_frames", ",".join(f"{t:.2f}" for t in offsets[1:])]
+            cmd += ["-c:a", "aac", "-b:a", "64k", "-ac", "1", "-movflags", "+faststart", str(part)]
+            subprocess.run(cmd, check=True)
+            if part.stat().st_size < WEB_LIMIT:
+                break
+        part.replace(mp4)
+    at = min(6.0, duration(clips[0]) / 2)
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{at:.1f}", "-i", str(mp4), "-frames:v", "1",
+                    "-vf", "scale=480:-2", "-q:v", "5", str(jpg)], check=True)
+
+
+def cmd_web(ioc: str) -> None:
+    """共有サイト用に、1球ずつの映像を打席ごとに1本にして <置き場>/web/<背番号>/ に書き、index.json を作る。
+    作ってある打席は、1球ずつの映像が新しくならない限り作り直さない（試合が増えたら cut のあとに流す）。"""
+    nm = players()
+    base = out_root(ioc) / "web"
+    people: dict[str, dict] = {}
+    jobs = []
+    for role in ("投手", "打者"):
+        for game in games_of(ioc):
+            for pa in pa_items(game, ioc, role, nm):
+                num = nm[pa["me"]]["folder"].split("_")[0]
+                person = people.setdefault(num, {"num": num, "name": nm[pa["me"]]["name"], "role": role, "no_video": {}, "at_bats": []})
+                if person["role"] != role:
+                    print(f"注意: #{num} は投手と打者の両方に記録があるので、{role}の打席は載せません", flush=True)
+                    continue
+                have = [p for p in pa["pitches"] if p["path"].exists()]
+                label = f"{pa['date']} {pa['rival']}"
+                if not have:
+                    person["no_video"][label] = person["no_video"].get(label, 0) + 1
+                    continue
+                lens = [duration(p["path"]) for p in have]
+                offsets = [sum(lens[:i]) for i in range(len(lens))]
+                _, mmdd, _ = game_label(game, ioc)
+                stem = f"{mmdd}_{pa['order']:03d}"
+                res = pa["res"]
+                note = next((NO_PITCH_SHOWN[p["row"]["id"]] for p in have if p["row"]["id"] in NO_PITCH_SHOWN), "")
+                person["at_bats"].append({
+                    "game": game, "mmdd": mmdd, "date": pa["date"], "rival": pa["rival"], "inning": pa["inning"], "half": pa["half"],
+                    "other": pa["other_tag"], "side": pa["side"], "res": res, "kind": web_kind(res), "n": len(have),
+                    "missing": len(pa["pitches"]) - len(have), "secs": round(sum(lens)), "file": f"{stem}.mp4", "jpg": f"{stem}.jpg", "note": note,
+                    "chips": [{"t": round(t, 1), "k": p["k"], "label": p["call"] or p["res"] or ""} for t, p in zip(offsets, have)]})
+                folder = base / num
+                folder.mkdir(parents=True, exist_ok=True)
+                mp4, jpg = folder / f"{stem}.mp4", folder / f"{stem}.jpg"
+                newest = max(p["path"].stat().st_mtime for p in have)
+                if not (mp4.exists() and jpg.exists() and mp4.stat().st_mtime >= newest):
+                    jobs.append(([p["path"] for p in have], offsets, mp4, jpg))
+    print(f"打席 {sum(len(p['at_bats']) for p in people.values())}、作るもの {len(jobs)}", flush=True)
+    with ThreadPoolExecutor(3) as ex:
+        for i, _ in enumerate(ex.map(lambda j: web_encode(*j), jobs), 1):
+            if i % 20 == 0:
+                print(f"  {i}/{len(jobs)}", flush=True)
+    for num, person in people.items():
+        if person["at_bats"] or person["no_video"]:
+            (base / num).mkdir(parents=True, exist_ok=True)
+            (base / num / "index.json").write_text(json.dumps(person, ensure_ascii=False, indent=1), encoding="utf-8")
+    sizes = [f.stat().st_size for f in base.glob("*/*.mp4")]
+    print(f"動画 {len(sizes)} 本・合計 {sum(sizes) / 1024 ** 3:.2f}GB・最大 {max(sizes) / 1024 ** 2:.1f}MB・上限超え {sum(s >= WEB_LIMIT for s in sizes)}", flush=True)
+
+
 # ---------------------------------------------------------------- スマホ用
 
 def cmd_phone(srcs: list[Path]) -> None:
@@ -1093,6 +1185,8 @@ def main() -> None:
         cmd_phone([Path(x) for x in a[1:]])
     elif a[0] == "player":
         cmd_player(a[1])
+    elif a[0] == "web":
+        cmd_web(a[1])
     else:
         sys.exit(__doc__)
 

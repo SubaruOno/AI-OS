@@ -35,6 +35,7 @@ URL はフォルダ形式（team/cuba/ → team/cuba/index.html）。Cloudflare 
     site_japan.py   日本代表のページ（japan/・japan/pitching/・japan/p/<背番号>/）
     site_video.py   台湾の日本遠征の打席ごとの映像（team/chinese-taipei/v/<背番号>/ と media/）
     site_video_kor.py 韓国の投手と打者のKBO1軍の打席ごとの映像（team/korea/v/<選手>/ と media/kor/）
+    site_video_jpn.py 日本代表の今大会の打席ごとの映像（japan/v/<背番号>/ と media/jpn/）
 URL に ?now=2026-11-08T12:00:00-06:00 を付けると「今」を差し替えて試せる。
 """
 
@@ -80,6 +81,11 @@ try:  # 韓国の投手と打者の映像ページ（別の部品）。なけれ
 except Exception as _error:
     print(f"注意: site_video_kor.py が読めないので、韓国の映像ページは出しません（{_error}）", file=sys.stderr)
     site_video_kor = None
+try:
+    import site_video_jpn
+except Exception as _error:
+    print(f"注意: site_video_jpn.py が読めないので、日本代表の映像ページは出しません（{_error}）", file=sys.stderr)
+    site_video_jpn = None
 try:  # 日本代表のページ（別の部品）。なければ今の japan_page を使う
     import site_japan
 except Exception as _error:
@@ -2289,7 +2295,7 @@ def build() -> tuple[dict[str, str], list[dict], str]:
 def video_pages() -> dict[str, str]:
     """台湾の選手と韓国の選手の映像ページ（site_video.py・site_video_kor.py）。読めない・失敗したときは出さない。"""
     out: dict[str, str] = {}
-    for part in (site_video, site_video_kor):
+    for part in (site_video, site_video_kor, site_video_jpn):
         if part is None:
             continue
         try:
@@ -2302,7 +2308,7 @@ def video_pages() -> dict[str, str]:
 def place_media(site: Path) -> None:
     """動画とサムネイルを書き出し先に置く。ハードリンクにして、作り直しのたびの複製とゴミ箱を増やさない。"""
     files = []
-    for part in (site_video, site_video_kor):
+    for part in (site_video, site_video_kor, site_video_jpn):
         if part is None:
             continue
         try:
