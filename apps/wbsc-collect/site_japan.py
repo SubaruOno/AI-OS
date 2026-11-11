@@ -403,7 +403,7 @@ def japan_page(d: dict, page, rec: Record) -> str:
     record_text = f"{w}勝{l}敗" + (f"{t}分" if t else "") if finished else "大会前"
     part = video()
     movies = part.section_html(root) if part else ""
-    movie_tile = ('<a class="tile" href="#video"><i>選手ごとの映像</i><b>打席ごと</b><small>今大会の日本戦の動画</small></a>' if movies else "")
+    movie_tile = (f'<a class="tile" href="#video"><i>選手ごとの映像</i><b>{len(part.data())}人</b><small>打席ごとの動画</small></a>' if movies else "")
     tiles = (
         # 入口の2枚は横幅いっぱいに並べる（.tiles の既定は小さな数字のタイル向けの幅）
         '<div class="tiles" style="grid-template-columns:repeat(auto-fit,minmax(100px,1fr))">'
