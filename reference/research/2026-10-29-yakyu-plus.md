@@ -3,6 +3,7 @@
 2026-10-29〜30に、公式サイト、App Store、公式Instagram、運営会社の記事と求人、同じ会社のバスケ・バレー・サッカー版、競合アプリを読んでまとめた。
 対象は [yakyu-plus.jp](https://yakyu-plus.jp/)。「推測」と書いたもの以外は、出典で確かめた事実。
 12枚のまとめ資料は [野球プラス調査まとめ（スライド）](https://claude.ai/artifact/NCh47EqHVKnMmqVb187FcQ) にある。
+そのPDF版は [野球プラス調査まとめ.pdf](../../private/research/2026-10-29-yakyu-plus/野球プラス調査まとめ.pdf)、出典の料金表PDF（2026年9月28日版）は [野球プラス_料金表_20260928版.pdf](../../private/research/2026-10-29-yakyu-plus/野球プラス_料金表_20260928版.pdf) に置いた。どちらもGitには入れていない。
 
 ## ひとことで
 
