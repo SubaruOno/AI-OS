@@ -3,7 +3,8 @@
 
     python3 apps/wbsc-collect/relief_forecast.py                    # まだやっていない一番早い日の試合
     python3 apps/wbsc-collect/relief_forecast.py --date 2026-11-13
-    python3 apps/wbsc-collect/relief_forecast.py --starter PUR="Jorhan Laboy"   # 発表された先発を入れる（何度でも）
+    python3 apps/wbsc-collect/relief_forecast.py --starter PUR=29 --starter JPN=16   # 発表された先発（背番号か名前の一部）。
+                                                                    # 06_レポート/継投予測/発表された先発.json にたまり、次から自動で使う
     python3 apps/wbsc-collect/relief_forecast.py --no-check         # 当たり方の確かめ（約10秒）を省く
 
 材料は WBSC の公式記録（collect.py が落とした plays.csv・pitching.csv・games.json・rosters.csv）だけ。
@@ -34,6 +35,7 @@ from gt_clips import COUNTRY  # noqa: E402
 
 DATA = Path.home() / "野球/U23ワールドカップ2026/05_収集データ"
 OUT = Path.home() / "野球/U23ワールドカップ2026/06_レポート/継投予測"
+ANN = OUT / "発表された先発.json"   # {"2026-11-12": {"PUR": "29", ...}}。--starter で入れたものがたまる
 EVENTS = ["u23-wc-2022", "u23-wc-2024", "u23-wc-2026"]
 NOW_EVENT = "u23-wc-2026"
 LATE_INN = 6          # 7回制なので6回からを終盤とする
@@ -378,7 +380,21 @@ def pool_of(ev: str, team: str, tg: dict, rosters: dict) -> dict[str, tuple[str,
     return pool
 
 
-def build_sets(all_games: dict, hist_obj: History, rosters: dict, skip: set | None = None):
+def find_pitcher(pool: dict, key: str) -> str | None:
+    """名前の一部か背番号で投手を探す。背番号が合う人を先にする"""
+    key = (key or "").strip().strip('"').lower()
+    if not key:
+        return None
+    for p, (nm, uni, _) in pool.items():
+        if key == str(uni).lower():
+            return p
+    hits = [p for p, (nm, _, _) in pool.items() if key in nm.lower()]
+    return hits[0] if len(hits) == 1 else None
+
+
+def build_sets(all_games: dict, hist_obj: History, rosters: dict, skip: set | None = None,
+               ann: dict | None = None, before: date | None = None):
+    """ann（発表された先発）のうち、before より前の日で、試合がまだ記録に入っていないものも先発の学習に足す"""
     tg = team_games(all_games)
     A, B, Dx, Dy = [], [], [], []
     meta_a, meta_b = [], []
@@ -410,6 +426,21 @@ def build_sets(all_games: dict, hist_obj: History, rosters: dict, skip: set | No
                     B.append((x, cands.index(a.pid)))
                     meta_b.append((ev, team, g.gameid))
                 used_so_far.add(a.pid)
+    for ds, teams in (ann or {}).items():
+        dd = date.fromisoformat(ds)
+        if before and dd >= before:
+            continue
+        for team, key in teams.items():
+            if any(g.event == NOW_EVENT and g.final and g.date == dd and team in (g.home, g.away) for g in all_games.values()):
+                continue   # 試合が記録に入っていれば、上で記録の方を使っている
+            pool = pool_of(NOW_EVENT, team, tg, rosters)
+            pids = list(pool)
+            y = find_pitcher(pool, key)
+            if y is None:
+                continue
+            hs = {p: hist(hist_obj.before(NOW_EVENT, p, dd), dd) for p in pids}
+            A.append((np.array([feat_starter(hs[p]) for p in pids]), pids.index(y)))
+            meta_a.append((NOW_EVENT, team, f"発表{ds}"))
     return A, B, (np.array(Dx), np.array(Dy)), meta_a, meta_b
 
 
@@ -577,13 +608,10 @@ def forecast(team: str, d: date, all_games, hist_obj, rosters, models, fixed_sta
     pa = clogit_prob(ma, np.array([feat_starter(hs[p]) for p in pids]))
     pd_ = logit_prob(md, np.array([feat_pitch(hs[p]) for p in pids]))
     starter_rank = sorted(zip(pids, pa), key=lambda x: -x[1])
-    st = None
-    if fixed_starter:
-        key = fixed_starter.lower()
-        for p in pids:
-            nm, uni, _ = pool[p]
-            if key in nm.lower() or key == str(uni):
-                st = p
+    st = find_pitcher(pool, fixed_starter) if fixed_starter else None
+    if fixed_starter and st is None:
+        print(f"注意：{team} の先発「{fixed_starter}」が名簿の投手に見つからない")
+    fixed_rank = [x[0] for x in starter_rank].index(st) + 1 if st else None
     if st is None:
         st = starter_rank[0][0]
     prof = team_profile(team, lst) if lst else None
@@ -611,7 +639,8 @@ def forecast(team: str, d: date, all_games, hist_obj, rosters, models, fixed_sta
                      "p_start": float(pa[pids.index(p)]), "p_pitch": float(pd_[pids.index(p)])})
     rows.sort(key=lambda x: (-x["p_pitch"]))
     return {"team": team, "date": d, "pool": pool, "rows": rows, "starter_rank": starter_rank[:4],
-            "starter": st, "starter_fixed": bool(fixed_starter and st), "scen": scen, "prof": prof, "exit_inn": exit_inn}
+            "starter": st, "starter_fixed": bool(fixed_starter and st), "fixed_rank": fixed_rank,
+            "fixed_p": float(pa[pids.index(st)]) if st else 0.0, "scen": scen, "prof": prof, "exit_inn": exit_inn}
 
 
 # ---------------------------------------------------------------- 書き出し
@@ -704,8 +733,9 @@ def render_team(f: dict, d: date) -> list[str]:
     # 先発
     o.append("<h3>先発</h3>")
     if f["starter_fixed"]:
-        o.append(f"<p>発表された先発：<b>{E(who(pool, f['starter']))}</b></p>")
-    o.append("<div class=wrap><table><tr><th>先発の候補</th><th>確率</th><th>今大会の登板</th></tr>")
+        o.append(f"<p>発表された先発：<b>{E(who(pool, f['starter']))}</b>"
+                 f"<span class=sub>（発表前の予想では{f['fixed_rank']}番目・{pct(f['fixed_p'])}）</span></p>")
+    o.append(f"<div class=wrap><table><tr><th>先発の候補{'（発表前の予想）' if f['starter_fixed'] else ''}</th><th>確率</th><th>今大会の登板</th></tr>")
     for p, x in f["starter_rank"][:3]:
         prev = [r for r in f["rows"] if r["pid"] == p][0]
         o.append(f"<tr><td>{E(who(pool, p))}</td><td class=num>{bar(x)}</td><td>{E(prev_txt(prev['prev']))}・{rest_txt(prev['h'])}</td></tr>")
@@ -730,12 +760,11 @@ def render_team(f: dict, d: date) -> list[str]:
     # 投手ごと
     o.append("<h3>投手ごとの状態</h3><div class=wrap><table><tr><th>投手</th><th>この日に投げる見込み</th><th>前回</th><th>今大会の登板</th></tr>")
     for r in f["rows"]:
-        if r["pid"] == f["starter"] and f["starter_fixed"]:
-            continue
         h = r["h"]
         cls = " class=warn" if h["rest"] == 1 else ""
-        tag = "<span class=tag>先発の予想1番目</span>" if r["pid"] == f["starter"] else ""
-        o.append(f"<tr><td>{E(who(pool, r['pid']))}{tag}</td><td class=num>{bar(r['p_pitch'])}</td>"
+        tag = "" if r["pid"] != f["starter"] else "<span class=tag>先発（発表）</span>" if f["starter_fixed"] else "<span class=tag>先発の予想1番目</span>"
+        chance = "先発" if r["pid"] == f["starter"] and f["starter_fixed"] else bar(r["p_pitch"])
+        o.append(f"<tr><td>{E(who(pool, r['pid']))}{tag}</td><td class=num>{chance}</td>"
                  f"<td{cls}>{rest_txt(h)}{'' if h['n'] == 0 else '（' + str(h['last_p']) + '球）'}</td><td>{E(prev_txt(r['prev']))}</td></tr>")
     o.append("</table></div>")
     # 試合ごとの継投
@@ -783,7 +812,18 @@ def main():
                        and g.home in COUNTRY and g.away in COUNTRY], key=lambda g: g.start)
     d = date.fromisoformat(a.date) if a.date else (upcoming[0].date if upcoming else date.today())
 
-    A, B, (dx, dy), _, _ = build_sets(all_games, hist_obj, rosters)
+    ann = json.loads(ANN.read_text(encoding="utf-8")) if ANN.exists() else {}
+    day = ann.setdefault(d.isoformat(), {})
+    for s in a.starter:
+        k, _, v = s.partition("=")
+        day[k.strip().upper()] = v.strip().strip('"')
+    if a.starter:
+        OUT.mkdir(parents=True, exist_ok=True)
+        ANN.write_text(json.dumps(ann, ensure_ascii=False, indent=1, sort_keys=True), encoding="utf-8")
+    fixed = day
+
+    # 予想の日とそれより後の発表は学習に入れない（発表前の予想として比べられるように）
+    A, B, (dx, dy), _, _ = build_sets(all_games, hist_obj, rosters, ann=ann, before=d)
     models = (fit_clogit(A), fit_clogit(B), fit_logit(dx, dy))
     print(f"学習：先発の選択 {len(A)}回、救援の選択 {len(B)}回、その日に投げるか {len(dy)}件")
     for nm, m, names in (("先発", models[0], A_NAMES), ("救援", models[1], B_NAMES), ("登板", models[2], D_NAMES)):
@@ -794,11 +834,6 @@ def main():
     if not a.no_check:
         chk = check(all_games, hist_obj, rosters)
         print("確かめ:", json.dumps(chk, ensure_ascii=False))
-
-    fixed = {}
-    for s in a.starter:
-        k, _, v = s.partition("=")
-        fixed[k.strip().upper()] = v.strip()
 
     day_games = [g for g in upcoming if g.date == d]
     teams_today = []
