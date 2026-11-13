@@ -208,9 +208,15 @@ def result_ja(n: str) -> str:
         return "併殺"
     if "sacrifice hit" in low or "sacrifice bunt" in low:
         return "送りバント"
-    if "fielders choice" in low or "fielder's choice" in low:
+    if "out by rule" in low and "interfering with catcher" in low:
+        return "守備妨害"         # 打者が捕手の守備を妨げてアウト（11/7 ニカラグアの CENTENO。打席と打数に入る）
+    # 野選とエラーは最初の文（打者のこと）だけで見る。後ろの文は走者のことで、
+    # 「singles ... X out at 3rd」「singles ... to 2nd on fielders choice」はヒット（11/13、台湾の投手で安打が公式と合わなかった）
+    first = low.split(". ")[0]
+    hit_first = re.search(r"\b(singles|doubles|triples|homers)\b", first) is not None
+    if not hit_first and ("fielders choice" in first or "fielder's choice" in first):
         return "野選"
-    if "error" in low:
+    if not hit_first and "error" in first:
         return "エラーで出塁"
     m = re.search(r"grounds out (\d)", n)
     if m:
