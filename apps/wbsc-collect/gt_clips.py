@@ -569,14 +569,18 @@ def pa_items(game: str, ioc: str, role: str, nm: dict) -> list[dict]:
         pitches_ = []
         for k, r in enumerate(group, 1):
             final = k == len(group)
-            path = folder / (clip_stem(r, k, final, res, other) + ".mp4")
+            # 打席の途中で投手が代わったとき、打席は結果の付く投手のものにするが、1球の映像は投げた投手のフォルダに置く
+            # （11/9 オーストラリア：Rosser の2ボールが Page-Allen のフォルダと字幕に入っていた。11/13）
+            by = r["pitcherid"] if role == "投手" and r["pitcherid"] in nm else me
+            pdir = folder if by == me else out_root(ioc) / role / nm[by]["folder"] / f"{mmdd}_{rival}"
+            path = pdir / (clip_stem(r, k, final, res, other) + ".mp4")
             # 同じ回に同じ姓の相手が2人いると名前がぶつかる（11/7 キューバの Pérez 2人）。2つ目からは番号を足す
             n = 2
             while path in used:
-                path = folder / (clip_stem(r, k, final, res, other) + f"_{n}.mp4")
+                path = pdir / (clip_stem(r, k, final, res, other) + f"_{n}.mp4")
                 n += 1
             used.add(path)
-            pitches_.append({"row": r, "k": k, "final": final, "path": path,
+            pitches_.append({"row": r, "k": k, "final": final, "path": path, "by": by,
                              "call": pitch_call(r["narrative"].strip()), "count": (r["balls"], r["strikes"]),
                              "res": res if final else "", "bats": r["batter_bats"], "throws": r["pitcher_throws"],
                              "runners": any(r[f"runner{j}"] not in ("", "0") for j in (1, 2, 3)), "pa": (game, i), "game": game, "date": date,
@@ -606,9 +610,12 @@ def cmd_cut(game: str, ioc: str, video: Path) -> None:
             mine.add(pa["folder"])
             hand = ({"L": "左打者", "R": "右打者", "S": "両打ち"} if role == "投手" else {"L": "左投手", "R": "右投手"}).get(
                 pa["pitches"][0]["bats"] if role == "投手" else pa["pitches"][0]["throws"], "")
-            head = f"{pa['me_tag']}　{hand}　{pa['date']} {pa['rival']} {pa['inning']}回{'表' if pa['half'] == 'top' else '裏'}　"
             for p in pa["pitches"]:
                 r = p["row"]
+                p["path"].parent.mkdir(parents=True, exist_ok=True)
+                mine.add(p["path"].parent)
+                tag = pa["me_tag"] if p["by"] == pa["me"] else tagged(nm[p["by"]])
+                head = f"{tag}　{hand}　{pa['date']} {pa['rival']} {pa['inning']}回{'表' if pa['half'] == 'top' else '裏'}　"
                 pitch_t = rel[r["id"]]
                 if pitch_t < 1:
                     # 録画が試合の途中から始まっている（11/7 韓国対日本は配信が4回裏2死から）。その前の球は切らない
@@ -646,8 +653,8 @@ def cmd_cut(game: str, ioc: str, video: Path) -> None:
         with ThreadPoolExecutor(3) as ex:
             list(ex.map(one, enumerate(jobs)))
         made = defaultdict(list)
-        for path, *_, pa in jobs:
-            made[pa["folder"]].append(path.with_suffix(".ts"))
+        for path, *_ in jobs:
+            made[path.parent].append(path.with_suffix(".ts"))
         for folder, items in made.items():
             lst = work / "list.txt"
             lst.write_text("".join(f"file '{i}'\n" for i in items), encoding="utf-8")
@@ -777,8 +784,10 @@ def find_player(name: str) -> tuple[str, dict]:
 
 def cmd_reel(ioc: str, name: str, only: list[str]) -> None:
     pid, me = find_player(name)
-    pas = [pa for pa in all_pas(ioc, "投手") if pa["me"] == pid]
-    ps = [p for pa in pas for p in pa["pitches"] if p["path"].exists()]
+    every = all_pas(ioc, "投手")
+    pas = [pa for pa in every if pa["me"] == pid]
+    # 1球は投げた投手で拾う（打席の途中で代わったときの、前の投手の球も入れ、後の投手の球は入れない）
+    ps = [p for pa in every for p in pa["pitches"] if p["by"] == pid and p["path"].exists()]
     out_dir = out_root(ioc) / "投手" / me["folder"] / "対策"
     out_dir.mkdir(parents=True, exist_ok=True)
     hand = {"L": "左投手", "R": "右投手"}.get(ps[0]["throws"], "")
@@ -931,7 +940,8 @@ def cmd_youtube(ioc: str, kind_: str, starter: str | None, first: list[str] | No
                     continue
                 add_card(who, role_hand, f"{title}（{len(chosen)}打席）", [summary(chosen)], games_line(chosen))
                 for p in chosen:
-                    pieces.extend(q["path"] for q in p["pitches"])
+                    # 投手は、その投手が投げた球だけ（打席の途中で代わったときの前の投手の球は入れない）
+                    pieces.extend(q["path"] for q in p["pitches"] if role == "打者" or q["by"] == m)
                 print(who, title, summary(chosen))
 
         lst = work / "list.txt"
