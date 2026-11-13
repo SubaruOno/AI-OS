@@ -7,7 +7,7 @@
     python3 gt_clips.py check <試合ID> <映像.mp4> [top|bot]     # align のあとに、ずれていそうな打席（目印のない球・使っていない球速の表示）を並べる
     python3 gt_clips.py cut <試合ID> <国> <映像.mp4>            # その国の投手と打者を1球ずつに切り、試合ごとのまとめを作る
     python3 gt_clips.py reel <国> <投手> [番号 ...]             # 投手の対策映像（走者あり・対右打者・対左打者・球種別）
-    python3 gt_clips.py youtube <国> 投手|野手 [--starter 投手 [--starter-games 試合]] [--order 投手,投手,...]
+    python3 gt_clips.py youtube <国> 投手|野手 [--starter 投手 [--starter-games 試合]] [--order 投手,投手,...|打者,打者,...]
                                 [--pas 右,左] [--scenes 場面,場面] [--bitrate 2000k]   # 短くするとき
                                                                # YouTube（限定公開）に上げる1本と章の説明文
     python3 gt_clips.py types <試合ID> <BASSの書き出し.txt> <映像.mp4>  # BASSの球種を記録の1球に付ける → <映像>.types.json
@@ -893,6 +893,10 @@ def cmd_youtube(ioc: str, kind_: str, starter: str | None, first: list[str] | No
             slot = {m: min((pa["slot"], pa["order"]) for pa in v if pa["game"] == last) if any(pa["game"] == last for pa in v)
                     else (10, 0) for m, v in by.items()}
             order = sorted(by, key=lambda m: slot[m])
+            if first:
+                # 打順を指定するとき（映像がまだない最新の試合の打順に並べる。11/13 台湾は 11/12 韓国戦の打順）
+                ids = [find_player(n)[0] for n in first]
+                order = [m for m in ids if m in by] + [m for m in order if m not in ids]
             nR, nL = pas_n or (BATTER_PAS_R, None)
             sides = (("R", "対右投手", nR), ("L", "対左投手", nL))
 
