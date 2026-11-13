@@ -517,6 +517,23 @@ def team_rows(game: str, ioc: str, role: str) -> list[dict]:
     return [r for r in pitches(game) if (r["batting_team"] == team) == (role == "打者")]
 
 
+def charged_pitcher(group: list[dict], res: str) -> str:
+    """打席の途中で投手が代わったとき、打席の結果が付く投手（公式記録の付け方）。
+    四球で、代わったときのカウントが打者に有利（2-0・2-1・3-0・3-1・3-2）なら前の投手。
+    三振で、代わったときに2ストライクなら前の投手。ほかは後の投手。
+    11/9 台湾−オーストラリアの4回裏、Rosser が2ボールで降り Page-Allen が三振を取った打席が、公式では Page-Allen に付いている（11/13）"""
+    first, last = group[0]["pitcherid"], group[-1]["pitcherid"]
+    if first == last:
+        return first
+    r = next(r for r in group if r["pitcherid"] != first)
+    b, s = int(r["balls"] or 0), int(r["strikes"] or 0)
+    if res in ("四球", "敬遠") and (b, s) in ((2, 0), (2, 1), (3, 0), (3, 1), (3, 2)):
+        return first
+    if "三振" in res and s == 2:
+        return first
+    return last
+
+
 def pa_items(game: str, ioc: str, role: str, nm: dict) -> list[dict]:
     """その国の投手（または打者）の打席。1打席ごとに、全球のファイルの置き場所と、場面分けに使う値。"""
     date, mmdd, rival = game_label(game, ioc)
@@ -537,10 +554,11 @@ def pa_items(game: str, ioc: str, role: str, nm: dict) -> list[dict]:
     out = []
     used: set[Path] = set()
     for i, ((inning, half, bid), group) in enumerate(plate_appearances(team_rows(game, ioc, role))):
-        r0 = group[0]
-        me = r0["pitcherid"] if role == "投手" else bid
-        other_id = bid if role == "投手" else r0["pitcherid"]
         res = result_ja(group[-1]["narrative"].strip())
+        pid = charged_pitcher(group, res)
+        r0 = next(r for r in group if r["pitcherid"] == pid)
+        me = pid if role == "投手" else bid
+        other_id = bid if role == "投手" else pid
         other_p = nm.get(other_id, {"name": "", "num": ""})
         other = short_name(other_p)
         folder = out_root(ioc) / role / nm[me]["folder"] / f"{mmdd}_{rival}"
