@@ -593,6 +593,11 @@ def pa_items(game: str, ioc: str, role: str, nm: dict) -> list[dict]:
     return out
 
 
+def concat_line(path) -> str:
+    """ffmpeg の concat の一覧の1行。名前の ' を逃がす（11/13：チェコの O'Rourke の球で一覧が切れ、野手の YouTube 用が8.5分で止まった）"""
+    return "file '{}'\n".format(str(path).replace("'", "'\\''"))
+
+
 def cmd_cut(game: str, ioc: str, video: Path) -> None:
     nm = players()
     anc = anchor_times(game, video)
@@ -657,7 +662,7 @@ def cmd_cut(game: str, ioc: str, video: Path) -> None:
             made[path.parent].append(path.with_suffix(".ts"))
         for folder, items in made.items():
             lst = work / "list.txt"
-            lst.write_text("".join(f"file '{i}'\n" for i in items), encoding="utf-8")
+            lst.write_text("".join(concat_line(i) for i in items), encoding="utf-8")
             joined = folder.parent / f"{folder.name}_まとめ.mp4"
             subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(lst), "-c", "copy",
                             "-movflags", "+faststart", str(joined)], check=True)
@@ -814,7 +819,7 @@ def cmd_reel(ioc: str, name: str, only: list[str]) -> None:
                     files.append(sub.with_suffix(".ts"))
                 files.append(p["path"])
             lst = work / f"{fname}.txt"
-            lst.write_text("".join(f"file '{f}'\n" for f in files), encoding="utf-8")
+            lst.write_text("".join(concat_line(f) for f in files), encoding="utf-8")
             reel = out_dir / f"{me['folder']}_{fname}.mp4"
             subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(lst),
                             *FLAGS, "-movflags", "+faststart", str(reel)], check=True)
@@ -945,7 +950,7 @@ def cmd_youtube(ioc: str, kind_: str, starter: str | None, first: list[str] | No
                 print(who, title, summary(chosen))
 
         lst = work / "list.txt"
-        lst.write_text("".join(f"file '{p}'\n" for p in pieces), encoding="utf-8")
+        lst.write_text("".join(concat_line(p) for p in pieces), encoding="utf-8")
         video = out_dir / f"{COUNTRY[ioc]}_{kind_}_大会2026.mp4"
         subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(lst), *YT_FLAGS, str(video)], check=True)
         starts, t = [], 0.0
