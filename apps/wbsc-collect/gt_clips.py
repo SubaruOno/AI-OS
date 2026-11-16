@@ -2,8 +2,9 @@
 """GameTime から保存した今大会の試合映像（gametime_dl.py）を、WBSCの1球ごとの記録に合わせて切り、
 イギリスの欧州2025（../../野球/.../イギリス/調査メモ/euro_*.py）と同じ形の対策映像にする。
 
-    python3 gt_clips.py ocr <映像.mp4>                         # 右下の得点表示（回・カウント・アウト・球速）を毎秒1回読む → <映像>.bug.json
+    python3 gt_clips.py ocr <映像.mp4> [--fps 3]               # 右下の得点表示（回・カウント・アウト・球速）を毎秒1回（--fps で回数）読む → <映像>.bug.json
     python3 gt_clips.py align <試合ID> <映像.mp4>               # 記録の時刻と映像の秒のずれを決める → <映像>.align.json
+    python3 gt_clips.py seq <試合ID> <映像.mp4>                 # 投球だけを詰めた映像（YouTube の「全球」の動画）を、球の並びで合わせる → <映像>.align.json
     python3 gt_clips.py check <試合ID> <映像.mp4> [top|bot]     # align のあとに、ずれていそうな打席（目印のない球・使っていない球速の表示）を並べる
     python3 gt_clips.py cut <試合ID> <国> <映像.mp4>            # その国の投手と打者を1球ずつに切り、試合ごとのまとめを作る
     python3 gt_clips.py reel <国> <投手> [番号 ...]             # 投手の対策映像（走者あり・対右打者・対左打者・球種別）
@@ -64,6 +65,9 @@ BUG_FPS = 1
 TAG_LAG, NO_TAG_LEAD = 1.0, 4.0
 # 1球の切り方（秒）。基準は投げた瞬間。前に飛んだ球は打球と走者を見せるため後ろを長く取る
 BEFORE, AFTER, AFTER_HIT = 6.5, 6.0, 14.0
+# 投球だけを詰めた映像（seq）で、編集の切れ目とみる場面の切り替えの強さ（ffmpeg の scene、0〜1）
+SCENE_THR = 0.15   # 打者の紹介から投球のカメラへの切り替えは 0.18 しかなかった（3位決定戦の2回裏）
+SEQ_REVEAL = 1.0
 FPS = 30
 FLAGS = ["-c:v", "h264_videotoolbox", "-b:v", "4500k", "-profile:v", "high", "-pix_fmt", "yuv420p",
          "-r", str(FPS), "-video_track_timescale", "90000", "-an"]
@@ -255,9 +259,10 @@ BUG_OUT = re.compile(r"\b([0-3])\s*OUTS?\b", re.I)
 BUG_MPH = re.compile(r"\b(\d{2,3})\s*M\s*P\s*H", re.I)
 
 
-def cmd_ocr(video: Path) -> None:
+def cmd_ocr(video: Path, fps: float = BUG_FPS) -> None:
+    # 投球だけを詰めた映像（seq）は1球が4〜6秒しかないので、毎秒3回読む（11/16 3位決定戦）
     with tempfile.TemporaryDirectory(prefix="gtocr") as tmp:
-        subprocess.run(["ffmpeg", "-v", "error", "-i", str(video), "-vf", f"fps={BUG_FPS},crop={BUG_CROP},scale=870:-1",
+        subprocess.run(["ffmpeg", "-v", "error", "-i", str(video), "-vf", f"fps={fps},crop={BUG_CROP},scale=870:-1",
                         str(Path(tmp) / "%06d.png")], check=True)
         files = sorted(Path(tmp).glob("*.png"))
         chunks = [files[i:i + 300] for i in range(0, len(files), 300)]
@@ -267,7 +272,7 @@ def cmd_ocr(video: Path) -> None:
                 for f in chunk:
                     text = " ".join(l["text"] for l in res.get(str(f), []))
                     i, c, o, m = BUG_INN.search(text), BUG_CNT.search(text), BUG_OUT.search(text), BUG_MPH.search(text)
-                    out.append([round((int(f.stem) - 1) / BUG_FPS, 2), int(i[1]) if i else None,
+                    out.append([round((int(f.stem) - 1) / fps, 2), int(i[1]) if i else None,
                                 f"{c[1]}-{c[2]}" if c else None, int(o[1]) if o else None, int(m[1]) if m else None])
     json.dump(out, open(str(video) + ".bug.json", "w"))
     print(len(out), "コマ", sum(1 for o in out if o[2]), "コマでカウントを読めた", sum(1 for o in out if o[4]), "コマで球速を読めた")
@@ -452,6 +457,117 @@ def cmd_check(game: str, video: Path, half: str | None = None) -> None:
         print("   表示:", " ".join(f"{t:.0f}秒({bug.get(round(t)) or bug.get(round(t) + 1)}MPH){'' if round(t) in used else '＊'}" for t in inwin))
 
 
+def scene_cuts(video: Path, thr: float = SCENE_THR) -> list[float]:
+    """場面の切り替わり（映像の秒）。ffmpeg の scene の値が thr を超えたコマ。"""
+    res = subprocess.run(["ffmpeg", "-v", "info", "-i", str(video), "-an", "-vf", f"scale=320:-2,select='gt(scene,{thr})',showinfo",
+                          "-f", "null", "-"], capture_output=True, text=True)
+    return sorted(float(m[1]) for m in re.finditer(r"pts_time:([\d.]+)", res.stderr))
+
+
+def cmd_seq(game: str, video: Path) -> None:
+    """投球だけを詰めてつないだ映像（YouTube の個人の「全球」の動画など）を、記録の1球に合わせる（11/16 3位決定戦）。
+
+    録画と違い、記録の入力の時刻と映像の秒のずれが場所ごとに変わるので、align の「全体のずれ」が使えない。
+    代わりに、球速の表示（tags）の並びと記録の球の並びを、表示が出たときの得点表示（回とカウント）で、
+    順番を保ったまま一番多く対応が付くように結ぶ。1球の映像は、編集の切れ目（場面の切り替え）と前後の球で区切り、
+    前の球の投球や次の球の投球が入らないようにする（区切りは <映像>.align.json の limits）。"""
+    # <映像>.fix.json に {1球のID: null} と書いた球は、映像にない球（編集で切られた球）として結ばず、切らない
+    fix_f = Path(str(video) + ".fix.json")
+    fixed, lead, missing = {}, {}, set()
+    for k, v in (json.load(open(fix_f)) if fix_f.exists() else {}).items():
+        if v is None:
+            missing.add(k)
+            continue
+        fixed[k] = float(v["t"] if isinstance(v, dict) else v)
+        if isinstance(v, dict) and "before" in v:
+            lead[k] = float(v["before"])
+    exp_all = expected(game)
+    exp = [e for e in exp_all if e["id"] not in missing]
+    reads = json.load(open(str(video) + ".bug.json"))
+    inn_at = {round(r[0]): r[1] for r in reads if r[1]}
+    tg = tags(video)
+    seen = shown_counts(video, tg)
+
+    def inning(t: float) -> int | None:
+        s = round(t)
+        return next((inn_at[k] for k in (s, s - 1, s + 1, s - 2, s + 2) if k in inn_at), None)
+
+    def ok(t: float, e: dict) -> bool:
+        pre, post = seen[t]
+        if pre != e["pre"]:
+            return False
+        i = inning(t)
+        if i is not None and i != e["inning"]:
+            return False
+        # 打席の最後の球と2ストライクからのファウルは、次の表示が変わらないか、次の球のあとのカウントになる
+        return post == e["post"] or post is None or e["final"] or e["pre"] == e["post"]
+
+    n, m = len(exp), len(tg)
+    fit = [[ok(tg[j], exp[i]) for j in range(m)] for i in range(n)]
+    # 対応の数が同じなら、後ろの表示を選ぶ（後ろから結ぶ）。投手交代の紹介の画面で投げている球にも球速が出て、
+    # 前から結ぶと初球がそれに付いた（3回裏と4回裏）。2ストライクからのファウルが編集で切られたときも、
+    # 打席の最後の球が残りの表示に付く（1回裏の工藤選手）
+    dp = [[0] * (m + 1) for _ in range(n + 1)]
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            dp[i][j] = max(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1] + 1 if fit[i - 1][j - 1] else 0)
+    pair, i, j = {}, n, m
+    while i > 0 and j > 0:
+        if fit[i - 1][j - 1] and dp[i][j] == dp[i - 1][j - 1] + 1:
+            pair[i - 1] = j - 1
+            i, j = i - 1, j - 1
+        elif dp[i][j - 1] >= dp[i - 1][j]:
+            j -= 1
+        else:
+            i -= 1
+    release = {exp[i]["id"]: tg[j] - TAG_LAG for i, j in pair.items()}
+    # 目印のない球は、前後の目印のある球の間に、球の数で等分して置く
+    est = {}
+    known = sorted(pair)
+    for i, e in enumerate(exp):
+        if e["id"] in release:
+            continue
+        lo = max((k for k in known if k < i), default=None)
+        hi = min((k for k in known if k > i), default=None)
+        t_lo = release[exp[lo]["id"]] if lo is not None else 0.0
+        t_hi = release[exp[hi]["id"]] if hi is not None else t_lo + 6 * (i - (lo or 0) + 1)
+        a, b = (lo if lo is not None else -1), (hi if hi is not None else n)
+        est[e["id"]] = t_lo + (t_hi - t_lo) * (i - a) / (b - a)
+    release.update(fixed)
+    for k in fixed:
+        est.pop(k, None)
+    when = {e["id"]: release.get(e["id"], est.get(e["id"])) for e in exp}
+    # 1球の区切り：始まりは「投げる BEFORE 秒前」「前の球の投げた 2 秒後」「投げる 0.25 秒前より前で最後の場面の切り替え」の遅いほう。
+    # 終わりは次の球の始まりまで。3位決定戦の動画は、投げてから次の球の足上げまでが約2.3秒、足上げから投げるまでが約1.5秒で、
+    # 投球の間は同じカメラのままつないであり、場面の切り替えでは区切れない（回の頭や打者の紹介の後だけ切り替わる）
+    cuts = scene_cuts(video)
+    starts = {}
+    for k, e in enumerate(exp):
+        r = when[e["id"]]
+        s = r - lead.get(e["id"], BEFORE)
+        if k:
+            s = max(s, when[exp[k - 1]["id"]] + 2.0)
+        if e["id"] not in lead:
+            s = max([s] + [c for c in cuts if s < c <= r - 0.25])
+        starts[e["id"]] = s
+    limits = {e["id"]: [starts[e["id"]], starts[exp[k + 1]["id"]] if k + 1 < n else when[e["id"]] + AFTER_HIT]
+              for k, e in enumerate(exp)}
+    # 判定の字幕は投げた SEQ_REVEAL 秒後から（1球が4秒ほどしかないので、録画の2.5秒後では間に合わない）。
+    # 目印のない球も、前後から置いた位置を release に入れる（どれかは estimated に残す）
+    json.dump({"offset": 0.0, "mode": "seq", "anchors": {i: t + SEQ_REVEAL for i, t in when.items()}, "release": when,
+               "estimated": sorted(est), "fixed": sorted(fixed), "missing": sorted(missing), "before": lead, "limits": limits},
+              open(str(video) + ".align.json", "w"))
+    used = set(pair.values())
+    print(f"全{len(exp_all)}球のうち球速の表示と結べた球 {len(pair)}、映像を見て決めた球 {len(fixed)}、映像にない球 {len(missing)}、"
+          f"球速の表示 {m}（使っていない {m - len(used)}）、場面の切り替え {len(cuts)}")
+    rows = {r["id"]: r for r in pitches(game)}
+    for e in exp:
+        if e["id"] in est:
+            r = rows[e["id"]]
+            print(f"  目印なし（前後の球から {est[e['id']]:.0f} 秒に置いた）: {e['id']} {e['inning']}回{'表' if r['half'] == 'top' else '裏'} "
+                  f"{e['pre']}→{e['post']} {r['narrative'].strip()[:50]}")
+
+
 def anchor_times(game: str, video: Path) -> dict[str, float]:
     al = json.load(open(str(video) + ".align.json"))
     return {e["id"]: al["anchors"].get(e["id"], e["utc"] + al["offset"]) for e in expected(game)}
@@ -602,7 +718,9 @@ def cmd_cut(game: str, ioc: str, video: Path) -> None:
     nm = players()
     anc = anchor_times(game, video)
     rel = release_times(game, video)
-    lead = json.load(open(str(video) + ".align.json")).get("before", {})
+    al = json.load(open(str(video) + ".align.json"))
+    lead = al.get("before", {})
+    limits = al.get("limits", {})   # 投球だけを詰めた映像（seq）の1球の区切り [始まり, 終わり]
     order = [r["id"] for r in pitches(game)]
     prev_of = {rid: rel[order[i - 1]] if i else None for i, rid in enumerate(order)}
     vlen = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(video)],
@@ -621,6 +739,9 @@ def cmd_cut(game: str, ioc: str, video: Path) -> None:
                 mine.add(p["path"].parent)
                 tag = pa["me_tag"] if p["by"] == pa["me"] else tagged(nm[p["by"]])
                 head = f"{tag}　{hand}　{pa['date']} {pa['rival']} {pa['inning']}回{'表' if pa['half'] == 'top' else '裏'}　"
+                if r["id"] in al.get("missing", []):
+                    print(f"  映像にない球なので切らない: {p['path'].name}", flush=True)
+                    continue
                 pitch_t = rel[r["id"]]
                 if pitch_t < 1:
                     # 録画が試合の途中から始まっている（11/7 韓国対日本は配信が4回裏2死から）。その前の球は切らない
@@ -628,13 +749,16 @@ def cmd_cut(game: str, ioc: str, video: Path) -> None:
                     continue
                 in_play = p["final"] and not p["call"] and pa["res"] and "三振" not in pa["res"] and pa["res"] not in ("四球", "死球")
                 start = pitch_t - lead.get(r["id"], BEFORE)
-                # 前の球の投げた瞬間の4秒後より前には戻らない（前の球の投球を入れないため）
+                lim = limits.get(r["id"])
                 prev = prev_of[r["id"]]
-                if prev is not None and prev < pitch_t - 1:
+                if lim:
+                    start = max(start, lim[0])
+                # 前の球の投げた瞬間の4秒後より前には戻らない（前の球の投球を入れないため）
+                elif prev is not None and prev < pitch_t - 1:
                     start = max(start, prev + 4)
                 # 投げた後の字幕（判定と打席の結果）は、カウントが変わった瞬間か、投げた2.5秒後の早いほうから
                 entry = min(anc[r["id"]], pitch_t + 2.5) if anc[r["id"]] > pitch_t else pitch_t + 2.5
-                length = min(pitch_t + (AFTER_HIT if in_play else AFTER), vlen) - start
+                length = min(pitch_t + (AFTER_HIT if in_play else AFTER), vlen, lim[1] if lim else vlen) - start
                 if length < 2:
                     # 録画が試合の終わりより前で切れている（11/6 南アフリカ対ベネズエラの最後の1球）
                     print(f"  録画の外なので切らない: {p['path'].name}", flush=True)
@@ -1098,6 +1222,8 @@ NO_PITCH_SHOWN = {"709879502": "この打席の初球は、投げる瞬間が映
                  "710275585": "投球は映っていません（中継が前の打席のまとめを流している間に投げられています）",
                  # 11/12 プエルトリコ戦 4回裏 山下選手の四球の球。リプレイから戻る切り替えの間に投げられた
                  "710143562": "投げる瞬間は映っていません（捕球から）"}
+# 録画以外から作った試合の、打席ごとの注記（11/16 3位決定戦は GameTime の録画が出ず、個人の YouTube の動画から作った）
+GAME_NOTE = {"202470": "この試合は、GameTime の録画がまだないため、投球だけを詰めてつないだ YouTube の動画から作っています"}
 
 
 def web_kind(res: str) -> str:
@@ -1158,6 +1284,9 @@ def cmd_web(ioc: str) -> None:
                 stem = f"{mmdd}_{pa['order']:03d}"
                 res = pa["res"]
                 note = next((NO_PITCH_SHOWN[p["row"]["id"]] for p in have if p["row"]["id"] in NO_PITCH_SHOWN), "")
+                if not note and game in GAME_NOTE:
+                    gone = len(pa["pitches"]) - len(have)
+                    note = GAME_NOTE[game] + (f"。この打席の{gone}球は、元の動画で切られていて映っていません" if gone else "")
                 person["at_bats"].append({
                     "game": game, "mmdd": mmdd, "date": pa["date"], "rival": pa["rival"], "inning": pa["inning"], "half": pa["half"],
                     "other": pa["other_tag"], "side": pa["side"], "res": res, "kind": web_kind(res), "n": len(have),
@@ -1208,9 +1337,11 @@ def main() -> None:
     if not a:
         sys.exit(__doc__)
     if a[0] == "ocr":
-        cmd_ocr(Path(a[1]))
+        cmd_ocr(Path(a[1]), float(a[a.index("--fps") + 1]) if "--fps" in a else BUG_FPS)
     elif a[0] == "align":
         cmd_align(a[1], Path(a[2]))
+    elif a[0] == "seq":
+        cmd_seq(a[1], Path(a[2]))
     elif a[0] == "check":
         cmd_check(a[1], Path(a[2]), a[3] if len(a) > 3 else None)
     elif a[0] == "cut":
