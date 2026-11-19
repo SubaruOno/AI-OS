@@ -18,6 +18,7 @@ privateリポジトリ、originに設定済み)。以前は `SubaruOno/Shigabase
 - 選手成績(`app/player-stats/`)、アナリティクス/スカウト画面(`app/analytics/`)
 - 体重管理と体重リマインド通知(`app/weight*.tsx`)
 - 動画ライブラリ(YouTubeのタイムスタンプ連携)、資料共有、チームメッセージ
+- 試合の映像の頭出し。試合にYouTubeの動画を紐づけると、Edge Function `fetch-youtube-timestamps` が説明欄の「0:00 1回表」の形の目次を読み取る。試合結果のスコアボードで▶が付いたマスを押すと、その回の頭から再生される
 
 [context/you.md](../context/you.md) では「選手コンディション管理アプリ」と紹介しているが、
 実際のスコープはそれより広く、投球・打撃データ分析やスカウティングまで含む。
