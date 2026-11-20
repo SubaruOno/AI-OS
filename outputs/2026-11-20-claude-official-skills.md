@@ -7,7 +7,7 @@ Anthropic が作って配っているスキルを、出どころ別にまとめ�
 | 出どころ | 数 | どこで使えるか |
 |---|---|---|
 | 1. Claude アプリに入っている Anthropic のスキル | 17 | デスクトップアプリ（Cowork・Code）、claude.ai |
-| 2. Claude Code に最初から入っているスキル | 約25 | Claude Code（ターミナル・デスクトップの Code タブ） |
+| 2. Claude Code に最初から入っているスキル | 22 | Claude Code（ターミナル・デスクトップの Code タブ） |
 | 3. Anthropic の公開リポジトリ（[anthropics/skills](https://github.com/anthropics/skills)） | 19 | 有料プランの claude.ai、Claude Code に追加、API |
 
 1と3は一部が重なる（docx・pdf・pptx・xlsx・skill-creator）。調べ方は最後の「確かめた方法」に書いた。
