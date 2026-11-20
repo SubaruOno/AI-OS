@@ -1125,3 +1125,4 @@
 - 2026-11-19 16:26 · subaru · shigabase/build · [SHIGABASE 紹介資料](https://claude.ai/artifact/33ht9e7YyP6b9CkcWAgJq3)に「試合の映像」の1枚を足して14枚にした。スコアボードのマスを押すとYouTubeがその回の頭から始まる流れを、10/11 明治国際医療大 6-5 滋賀大の実際の画面（2回裏）で見せた。動画のURLは写さず、.env.local は元に戻した。頭出しの仕組みを[SHIGABASEの説明](../docs/shigabase.md)に追記
 - 2026-11-19 16:43 · subaru · shigabase/build · アプリのコードを試合記録・分析・チーム運営に分けて読み、[SHIGABASE 紹介資料](https://claude.ai/artifact/33ht9e7YyP6b9CkcWAgJq3)を19枚に広げた（1球に残せる項目、記録係を助ける仕組み、Excelとの出し入れ、選手成績の絞り込み、ウエイト記録を追加）。メニューから開けない画面は載せていない。練習用に作った試合は同期せず削除、.env.local は元に戻した
 - 2026-11-19 16:48 · subaru · shigabase/decision · SHIGABASE紹介資料の続きはPetacotのワークスペース（~/Petacot/petacot-brain）で進めると決め、そちらのセッションに引き継いだ
+- 2026-11-20 13:29 · subaru · その他/research · 便利・おもろい系のGitHubリポジトリを約50件調べ、更新日・ライセンス・署名を確かめて15件ほどに絞って紹介した（Boring Notch、Mac版Filee、急にスターが増えたAI系は見送り）
